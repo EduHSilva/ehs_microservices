@@ -7,6 +7,7 @@ import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.domain.entities.User;
 import com.edu.silva.users.services.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ public class AuthController {
     public AuthController(UserService service) {
         this.service = service;
     }
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("me")
     public ResponseEntity<?> me(@AuthenticationPrincipal User user) {
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getLastLogin(), null);

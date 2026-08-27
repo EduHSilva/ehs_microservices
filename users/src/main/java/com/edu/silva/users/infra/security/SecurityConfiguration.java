@@ -33,10 +33,18 @@ public class SecurityConfiguration {
                 "/actuator/loggers/**"
         };
 
+        String[] swaggerEndpoints = new String[] {
+                "/swagger-ui.html",
+                "/swagger-ui/**",
+                "/v3/api-docs",
+                "/v3/api-docs/**"
+        };
+
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(actuatorEndpoints).permitAll()
+                        .requestMatchers(swaggerEndpoints).permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/auth/login",

@@ -4,6 +4,7 @@ import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.services.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.util.UUID;
 
 @RestController
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
     private final UserService service;
 

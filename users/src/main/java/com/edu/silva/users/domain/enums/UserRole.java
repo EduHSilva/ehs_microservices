@@ -7,7 +7,10 @@ public enum UserRole {
     ADMIN("admin"),
     CRM("crm"),
     FINANCES("finances"),
-    HEALTH("health");
+    HEALTH_USER("health_user"),
+    HEALTH_PERSONAL("health_personal"),
+    HEALTH_NUTRITIONIST("health_nutritionist"),
+    STUDY("study");
 
     private final String role;
 

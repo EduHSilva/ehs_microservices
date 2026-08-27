@@ -6,16 +6,15 @@ COPY . .
 
 ARG SERVICE_NAME
 
-RUN mvn dependency:go-offline
-RUN mvn clean package -pl ${SERVICE_NAME} -am -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B clean package \
+    -pl ${SERVICE_NAME} \
+    -am \
+    -DskipTests
 
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget \
-    && rm -rf /var/lib/apt/lists/*
 
 ARG SERVICE_NAME
 

@@ -77,9 +77,19 @@ public class UserServiceImpl implements UserService {
                 throw new CustomExceptions.EntityNotFoundException(Company.class.getSimpleName(), dto.companyID());
             }
         } else {
-            company.setName(dto.username());
-            company.setOwner(user);
-            company.setStatus(Status.ACTIVE);
+            String companyName = null;
+            switch (dto.role()) {
+                // todo internacionalizar
+                case HEALTH_NUTRITIONIST -> companyName = dto.username() + " nutricionista";
+                case HEALTH_PERSONAL -> companyName = dto.username() + " personal";
+                case CRM -> companyName = dto.username();
+            }
+
+            if (companyName != null) {
+                company.setOwner(user);
+                company.setStatus(Status.ACTIVE);
+                company.setName(companyName);
+            }
         }
 
         user.setStatus(UserStatus.WAITING_CONFIRMATION);

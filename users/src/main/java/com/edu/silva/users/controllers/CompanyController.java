@@ -4,6 +4,7 @@ import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.users.domain.dtos.requests.UpdateCompanyRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.CompanyResponseDTO;
 import com.edu.silva.users.services.CompanyService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController()
+@SecurityRequirement(name = "bearerAuth")
 public class CompanyController {
     private final CompanyService service;
 
