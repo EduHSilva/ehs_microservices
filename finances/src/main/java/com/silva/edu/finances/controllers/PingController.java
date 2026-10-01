@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class PingController {
     @GetMapping("/ping")
-    public DefaultResponse index() {
-        return new DefaultResponse("pong");
+    public DefaultResponse<Void> index() {
+        return new DefaultResponse<Void>("pong");
     }
 }

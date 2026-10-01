@@ -1,6 +1,7 @@
 package com.silva.edu.finances.controllers;
 
 import com.edu.silva.common.DefaultResponse;
+import com.edu.silva.common.PageResponse;
 import com.silva.edu.finances.domain.dtos.request.AddCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.AddTransactionRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateCategoryRequestDTO;
@@ -29,35 +30,35 @@ public class CategoryController {
     }
 
     @GetMapping(BASE_URL)
-    ResponseEntity<@NonNull DefaultResponse> all(
+    ResponseEntity<@NonNull DefaultResponse<PageResponse<CategoryResponseDTO>>> all(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<@NonNull CategoryResponseDTO> t = service.findAll(page, size);
-        return ResponseEntity.ok(new DefaultResponse("Find all categories successfully", t, BASE_URL));
+        return ResponseEntity.ok(DefaultResponse.paged("Find all categories successfully", t, BASE_URL));
     }
 
     @GetMapping(BASE_URL + "/{id}")
-    ResponseEntity<@NonNull DefaultResponse> one(@PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse("Category find successfully", service.findById(id), BASE_URL, id));
+    ResponseEntity<@NonNull DefaultResponse<CategoryResponseDTO>> one(@PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("Category find successfully", service.findById(id), BASE_URL, id));
     }
 
     @PostMapping(BASE_URL)
-    ResponseEntity<@NonNull DefaultResponse> save(@RequestBody @Valid AddCategoryRequestDTO dto) {
+    ResponseEntity<@NonNull DefaultResponse<CategoryResponseDTO>> save(@RequestBody @Valid AddCategoryRequestDTO dto) {
         CategoryResponseDTO t = service.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                new DefaultResponse("Category successfully saved", t, BASE_URL, t.getId())
+                new DefaultResponse<>("Category successfully saved", t, BASE_URL, t.getId())
         );
     }
 
     @PutMapping(BASE_URL + "/{id}")
-    ResponseEntity<@NonNull DefaultResponse> replace(@RequestBody @Valid UpdateCategoryRequestDTO request, @PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse("Category successfully updated", service.update(id, request), BASE_URL, id));
+    ResponseEntity<@NonNull DefaultResponse<CategoryResponseDTO>> replace(@RequestBody @Valid UpdateCategoryRequestDTO request, @PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("Category successfully updated", service.update(id, request), BASE_URL, id));
     }
 
     @DeleteMapping(BASE_URL + "/{id}")
-    ResponseEntity<@NonNull DefaultResponse> delete(@PathVariable UUID id) {
+    ResponseEntity<@NonNull DefaultResponse<Void>> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ResponseEntity.ok(new DefaultResponse("Category successfully deleted"));
+        return ResponseEntity.ok(new DefaultResponse<Void>("Category successfully deleted"));
     }
 }

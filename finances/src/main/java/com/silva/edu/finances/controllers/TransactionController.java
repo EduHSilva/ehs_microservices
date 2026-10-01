@@ -1,6 +1,7 @@
 package com.silva.edu.finances.controllers;
 
 import com.edu.silva.common.DefaultResponse;
+import com.edu.silva.common.PageResponse;
 import com.silva.edu.finances.domain.dtos.request.AddTransactionRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateTransactionRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
@@ -25,35 +26,35 @@ public class TransactionController {
     }
 
     @GetMapping(BASE_URL)
-    ResponseEntity<@NonNull DefaultResponse> all(
+    ResponseEntity<@NonNull DefaultResponse<PageResponse<TransactionResponseDTO>>> all(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<@NonNull TransactionResponseDTO> t = service.findAll(page, size);
-        return ResponseEntity.ok(new DefaultResponse("Find all transactions successfully", t, BASE_URL));
+        return ResponseEntity.ok(DefaultResponse.paged("Find all transactions successfully", t, BASE_URL));
     }
 
     @GetMapping(BASE_URL + "/{id}")
-    ResponseEntity<@NonNull DefaultResponse> one(@PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse("Transaction find successfully", service.findById(id), BASE_URL, id));
+    ResponseEntity<@NonNull DefaultResponse<TransactionResponseDTO>> one(@PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("Transaction find successfully", service.findById(id), BASE_URL, id));
     }
 
     @PostMapping(BASE_URL)
-    ResponseEntity<@NonNull DefaultResponse> save(@RequestBody @Valid AddTransactionRequestDTO dto) {
+    ResponseEntity<@NonNull DefaultResponse<TransactionResponseDTO>> save(@RequestBody @Valid AddTransactionRequestDTO dto) {
         TransactionResponseDTO t = service.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                new DefaultResponse("Transaction successfully saved", t, BASE_URL, t.getId())
+                new DefaultResponse<>("Transaction successfully saved", t, BASE_URL, t.getId())
         );
     }
 
     @PutMapping(BASE_URL + "/{id}")
-    ResponseEntity<@NonNull DefaultResponse> replace(@RequestBody @Valid UpdateTransactionRequestDTO request, @PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse("Transaction successfully updated", service.update(id, request), BASE_URL, id));
+    ResponseEntity<@NonNull DefaultResponse<TransactionResponseDTO>> replace(@RequestBody @Valid UpdateTransactionRequestDTO request, @PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("Transaction successfully updated", service.update(id, request), BASE_URL, id));
     }
 
     @DeleteMapping(BASE_URL + "/{id}")
-    ResponseEntity<@NonNull DefaultResponse> delete(@PathVariable UUID id) {
+    ResponseEntity<@NonNull DefaultResponse<Void>> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ResponseEntity.ok(new DefaultResponse("Transaction successfully deleted"));
+        return ResponseEntity.ok(new DefaultResponse<Void>("Transaction successfully deleted"));
     }
 }

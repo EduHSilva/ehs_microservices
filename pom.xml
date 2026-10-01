@@ -27,6 +27,7 @@
         <module>notifications</module>
         <module>finances</module>
         <module>tasks</module>
+        <module>study</module>
     </modules>
 
     <properties>

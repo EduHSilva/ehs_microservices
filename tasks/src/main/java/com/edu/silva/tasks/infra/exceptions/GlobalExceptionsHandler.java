@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionsHandler {
 
     @ExceptionHandler(CustomExceptions.EntityNotFoundException.class)
-    public ResponseEntity<@NonNull DefaultResponse> handleEntityNotFound(CustomExceptions.EntityNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DefaultResponse(ex.getMessage()));
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleEntityNotFound(CustomExceptions.EntityNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DefaultResponse<Void>(ex.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<@NonNull DefaultResponse> handleGeneric(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DefaultResponse(ex.getMessage()));
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleGeneric(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DefaultResponse<Void>(ex.getMessage()));
     }
 }

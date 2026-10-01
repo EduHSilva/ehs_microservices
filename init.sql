@@ -5,4 +5,5 @@ CREATE DATABASE notifications;
 CREATE DATABASE finances;
 CREATE DATABASE tasks;
 CREATE DATABASE health;
+CREATE DATABASE study;
 

@@ -17,18 +17,18 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<DefaultResponse> getData() {
+    public ResponseEntity<DefaultResponse<DashboardResponseDTO>> getData() {
         DashboardResponseDTO dto = service.getData();
         return ResponseEntity.ok(
-                new DefaultResponse("Find data successfully", dto)
+                new DefaultResponse<>("Find data successfully", dto)
         );
     }
 
     @GetMapping("/dashboard/kanban")
-    public ResponseEntity<DefaultResponse> getDataKanban() {
+    public ResponseEntity<DefaultResponse<DashboardKanbanResponseDTO>> getDataKanban() {
         DashboardKanbanResponseDTO dto = service.getDataKanban();
         return ResponseEntity.ok(
-                new DefaultResponse("Find data successfully", dto)
+                new DefaultResponse<>("Find data successfully", dto)
         );
     }
 }

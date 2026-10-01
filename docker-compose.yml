@@ -287,6 +287,35 @@ services:
     ports:
       - "8686:8686"
 
+  study:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: study
+    container_name: study
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9191/actuator/health" ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/study
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+    ports:
+      - "9191:9191"
 
   fitness:
     platform: linux/amd64

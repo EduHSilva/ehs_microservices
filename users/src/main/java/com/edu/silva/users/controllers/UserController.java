@@ -1,6 +1,7 @@
 package com.edu.silva.users.controllers;
 
 import com.edu.silva.common.DefaultResponse;
+import com.edu.silva.common.PageResponse;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.services.UserService;
@@ -25,16 +26,16 @@ public class UserController {
         this.service = userService;
     }
     @GetMapping()
-    ResponseEntity<@NonNull DefaultResponse> all(
+    ResponseEntity<@NonNull DefaultResponse<PageResponse<UserResponseDTO>>> all(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<@NonNull UserResponseDTO> users = service.findAll(page, size);
-        return ResponseEntity.ok(new DefaultResponse("Find all users successfully", users, BASE_URL));
+        return ResponseEntity.ok(DefaultResponse.paged("Find all users successfully", users, BASE_URL));
     }
     @GetMapping("/{id}")
-    ResponseEntity<@NonNull DefaultResponse> one(@PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse("User find successfully", service.findById(id), BASE_URL, id));
+    ResponseEntity<@NonNull DefaultResponse<UserResponseDTO>> one(@PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("User find successfully", service.findById(id), BASE_URL, id));
     }
     @GetMapping(value = "/confirm/{id}")
     public RedirectView confirm(@PathVariable UUID id) {
@@ -42,12 +43,12 @@ public class UserController {
         return new RedirectView("/confirm.html");
     }
     @PutMapping("/{id}")
-    ResponseEntity<@NonNull DefaultResponse> update(@RequestBody @Valid UpdateUserRequestDTO request, @PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse("User successfully updated", service.update(id, request), BASE_URL, id));
+    ResponseEntity<@NonNull DefaultResponse<UserResponseDTO>> update(@RequestBody @Valid UpdateUserRequestDTO request, @PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("User successfully updated", service.update(id, request), BASE_URL, id));
     }
     @DeleteMapping("/{id}")
-    ResponseEntity<@NonNull DefaultResponse> delete(@PathVariable UUID id) {
+    ResponseEntity<@NonNull DefaultResponse<Void>> delete(@PathVariable UUID id) {
         service.delete(id);
-        return ResponseEntity.ok(new DefaultResponse("User successfully deleted"));
+        return ResponseEntity.ok(new DefaultResponse<>("User successfully deleted"));
     }
 }
