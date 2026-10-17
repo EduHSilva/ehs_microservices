@@ -24,6 +24,7 @@ public class CompanyController {
     public CompanyController(CompanyService service) {
         this.service = service;
     }
+
     @GetMapping(BASE_URL)
     ResponseEntity<@NonNull DefaultResponse<PageResponse<CompanyResponseDTO>>> all(
             @RequestParam(defaultValue = "0") int page,

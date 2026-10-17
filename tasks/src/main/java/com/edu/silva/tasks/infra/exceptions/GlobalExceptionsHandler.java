@@ -15,6 +15,11 @@ public class GlobalExceptionsHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DefaultResponse<Void>(ex.getMessage()));
     }
 
+    @ExceptionHandler(CustomExceptions.InvalidTaskCompletionException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleInvalidTaskCompletion(CustomExceptions.InvalidTaskCompletionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<@NonNull DefaultResponse<Void>> handleGeneric(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DefaultResponse<Void>(ex.getMessage()));

@@ -1,11 +1,16 @@
 package com.edu.silva.tasks.domain.dtos.requests;
 
-import jakarta.validation.constraints.NotNull;
+import com.edu.silva.tasks.domain.enums.TaskStatus;
+import com.edu.silva.tasks.domain.enums.TaskType;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.Date;
 
 public record AddTaskDTO(
-        @NotNull String title,
-        @NotNull Date dueDate
+        @NotBlank String title,
+        TaskType type,
+        Date startDate,
+        Date endDate,
+        TaskStatus status
 ) {
 }

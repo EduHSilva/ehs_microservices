@@ -6,4 +6,10 @@ public class CustomExceptions {
             super(String.format("%s não encontrado: %s", entityName, id));
         }
     }
+
+    public static class InvalidTaskCompletionException extends RuntimeException {
+        public InvalidTaskCompletionException(String message) {
+            super(message);
+        }
+    }
 }

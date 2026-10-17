@@ -1,6 +1,7 @@
 package com.edu.silva.tasks.domain.entities;
 
 import com.edu.silva.tasks.domain.enums.TaskStatus;
+import com.edu.silva.tasks.domain.enums.TaskType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,7 +35,14 @@ public class Task {
     @UpdateTimestamp
     private Date updatedDate;
     private String title;
-    private Date dueDate;
+    /** First day on which this task is available. */
+    @Column(name = "start_date")
+    private Date startDate;
+    /** Optional last day on which this task can be completed. */
+    @Column(name = "due_date")
+    private Date endDate;
+    @Enumerated(EnumType.STRING)
+    private TaskType type;
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
 

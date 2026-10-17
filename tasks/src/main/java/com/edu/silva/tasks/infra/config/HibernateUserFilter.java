@@ -37,12 +37,16 @@ public class HibernateUserFilter extends OncePerRequestFilter {
                 Session session = entityManager.unwrap(Session.class);
                 session.enableFilter("userFilter")
                         .setParameter("userId", userId);
-
             } catch (Exception e) {
                 throw new ServletException(e);
+            }
+
+            try {
+                filterChain.doFilter(request, response);
             } finally {
                 UserContext.clear();
             }
+            return;
         }
 
         filterChain.doFilter(request, response);
