@@ -22,6 +22,10 @@ public class CompanyResponseDTO {
 
     public CompanyResponseDTO(Company company) {
         BeanUtils.copyProperties(company, this);
-        this.users = company.getUsers().stream().map(UserResponseDTO::new).toList();
+        if (company.getUsers() != null) {
+            this.users = company.getUsers().stream().map(UserResponseDTO::new).toList();
+        } else {
+            this.users = new ArrayList<>();
+        }
     }
 }

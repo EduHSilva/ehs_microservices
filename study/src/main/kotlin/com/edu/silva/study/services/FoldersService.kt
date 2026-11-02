@@ -13,4 +13,6 @@ interface FoldersService {
     fun add(request: FolderRequestDTO): FolderResponseDTO
 
     fun update(id: UUID?, request: FolderRequestDTO): FolderResponseDTO
+
+    fun delete(id: UUID?)
 }

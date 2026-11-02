@@ -11,16 +11,19 @@ import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.services.RecurrenceService;
+import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@Transactional
 public class RecurrenceServiceImpl implements RecurrenceService {
 
     private final RecurrenceRepository repository;
@@ -36,21 +39,20 @@ public class RecurrenceServiceImpl implements RecurrenceService {
         Recurrence r = new Recurrence();
         BeanUtils.copyProperties(request, r);
         r.setStatus(RecurrenceStatus.ACTIVE);
-        if (request.type() == RecurrenceType.INSTALLMENT && request.installments() == 0) {
-            throw new CustomExceptions.InvalidInstallmentsException();
-        }
+        validateInstallments(request.type(), request.installments(), request.payed());
 
-        Category category = categoryRepository.findById(request.categoryID())
+        Category category = categoryRepository.findByIdAndUserId(request.categoryID(), UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), request.categoryID()));
 
         r.setCategory(category);
+        r.setUserId(UserContext.getUser());
         repository.save(r);
         return new RecurrenceResponseDTO(r);
     }
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        repository.delete(findEntity(id));
     }
 
     @Override
@@ -61,20 +63,30 @@ public class RecurrenceServiceImpl implements RecurrenceService {
 
     @Override
     public RecurrenceResponseDTO findById(UUID id) {
-        return new RecurrenceResponseDTO(repository.findById(id)
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Recurrence.class.getSimpleName(), id)));
+        return new RecurrenceResponseDTO(findEntity(id));
     }
 
     @Override
     public RecurrenceResponseDTO update(UUID id, UpdateRecurrenceRequestDTO request) {
-        return repository.findById(id)
-                .map(recurrence -> {
-                    recurrence.setDay(request.day());
-                    recurrence.setInstallments(request.installments());
-                    recurrence.setPayed(request.payed());
-                    recurrence.setTitle(request.title());
-                    return new RecurrenceResponseDTO(repository.save(recurrence));
-                })
+        Recurrence recurrence = findEntity(id);
+        validateInstallments(recurrence.getType(), request.installments(), request.payed());
+        recurrence.setDay(request.day());
+        recurrence.setInstallments(request.installments());
+        recurrence.setPayed(request.payed());
+        recurrence.setTitle(request.title());
+        recurrence.setValue(request.value());
+        return new RecurrenceResponseDTO(repository.save(recurrence));
+    }
+
+    private Recurrence findEntity(UUID id) {
+        return repository.findByIdAndUserId(id, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Recurrence.class.getSimpleName(), id));
+    }
+
+    private void validateInstallments(RecurrenceType type, Integer installments, Integer payed) {
+        if (type == RecurrenceType.INSTALLMENT
+                && (installments == null || installments <= 0 || (payed != null && payed > installments))) {
+            throw new CustomExceptions.InvalidInstallmentsException();
+        }
     }
 }

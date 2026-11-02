@@ -1,12 +1,12 @@
 package com.silva.edu.finances.domain.dtos.request;
 
-import com.silva.edu.finances.domain.enums.CategoryStatus;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateCategoryRequestDTO(
-        @NotEmpty String title,
-        @NotNull int goal,
-        @NotEmpty String color) {
+        @NotBlank String title,
+        @NotNull @Min(0) Integer goal,
+        @NotBlank String color) {
 
 }

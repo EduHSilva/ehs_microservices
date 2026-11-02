@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.Filter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -22,6 +23,7 @@ import java.util.UUID;
 @Table(name = "recurrences")
 @SQLDelete(sql = "UPDATE recurrences SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
+@Filter(name = "userFilter", condition = "user_id = :userId")
 public class Recurrence implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -32,7 +34,8 @@ public class Recurrence implements Serializable {
     private Date updatedDate;
     private String title;
     private int day;
-    private double value;
+    @Column(precision = 19, scale = 4)
+    private java.math.BigDecimal value;
     private boolean income;
     @ManyToOne
     private Category category;
@@ -42,4 +45,6 @@ public class Recurrence implements Serializable {
     private Integer payed;
     @Enumerated(EnumType.STRING)
     private RecurrenceStatus status;
+    @Column(name = "user_id")
+    private UUID userId;
 }

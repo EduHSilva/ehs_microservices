@@ -300,6 +300,8 @@ services:
         condition: service_healthy
       admin:
         condition: service_healthy
+      tasks:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9191/actuator/health" ]
       interval: 20s
@@ -314,6 +316,7 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+      TASKS_SERVICE_URL: http://tasks:8686
     ports:
       - "9191:9191"
 

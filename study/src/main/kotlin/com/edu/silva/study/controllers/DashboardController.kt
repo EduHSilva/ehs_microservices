@@ -1,38 +1,34 @@
 package com.edu.silva.study.controllers
 
-import org.springframework.http.HttpStatus
+import com.edu.silva.common.DefaultResponse
+import com.edu.silva.study.domain.dto.responses.DashboardResponseDTO
+import com.edu.silva.study.services.DashboardService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RequestHeader
+import java.util.UUID
 
-@RestController("/dashboard")
+private const val BASE_URL = "/dashboard"
+
+@RestController
 class DashboardController {
-    @GetMapping()
-    fun get(): ResponseEntity<String> {
-        return ResponseEntity(
-            """
-        {
-          "weeklyProgress": {
-            "completed": 14,
-            "total": 20
-          },
-          "focus": {
-            "remainingSeconds": 1125,
-            "subject": "Escrita do Capítulo 1",
-            "running": true
-          },
-          "reminders": [],
-          "notes": [
-            {
-              "id": "1",
-              "week": "Semana 3",
-              "title": "Finalizar introdução",
-              "subject": "Escrita"
-            }
-          ]
-        }
-        """.trimIndent(),
-            HttpStatus.OK
+
+    private var service: DashboardService
+
+    constructor(service: DashboardService) {
+        this.service = service
+    }
+
+
+    @GetMapping(BASE_URL)
+    fun get(@RequestHeader("X-User-ID") userId: UUID): ResponseEntity<DefaultResponse<DashboardResponseDTO>> {
+        val data = service.get(userId)
+        return ResponseEntity.ok(
+            DefaultResponse<DashboardResponseDTO>(
+                "Find all data successfully",
+                data
+            )
         )
     }
 }

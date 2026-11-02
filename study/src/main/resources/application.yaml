@@ -26,6 +26,9 @@ eureka:
 server:
   port: 9191
   forward-headers-strategy: framework
+tasks:
+  service:
+    url: ${TASKS_SERVICE_URL:http://localhost:8686}
 
 management:
   endpoint:

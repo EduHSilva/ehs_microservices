@@ -12,16 +12,19 @@ import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.TransactionService;
+import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@Transactional
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository repository;
@@ -40,16 +43,17 @@ public class TransactionServiceImpl implements TransactionService {
         BeanUtils.copyProperties(request, transaction);
         transaction.setStatus(TransactionStatus.OK);
 
-        Category category = categoryRepository.findById(request.categoryID())
+        Category category = categoryRepository.findByIdAndUserId(request.categoryID(), UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), request.categoryID()));
         transaction.setCategory(category);
 
         if (request.recurrencyID() != null) {
-            Recurrence rec = recurrenceRepository.findById(request.recurrencyID())
-                    .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Recurrence.class.getSimpleName(), request.categoryID()));
+            Recurrence rec = recurrenceRepository.findByIdAndUserId(request.recurrencyID(), UserContext.getUser())
+                    .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Recurrence.class.getSimpleName(), request.recurrencyID()));
             transaction.setRecurrence(rec);
 
         }
+        transaction.setUserId(UserContext.getUser());
 
         repository.save(transaction);
         return new TransactionResponseDTO(transaction);
@@ -57,7 +61,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        repository.delete(findEntity(id));
     }
 
     @Override
@@ -68,18 +72,22 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public TransactionResponseDTO findById(UUID id) {
-        return new TransactionResponseDTO(repository.findById(id)
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Transaction.class.getSimpleName(), id)));
+        return new TransactionResponseDTO(findEntity(id));
     }
 
     @Override
     public TransactionResponseDTO update(UUID id, UpdateTransactionRequestDTO request) {
-        return repository.findById(id)
-                .map(transaction -> {
-                    transaction.setValue(request.value());
-                    transaction.setTitle(request.title());
-                    return new TransactionResponseDTO(repository.save(transaction));
-                })
+        Transaction transaction = findEntity(id);
+        transaction.setValue(request.value());
+        transaction.setTitle(request.title());
+        if (request.executionDate() != null) {
+            transaction.setExecutionDate(request.executionDate());
+        }
+        return new TransactionResponseDTO(repository.save(transaction));
+    }
+
+    private Transaction findEntity(UUID id) {
+        return repository.findByIdAndUserId(id, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Transaction.class.getSimpleName(), id));
     }
 }

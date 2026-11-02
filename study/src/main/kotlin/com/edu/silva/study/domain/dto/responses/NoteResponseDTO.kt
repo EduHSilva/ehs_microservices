@@ -4,7 +4,7 @@ import java.util.UUID
 
 data class NoteResponseDTO (
     val id: UUID,
-    val folderID: UUID?,
+    val folderId: UUID?,
     val title: String,
     val content: String
 )

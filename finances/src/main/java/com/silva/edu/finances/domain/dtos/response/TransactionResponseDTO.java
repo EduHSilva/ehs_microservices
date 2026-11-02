@@ -9,6 +9,7 @@ import org.springframework.beans.BeanUtils;
 
 import java.util.Date;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -16,7 +17,7 @@ import java.util.UUID;
 public class TransactionResponseDTO {
     private UUID id;
     private boolean income;
-    private double value;
+    private BigDecimal value;
     private String category;
     private String classification;
     private String recurrence;

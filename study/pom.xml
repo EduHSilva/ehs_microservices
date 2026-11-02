@@ -148,6 +148,6 @@
 				</dependencies>
 			</plugin>
 		</plugins>
-	</build>
+</build>
 
 </project>

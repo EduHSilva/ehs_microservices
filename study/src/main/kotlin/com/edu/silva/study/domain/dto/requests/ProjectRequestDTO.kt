@@ -1,11 +1,11 @@
 package com.edu.silva.study.domain.dto.requests
 
-import com.edu.silva.common.enums.Status
+import com.edu.silva.study.domain.enums.ProjectStatus
 import java.util.UUID
 
 data class ProjectRequestDTO(
-    val id: UUID,
+    val id: UUID? = null,
     val title: String,
-    val milestone: String,
-    val status: Status
+    val status: ProjectStatus = ProjectStatus.WAITING,
+    val advisor: String? = null
 )

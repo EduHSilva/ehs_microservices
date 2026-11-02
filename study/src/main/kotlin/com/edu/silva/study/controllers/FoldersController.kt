@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
-private const val BASE_URL = "/notes/folder"
+private const val BASE_URL = "/notes/folders"
 
 @RestController
 class FoldersController {
@@ -49,9 +49,9 @@ class FoldersController {
         )
     }
 
-    @PostMapping("$BASE_URL/{id}")
+    @PostMapping(BASE_URL)
     fun save(
-        @RequestBody @Valid request: @Valid FolderRequestDTO, @PathVariable id: String
+        @RequestBody @Valid request: @Valid FolderRequestDTO
     ): ResponseEntity<DefaultResponse<FolderResponseDTO?>> {
         val folder = service.add(request)
         return ResponseEntity.ok(
@@ -73,6 +73,21 @@ class FoldersController {
             DefaultResponse<FolderResponseDTO?>(
                 "Folder successfully updated",
                 service.update(id, request),
+                BASE_URL,
+                id
+            )
+        )
+    }
+
+    @DeleteMapping("$BASE_URL/{id}")
+    fun delete(
+        @PathVariable id: UUID?
+    ): ResponseEntity<DefaultResponse<Void>> {
+        service.delete(id)
+        return ResponseEntity.ok(
+            DefaultResponse<Void>(
+                "Folder successfully deleted",
+                null,
                 BASE_URL,
                 id
             )

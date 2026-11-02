@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.springframework.beans.BeanUtils;
 
 import java.util.UUID;
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -21,7 +22,7 @@ public class RecurrenceResponseDTO {
     private UUID categoryID;
     private int day;
     private RecurrenceType type;
-    private double value;
+    private BigDecimal value;
     private boolean income;
     private Integer installments;
     private Integer payed;

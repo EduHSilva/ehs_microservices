@@ -10,7 +10,9 @@ interface NotesService {
 
     fun findById(id: UUID?): NoteResponseDTO?
 
-    fun add(request: NoteRequestDTO?): NoteResponseDTO?
+    fun add(folderId: UUID?, request: NoteRequestDTO?): NoteResponseDTO?
 
     fun update(id: UUID?, request: NoteRequestDTO?): NoteResponseDTO?
+
+    fun delete(id: UUID?)
 }

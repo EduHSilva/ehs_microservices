@@ -30,9 +30,9 @@ public class JwtAuthFilter implements GlobalFilter {
     }
 
     Map<String, String> routeRoles = Map.of(
-            "CRM", "ROLE_CRM",
-            "FINANCES", "ROLE_FINANCES",
-            "FITNESS", "ROLE_FITNESS"
+            "crm", "CRM",
+            "finances", "FINANCES",
+            "fitness", "ROLE_FITNESS"
     );
 
     @Override
@@ -65,10 +65,14 @@ public class JwtAuthFilter implements GlobalFilter {
         String token = authHeader.substring(7);
 
         DecodedJWT jwt = jwtUtil.validateToken(token);
+        if (jwt == null) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
         List<String> roles = jwt.getClaim("roles").asList(String.class);
 
         for (Map.Entry<String, String> entry : routeRoles.entrySet()) {
-            if (entry.getKey().equals(service) && !roles.contains("ADMIN")) {
+            if (service != null && entry.getKey().equalsIgnoreCase(service) && (roles == null || !roles.contains("ADMIN"))) {
                 if (roles == null || !roles.contains(entry.getValue())) {
                     exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                     return exchange.getResponse().setComplete();

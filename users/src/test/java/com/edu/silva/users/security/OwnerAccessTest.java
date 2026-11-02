@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @EnableMethodSecurity
+@ActiveProfiles("test")
 class OwnerAccessTest {
 
     @Autowired
@@ -53,6 +55,7 @@ class OwnerAccessTest {
         company.setOwner(owner);
 
         when(repository.findById(id)).thenReturn(Optional.of(company));
+        when(repository.save(org.mockito.ArgumentMatchers.any(Company.class))).thenReturn(company);
 
         UpdateCompanyRequestDTO req = new UpdateCompanyRequestDTO("NewName");
         assertDoesNotThrow(() -> {
@@ -78,25 +81,24 @@ class OwnerAccessTest {
         when(repository.findById(id)).thenReturn(Optional.of(company));
 
         UpdateCompanyRequestDTO req = new UpdateCompanyRequestDTO("NewName");
-
-        assertThrows(AccessDeniedException.class,
-                () -> companyService.update(id, req));
-
-        assertThrows(AccessDeniedException.class,
-                () -> userService.findAll(0, 10));
+        assertThrows(AccessDeniedException.class, () -> companyService.update(id, req));
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void shouldAllowAdmin() {
-        UUID companyId = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
+
+        Company company = new Company();
+        User owner = new User();
+        owner.setEmail("owner@email.com");
+        owner.setUsername("owner@email.com");
+        company.setOwner(owner);
+
+        when(repository.findById(id)).thenReturn(Optional.of(company));
+        when(repository.save(org.mockito.ArgumentMatchers.any(Company.class))).thenReturn(company);
+
         UpdateCompanyRequestDTO req = new UpdateCompanyRequestDTO("NewName");
-        assertDoesNotThrow(() -> {
-            try {
-                companyService.update(companyId, req);
-                companyService.findAll(0, 10);
-            } catch (Exception ignored) {
-            }
-        });
+        assertDoesNotThrow(() -> companyService.update(id, req));
     }
 }

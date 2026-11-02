@@ -1,29 +1,27 @@
 package com.silva.edu.finances.services.impl;
 
 import com.silva.edu.finances.domain.dtos.request.AddCategoryRequestDTO;
-import com.silva.edu.finances.domain.dtos.request.AddTransactionRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateCategoryRequestDTO;
-import com.silva.edu.finances.domain.dtos.request.UpdateTransactionRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.CategoryResponseDTO;
-import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
 import com.silva.edu.finances.domain.entities.Category;
-import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.CategoryStatus;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
-import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.CategoryService;
+import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@Transactional
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository repository;
@@ -37,13 +35,14 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = new Category();
         BeanUtils.copyProperties(request, category);
         category.setStatus(CategoryStatus.ACTIVE);
+        category.setUserId(UserContext.getUser());
         repository.save(category);
         return new CategoryResponseDTO(category);
     }
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        repository.delete(findEntity(id));
     }
 
     @Override
@@ -54,18 +53,20 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponseDTO findById(UUID id) {
-        return new CategoryResponseDTO(repository.findById(id)
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), id)));
+        return new CategoryResponseDTO(findEntity(id));
     }
 
     @Override
     public CategoryResponseDTO update(UUID id, UpdateCategoryRequestDTO request) {
-        return repository.findById(id)
-                .map(category -> {
-                    category.setTitle(request.title());
-                    category.setGoal(request.goal());
-                    return new CategoryResponseDTO(repository.save(category));
-                })
+        Category category = findEntity(id);
+        category.setTitle(request.title());
+        category.setGoal(request.goal());
+        category.setColor(request.color());
+        return new CategoryResponseDTO(repository.save(category));
+    }
+
+    private Category findEntity(UUID id) {
+        return repository.findByIdAndUserId(id, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), id));
     }
 }

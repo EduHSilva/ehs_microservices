@@ -2,9 +2,7 @@ package com.edu.silva.study.controllers
 
 import com.edu.silva.common.DefaultResponse
 import com.edu.silva.common.PageResponse
-import com.edu.silva.study.domain.dto.requests.NoteRequestDTO
 import com.edu.silva.study.domain.dto.requests.ProjectRequestDTO
-import com.edu.silva.study.domain.dto.responses.NoteResponseDTO
 import com.edu.silva.study.domain.dto.responses.ProjectResponseDTO
 import com.edu.silva.study.services.ProjectService
 import jakarta.validation.Valid
@@ -51,14 +49,14 @@ class ProjectsController {
         )
     }
 
-    @PostMapping("$BASE_URL/{id}")
+    @PostMapping(BASE_URL)
     fun save(
-        @RequestBody @Valid request: @Valid ProjectRequestDTO, @PathVariable id: String
+        @RequestBody @Valid request: ProjectRequestDTO
     ): ResponseEntity<DefaultResponse<ProjectResponseDTO?>> {
         val note = service.add(request)
         return ResponseEntity.ok(
             DefaultResponse<ProjectResponseDTO?>(
-                "Project successfully updated",
+                "Project successfully saved",
                 note,
                 BASE_URL,
                 note!!.id

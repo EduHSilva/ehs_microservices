@@ -51,9 +51,9 @@ class NotesController {
 
     @PostMapping("$BASE_URL/{id}")
     fun save(
-        @RequestBody @Valid request: @Valid NoteRequestDTO, @PathVariable id: String
+        @RequestBody @Valid request: @Valid NoteRequestDTO, @PathVariable id: UUID?
     ): ResponseEntity<DefaultResponse<NoteResponseDTO?>> {
-        val note = service.add(request)
+        val note = service.add(id, request)
         return ResponseEntity.ok(
             DefaultResponse<NoteResponseDTO?>(
                 "Note successfully updated",
@@ -73,6 +73,21 @@ class NotesController {
             DefaultResponse<NoteResponseDTO?>(
                 "Note successfully updated",
                 service.update(id, request),
+                BASE_URL,
+                id
+            )
+        )
+    }
+
+    @DeleteMapping("$BASE_URL/{id}")
+    fun delete(
+        @PathVariable id: UUID?
+    ): ResponseEntity<DefaultResponse<Void>> {
+        service.delete(id)
+        return ResponseEntity.ok(
+            DefaultResponse<Void>(
+                "Note successfully deleted",
+                null,
                 BASE_URL,
                 id
             )

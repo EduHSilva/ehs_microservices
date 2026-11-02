@@ -1,7 +1,6 @@
 package com.silva.edu.finances.domain.dtos.response;
 
 import com.silva.edu.finances.domain.entities.Category;
-import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.CategoryClassification;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

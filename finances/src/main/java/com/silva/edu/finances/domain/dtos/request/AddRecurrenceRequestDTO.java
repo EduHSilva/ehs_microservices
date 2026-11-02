@@ -1,18 +1,19 @@
 package com.silva.edu.finances.domain.dtos.request;
 
 import com.silva.edu.finances.domain.enums.RecurrenceType;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public record AddRecurrenceRequestDTO(
-        @NotNull int day,
+        @Min(1) @Max(31) int day,
         boolean income,
         @NotNull UUID categoryID,
         @NotNull RecurrenceType type,
-        Integer installments,
-        Integer payed,
-        @NotNull double value,
-        @NotNull String title
+        @Min(0) Integer installments,
+        @Min(0) Integer payed,
+        @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
+        @NotBlank String title
 ) {
 }

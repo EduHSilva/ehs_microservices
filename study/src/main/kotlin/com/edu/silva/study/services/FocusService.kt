@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page
 import java.util.*
 
 interface FocusService {
-    fun findAll(page: Int, size: Int): Page<FocusResponseDTO>?
+    fun findAll(date: Date?, page: Int, size: Int): Page<FocusResponseDTO>?
 
     fun findById(id: UUID?): FocusResponseDTO?
 

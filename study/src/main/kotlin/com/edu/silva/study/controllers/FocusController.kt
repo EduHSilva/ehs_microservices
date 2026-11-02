@@ -8,8 +8,12 @@ import com.edu.silva.study.services.FocusService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
-import java.util.*
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Date
+import java.util.UUID
 
 private const val BASE_URL = "/focus"
 
@@ -25,9 +29,11 @@ class FocusController {
     @GetMapping(BASE_URL)
     fun get(
         @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "10") size: Int
+        @RequestParam(defaultValue = "10") size: Int,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) date: LocalDate
     ): ResponseEntity<DefaultResponse<PageResponse<FocusResponseDTO?>?>> {
-        val folders: Page<FocusResponseDTO>? = service.findAll(page, size)
+        val dateAtStartOfDay = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant())
+        val folders: Page<FocusResponseDTO>? = service.findAll(dateAtStartOfDay, page, size)
         return ResponseEntity.ok(
             DefaultResponse.paged<FocusResponseDTO>(
                 "Find all sessions successfully",
@@ -49,14 +55,14 @@ class FocusController {
         )
     }
 
-    @PostMapping("$BASE_URL/{id}")
+    @PostMapping(BASE_URL)
     fun save(
-        @RequestBody @Valid request: @Valid FocusRequestDTO, @PathVariable id: String
+        @RequestBody @Valid request: @Valid FocusRequestDTO
     ): ResponseEntity<DefaultResponse<FocusResponseDTO?>> {
         val folder = service.add(request)
         return ResponseEntity.ok(
             DefaultResponse<FocusResponseDTO?>(
-                "Focus session successfully updated",
+                "Focus session successfully saved",
                 folder,
                 BASE_URL,
                 folder.id
