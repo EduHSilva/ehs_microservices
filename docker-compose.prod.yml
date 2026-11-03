@@ -1,0 +1,417 @@
+services:
+
+  # --------------------------------------------------
+  # INFRASTRUCTURE
+  # --------------------------------------------------
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - backend
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER obrigatória}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS obrigatória}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # SERVICE DISCOVERY
+  # --------------------------------------------------
+
+  service-discover:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/service-discover:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # ADMIN
+  # --------------------------------------------------
+
+  admin:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/admin:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9091/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # API GATEWAY
+  # --------------------------------------------------
+
+  gateway:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/gateway:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # USERS
+  # --------------------------------------------------
+
+  users:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/users:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/users
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL obrigatória}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD obrigatória}
+
+      API_SECURITY_TOKEN_SECRET: ${API_SECURITY_TOKEN_SECRET:?API_SECURITY_TOKEN_SECRET obrigatória}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8181/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # PAYMENTS
+  # --------------------------------------------------
+
+  payments:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/payments:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payments
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8282/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # CRM
+  # --------------------------------------------------
+
+  crm:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/crm:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/crm
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8383/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # NOTIFICATIONS
+  # --------------------------------------------------
+
+  notifications:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/notifications:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notifications
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8484/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # FINANCES
+  # --------------------------------------------------
+
+  finances:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/finances:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/finances
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8989/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # TASKS
+  # --------------------------------------------------
+
+  tasks:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/tasks:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tasks
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8686/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # STUDY
+  # --------------------------------------------------
+
+  study:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/study:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      tasks:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/study
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+
+      TASKS_SERVICE_URL: http://tasks:8686
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9191/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # FITNESS
+  # --------------------------------------------------
+
+  fitness:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/fitness:${IMAGE_TAG:-latest}
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      service-discover:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}@postgres:5432/health?sslmode=disable
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+      EUREKA_URL: http://service-discover:8761/eureka
+
+      SERVICE_NAME: FITNESS
+      SERVICE_HOST: fitness
+      SERVICE_PORT: 9090
+      PORT: 9090
+
+      FOOD_API_HOST: ${FOOD_API_HOST:-}
+      FOOD_API_KEY: ${FOOD_API_KEY:-}
+      FOOD_APP_ID: ${FOOD_APP_ID:-}
+
+      GPT_API_URL: ${GPT_API_URL:-}
+      GPT_API_KEY: ${GPT_API_KEY:-}
+
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET obrigatória}
+
+      EXERCISES_API_HOST: ${EXERCISES_API_HOST:-}
+      EXERCISES_API_KEY: ${EXERCISES_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 50s
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # NGINX - PUBLIC ENTRYPOINT
+  # --------------------------------------------------
+
+  nginx:
+    image: nginx:1.28-alpine
+    restart: unless-stopped
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/certbot/www:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  letsencrypt:

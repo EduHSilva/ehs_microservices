@@ -1,4 +1,4 @@
-name: Build
+name: Build and Publish
 
 on:
   workflow_dispatch:
@@ -9,9 +9,13 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}
+  IMAGE_PREFIX: ghcr.io/eduhsilva
 
 jobs:
+
+  # --------------------------------------------------
+  # TESTS
+  # --------------------------------------------------
 
   test-java:
     name: Test Java
@@ -36,7 +40,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: health
+        working-directory: fitness
 
     steps:
       - uses: actions/checkout@v4
@@ -44,38 +48,41 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.26.5"
           cache: true
 
       - name: Go Test
         run: go test ./...
 
-  build-images:
-    name: Build Docker Images
+  # --------------------------------------------------
+  # BUILD AND PUSH - JAVA
+  # --------------------------------------------------
 
-    needs:
-      - test-java
-      - test-go
-
+  build-java-images:
+    name: Build Java - ${{ matrix.service }}
+    needs: test-java
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
-
       matrix:
         service:
           - service-discover
+          - admin
           - gateway
           - users
-          - crm
           - payments
+          - crm
           - notifications
           - finances
           - tasks
-          - health
+          - study
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login GHCR
         uses: docker/login-action@v3
@@ -84,25 +91,47 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Image
-        run: |
-          docker build \
-            --build-arg SERVICE_NAME=${{ matrix.service }} \
-            -t ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:latest \
-            .
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            SERVICE_NAME=${{ matrix.service }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
 
-      - name: Push Image
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:latest
+  # --------------------------------------------------
+  # BUILD AND PUSH - FITNESS (GO)
+  # --------------------------------------------------
 
-  deploy:
-    name: Deploy
-
-    needs: build-images
-
-    if: false
-
+  build-fitness-image:
+    name: Build Fitness
+    needs: test-go
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo "Deploy disabled"
+      - uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fitness
+          file: ./fitness/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/fitness:latest
+            ${{ env.IMAGE_PREFIX }}/fitness:${{ github.sha }}

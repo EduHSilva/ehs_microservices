@@ -10,10 +10,11 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o health .
 
-
 FROM --platform=linux/amd64 alpine:3.20
 
 WORKDIR /app
+
+RUN apk add --no-cache wget
 
 COPY --from=builder /app/health /app/health
 
