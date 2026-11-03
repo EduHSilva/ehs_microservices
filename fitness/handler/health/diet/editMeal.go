@@ -53,7 +53,7 @@ func UpdateMealHandler(ctx *gin.Context) {
 
 	if len(request.Foods) != 0 {
 		if err := db.Where("meal_id = ?", meal.ID).Delete(&diet.Food{}).Error; err != nil {
-			logger.ErrF(err.Error())
+			logger.ErrF("error on find meal", err.Error())
 			helper.SendError(ctx, http.StatusInternalServerError, "Failed to delete associated foods")
 			return
 		}
