@@ -84,7 +84,7 @@ public class JwtAuthFilter implements GlobalFilter {
 
         exchange = exchange.mutate()
                 .request(builder ->
-                        builder.header("X-User-ID", subject))
+                        builder.headers(headers -> headers.set("X-User-ID", subject)))
                 .build();
 
         Logger.log(subject, method, path, service, meta, ip);

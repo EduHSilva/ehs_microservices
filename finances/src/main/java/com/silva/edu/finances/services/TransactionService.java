@@ -13,7 +13,7 @@ public interface TransactionService {
 
     void delete(UUID id);
 
-    Page<@NonNull TransactionResponseDTO> findAll(int page, int size);
+    Page<@NonNull TransactionResponseDTO> findAll(int page, int size, String accountId);
 
     TransactionResponseDTO findById(UUID id);
 

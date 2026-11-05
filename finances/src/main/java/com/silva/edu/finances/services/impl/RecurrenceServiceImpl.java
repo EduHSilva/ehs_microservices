@@ -11,6 +11,7 @@ import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.services.RecurrenceService;
+import com.silva.edu.finances.services.FinanceAccountService;
 import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.beans.BeanUtils;
@@ -28,16 +29,22 @@ public class RecurrenceServiceImpl implements RecurrenceService {
 
     private final RecurrenceRepository repository;
     private final CategoryRepository categoryRepository;
+    private final FinanceAccountService accountService;
 
-    public RecurrenceServiceImpl(RecurrenceRepository repository, CategoryRepository categoryRepository) {
+    public RecurrenceServiceImpl(RecurrenceRepository repository, CategoryRepository categoryRepository, FinanceAccountService accountService) {
         this.repository = repository;
         this.categoryRepository = categoryRepository;
+        this.accountService = accountService;
     }
 
     @Override
     public RecurrenceResponseDTO save(AddRecurrenceRequestDTO request) {
         Recurrence r = new Recurrence();
         BeanUtils.copyProperties(request, r);
+        String accountId = request.accountId() == null || request.accountId().isBlank()
+                ? accountService.getOrCreatePersonalDefault() : request.accountId().trim();
+        accountService.requireAccess(accountId);
+        r.setAccountId(accountId);
         r.setStatus(RecurrenceStatus.ACTIVE);
         validateInstallments(request.type(), request.installments(), request.payed());
 
@@ -56,9 +63,13 @@ public class RecurrenceServiceImpl implements RecurrenceService {
     }
 
     @Override
-    public Page<@NonNull RecurrenceResponseDTO> findAll(int page, int size) {
+    public Page<@NonNull RecurrenceResponseDTO> findAll(int page, int size, String accountId) {
+        if (accountId != null && !accountId.isBlank()) accountService.requireAccess(accountId);
         Pageable pageable = PageRequest.of(page, size);
-        return repository.findAll(pageable).map(RecurrenceResponseDTO::new);
+        var result = accountId == null || accountId.isBlank()
+                ? repository.findAll(pageable)
+                : repository.findAllByAccountId(accountId, pageable);
+        return result.map(RecurrenceResponseDTO::new);
     }
 
     @Override

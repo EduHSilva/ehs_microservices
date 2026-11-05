@@ -11,15 +11,19 @@ import com.silva.edu.finances.domain.dtos.response.RecurrenceResponseDTO;
 import com.silva.edu.finances.services.CategoryService;
 import com.silva.edu.finances.services.RecurrenceService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.UUID;
 
 @RestController
+@Validated
 public class RecurrenceController {
     private final RecurrenceService service;
 
@@ -31,10 +35,11 @@ public class RecurrenceController {
 
     @GetMapping(BASE_URL)
     ResponseEntity<@NonNull DefaultResponse<PageResponse<RecurrenceResponseDTO>>> all(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(200) int size,
+            @RequestParam(required = false) String accountId
     ) {
-        Page<@NonNull RecurrenceResponseDTO> t = service.findAll(page, size);
+        Page<@NonNull RecurrenceResponseDTO> t = service.findAll(page, Math.min(size, 200), accountId);
         return ResponseEntity.ok(DefaultResponse.paged("Find all recurrence successfully", t, BASE_URL));
     }
 

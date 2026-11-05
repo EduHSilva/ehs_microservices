@@ -24,11 +24,15 @@ public class TransactionResponseDTO {
     private Date executionDate;
     private String title;
     private TransactionStatus status;
+    private String accountId;
 
     public TransactionResponseDTO(Transaction transaction) {
         BeanUtils.copyProperties(transaction, this);
-        this.category = transaction.getCategory().getTitle();
-        this.classification = transaction.getCategory().getClassification().name();
+        this.accountId = transaction.getAccountId();
+        if (transaction.getCategory() != null) {
+            this.category = transaction.getCategory().getTitle();
+            this.classification = transaction.getCategory().getClassification().name();
+        }
         if (transaction.getRecurrence() != null) {
             this.recurrence = transaction.getRecurrence().getTitle();
         }

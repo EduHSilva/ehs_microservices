@@ -12,6 +12,7 @@ import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.TransactionService;
+import com.silva.edu.finances.services.FinanceAccountService;
 import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.beans.BeanUtils;
@@ -30,11 +31,13 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository repository;
     private final CategoryRepository categoryRepository;
     private final RecurrenceRepository recurrenceRepository;
+    private final FinanceAccountService accountService;
 
-    public TransactionServiceImpl(TransactionRepository repository, CategoryRepository categoryRepository, RecurrenceRepository recurrenceRepository) {
+    public TransactionServiceImpl(TransactionRepository repository, CategoryRepository categoryRepository, RecurrenceRepository recurrenceRepository, FinanceAccountService accountService) {
         this.repository = repository;
         this.categoryRepository = categoryRepository;
         this.recurrenceRepository = recurrenceRepository;
+        this.accountService = accountService;
     }
 
     @Override
@@ -42,6 +45,10 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = new Transaction();
         BeanUtils.copyProperties(request, transaction);
         transaction.setStatus(TransactionStatus.OK);
+        String accountId = request.accountId() == null || request.accountId().isBlank()
+                ? accountService.getOrCreatePersonalDefault() : request.accountId().trim();
+        accountService.requireAccess(accountId);
+        transaction.setAccountId(accountId);
 
         Category category = categoryRepository.findByIdAndUserId(request.categoryID(), UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), request.categoryID()));
@@ -65,9 +72,13 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Page<@NonNull TransactionResponseDTO> findAll(int page, int size) {
+    public Page<@NonNull TransactionResponseDTO> findAll(int page, int size, String accountId) {
+        if (accountId != null && !accountId.isBlank()) accountService.requireAccess(accountId);
         Pageable pageable = PageRequest.of(page, size);
-        return repository.findAll(pageable).map(TransactionResponseDTO::new);
+        var result = accountId == null || accountId.isBlank()
+                ? repository.findAll(pageable)
+                : repository.findAllByAccountId(accountId, pageable);
+        return result.map(TransactionResponseDTO::new);
     }
 
     @Override

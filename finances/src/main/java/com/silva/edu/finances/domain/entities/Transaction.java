@@ -19,7 +19,9 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "transaction")
+@Table(name = "transaction",
+        uniqueConstraints = @UniqueConstraint(name = "uk_transaction_import", columnNames = {"user_id", "account_id", "import_key"}),
+        indexes = @Index(name = "idx_transaction_user_account_date", columnList = "user_id, account_id, execution_date"))
 @SQLDelete(sql = "UPDATE transaction SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
 @Filter(name = "userFilter", condition = "user_id = :userId")
@@ -33,6 +35,8 @@ public class Transaction implements Serializable {
     private Date updatedDate;
     private Date executionDate;
     private String title;
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean income;
     @Column(precision = 19, scale = 4)
     private java.math.BigDecimal value;
     @Enumerated(EnumType.STRING)
@@ -43,4 +47,10 @@ public class Transaction implements Serializable {
     private Recurrence recurrence;
     @Column(name = "user_id")
     private UUID userId;
+    @Column(name = "account_id", length = 80)
+    private String accountId;
+    @Column(name = "import_key", length = 64)
+    private String importKey;
+    @Column(name = "import_source", length = 40)
+    private String importSource;
 }

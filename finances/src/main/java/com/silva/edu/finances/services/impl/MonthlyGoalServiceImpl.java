@@ -1,0 +1,146 @@
+package com.silva.edu.finances.services.impl;
+
+import com.silva.edu.finances.domain.dtos.request.GoalContributionRequest;
+import com.silva.edu.finances.domain.dtos.request.MonthlyGoalRequest;
+import com.silva.edu.finances.domain.dtos.response.MonthlyGoalResponse;
+import com.silva.edu.finances.domain.dtos.response.MonthlyGoalSummaryResponse;
+import com.silva.edu.finances.domain.entities.GoalContribution;
+import com.silva.edu.finances.domain.entities.MonthlyGoal;
+import com.silva.edu.finances.domain.enums.GoalMode;
+import com.silva.edu.finances.infra.config.UserContext;
+import com.silva.edu.finances.infra.exceptions.CustomExceptions;
+import com.silva.edu.finances.repositories.GoalContributionRepository;
+import com.silva.edu.finances.repositories.MonthlyGoalRepository;
+import com.silva.edu.finances.repositories.TransactionRepository;
+import com.silva.edu.finances.services.MonthlyGoalService;
+import com.silva.edu.finances.services.FinanceAccountService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class MonthlyGoalServiceImpl implements MonthlyGoalService {
+    private final MonthlyGoalRepository goals;
+    private final GoalContributionRepository contributions;
+    private final TransactionRepository transactions;
+    private final FinanceAccountService accountService;
+
+    public MonthlyGoalServiceImpl(MonthlyGoalRepository goals, GoalContributionRepository contributions,
+                                  TransactionRepository transactions, FinanceAccountService accountService) {
+        this.goals = goals;
+        this.contributions = contributions;
+        this.transactions = transactions;
+        this.accountService = accountService;
+    }
+
+    @Override @Transactional(readOnly = true)
+    public Page<MonthlyGoalResponse> list(String accountId, String periodMonth, int page, int size) {
+        accountService.requireAccess(accountId);
+        return goals.findAllByUserIdAndAccountIdAndPeriodMonth(UserContext.getUser(), accountId, periodMonth,
+                PageRequest.of(page, size)).map(this::response);
+    }
+
+    @Override public MonthlyGoalResponse create(MonthlyGoalRequest request) {
+        validate(request);
+        accountService.requireAccess(request.accountId());
+        MonthlyGoal goal = new MonthlyGoal();
+        goal.setUserId(UserContext.getUser());
+        copy(request, goal);
+        return response(goals.save(goal));
+    }
+
+    @Override public MonthlyGoalResponse update(UUID id, MonthlyGoalRequest request) {
+        validate(request);
+        accountService.requireAccess(request.accountId());
+        MonthlyGoal goal = findGoal(id);
+        copy(request, goal);
+        return response(goals.save(goal));
+    }
+
+    @Override public void delete(UUID id) {
+        MonthlyGoal goal = findGoal(id);
+        contributions.deleteAllByGoalIdAndUserId(id, UserContext.getUser());
+        goals.delete(goal);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public MonthlyGoalSummaryResponse summary(UUID id, String periodMonth) {
+        MonthlyGoal goal = findGoal(id);
+        accountService.requireAccess(goal.getAccountId());
+        YearMonth month = YearMonth.parse(periodMonth);
+        LocalDate start = month.atDay(1);
+        LocalDate end = month.plusMonths(1).atDay(1);
+        BigDecimal base = transactions.sumConfirmedIncome(goal.getUserId(), goal.getAccountId(),
+                java.util.Date.from(start.atStartOfDay().toInstant(ZoneOffset.UTC)),
+                java.util.Date.from(end.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        if (base == null) base = BigDecimal.ZERO;
+        BigDecimal expected = goal.getMode() == GoalMode.FIXED ? goal.getAmount()
+                : base.multiply(goal.getAmount()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+        BigDecimal realized = contributions.sumForGoalAndPeriod(id, goal.getUserId(), start, end);
+        if (realized == null) realized = BigDecimal.ZERO;
+        BigDecimal difference = expected.subtract(realized);
+        BigDecimal progress = expected.signum() == 0 ? BigDecimal.ZERO
+                : realized.multiply(BigDecimal.valueOf(100)).divide(expected, 2, RoundingMode.HALF_UP);
+        return new MonthlyGoalSummaryResponse(id, goal.getAccountId(), goal.getTitle(), periodMonth,
+                base, expected, realized, difference, progress);
+    }
+
+    @Override public void contribute(UUID id, GoalContributionRequest request) {
+        MonthlyGoal goal = findGoal(id);
+        if (request.transactionId() != null) {
+            if (contributions.existsByTransactionId(request.transactionId()))
+                throw new IllegalArgumentException("Transaction already linked to a goal contribution");
+            var transaction = transactions.findByIdAndUserId(request.transactionId(), UserContext.getUser())
+                    .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", request.transactionId()));
+            if (!goal.getAccountId().equals(transaction.getAccountId()))
+                throw new IllegalArgumentException("Transaction and goal accounts do not match");
+            if (transaction.isIncome() || transaction.getStatus() != com.silva.edu.finances.domain.enums.TransactionStatus.OK
+                    || transaction.getValue().compareTo(request.amount()) != 0
+                    || transaction.getExecutionDate().toInstant().atZone(ZoneOffset.UTC).toLocalDate().compareTo(request.date()) != 0)
+                throw new IllegalArgumentException("Linked contribution must match a confirmed expense transaction");
+        }
+        GoalContribution contribution = new GoalContribution();
+        contribution.setUserId(UserContext.getUser());
+        contribution.setGoal(goal);
+        contribution.setAmount(request.amount());
+        contribution.setDate(request.date());
+        contribution.setTransactionId(request.transactionId());
+        contributions.save(contribution);
+    }
+
+    @Override public void removeContribution(UUID contributionId) {
+        GoalContribution contribution = contributions.findByIdAndUserId(contributionId, UserContext.getUser())
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("GoalContribution", contributionId));
+        contributions.delete(contribution);
+    }
+
+    private MonthlyGoal findGoal(UUID id) {
+        return goals.findByIdAndUserId(id, UserContext.getUser())
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("MonthlyGoal", id));
+    }
+    private void validate(MonthlyGoalRequest request) {
+        if (request.mode() == GoalMode.PERCENT_INCOME && request.amount().compareTo(BigDecimal.valueOf(100)) > 0)
+            throw new IllegalArgumentException("Income percentage must be between 0 and 100");
+    }
+    private void copy(MonthlyGoalRequest request, MonthlyGoal goal) {
+        goal.setAccountId(request.accountId().trim());
+        goal.setTitle(request.title().trim());
+        goal.setMode(request.mode());
+        goal.setAmount(request.amount());
+        goal.setPeriodMonth(request.periodMonth());
+        goal.setActive(request.active());
+    }
+    private MonthlyGoalResponse response(MonthlyGoal g) {
+        return new MonthlyGoalResponse(g.getId(), g.getAccountId(), g.getTitle(), g.getMode(),
+                g.getAmount(), g.getPeriodMonth(), g.isActive());
+    }
+}

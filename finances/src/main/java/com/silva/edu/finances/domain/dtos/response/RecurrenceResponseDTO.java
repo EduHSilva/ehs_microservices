@@ -27,6 +27,7 @@ public class RecurrenceResponseDTO {
     private Integer installments;
     private Integer payed;
     private RecurrenceStatus status;
+    private String accountId;
 
 
     public RecurrenceResponseDTO(Recurrence recurrence) {

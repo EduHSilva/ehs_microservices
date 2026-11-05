@@ -20,7 +20,7 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "recurrences")
+@Table(name = "recurrences", indexes = @Index(name = "idx_recurrence_user_account", columnList = "user_id, account_id"))
 @SQLDelete(sql = "UPDATE recurrences SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
 @Filter(name = "userFilter", condition = "user_id = :userId")
@@ -47,4 +47,6 @@ public class Recurrence implements Serializable {
     private RecurrenceStatus status;
     @Column(name = "user_id")
     private UUID userId;
+    @Column(name = "account_id", length = 80)
+    private String accountId;
 }

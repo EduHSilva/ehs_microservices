@@ -16,7 +16,7 @@ public interface RecurrenceService {
 
     void delete(UUID id);
 
-    Page<@NonNull RecurrenceResponseDTO> findAll(int page, int size);
+    Page<@NonNull RecurrenceResponseDTO> findAll(int page, int size, String accountId);
 
     RecurrenceResponseDTO findById(UUID id);
 

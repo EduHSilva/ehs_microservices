@@ -14,6 +14,7 @@ public record AddRecurrenceRequestDTO(
         @Min(0) Integer installments,
         @Min(0) Integer payed,
         @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
-        @NotBlank String title
+        @NotBlank String title,
+        @Size(max = 80) String accountId
 ) {
 }

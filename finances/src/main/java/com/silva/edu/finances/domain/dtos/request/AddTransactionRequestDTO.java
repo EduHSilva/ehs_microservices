@@ -15,6 +15,7 @@ public record AddTransactionRequestDTO(
         @NotNull UUID categoryID,
         @NotBlank String title,
         UUID recurrencyID,
-        @NotNull Date executionDate
+        @NotNull Date executionDate,
+        @jakarta.validation.constraints.Size(max = 80) String accountId
 ) {
 }
