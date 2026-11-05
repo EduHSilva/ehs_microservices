@@ -88,6 +88,7 @@ services:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+      API_SECURITY_TOKEN_SECRET: ${API_SECURITY_TOKEN_SECRET:?API_SECURITY_TOKEN_SECRET obrigatória}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
       interval: 20s
