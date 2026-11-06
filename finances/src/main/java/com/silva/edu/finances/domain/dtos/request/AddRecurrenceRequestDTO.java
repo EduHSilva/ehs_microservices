@@ -1,5 +1,6 @@
 package com.silva.edu.finances.domain.dtos.request;
 
+import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
 import jakarta.validation.constraints.*;
 
@@ -15,6 +16,7 @@ public record AddRecurrenceRequestDTO(
         @Min(0) Integer payed,
         @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
         @NotBlank String title,
-        @Size(max = 80) String accountId
+        @Size(max = 80) String accountId,
+        RecurrenceStatus status
 ) {
 }

@@ -21,4 +21,6 @@ public interface RecurrenceService {
     RecurrenceResponseDTO findById(UUID id);
 
     RecurrenceResponseDTO update(UUID id, UpdateRecurrenceRequestDTO request);
+
+    RecurrenceResponseDTO confirm(UUID id);
 }

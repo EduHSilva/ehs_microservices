@@ -17,6 +17,7 @@ public class CategoryResponseDTO {
     private String color;
     private String title;
     private int goal;
+    private boolean income;
     private CategoryClassification classification;
 
     public CategoryResponseDTO(Category category) {

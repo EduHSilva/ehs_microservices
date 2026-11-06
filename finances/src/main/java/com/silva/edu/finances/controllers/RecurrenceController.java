@@ -66,4 +66,9 @@ public class RecurrenceController {
         service.delete(id);
         return ResponseEntity.ok(new DefaultResponse<Void>("Recurrence successfully deleted"));
     }
+
+    @PostMapping(BASE_URL + "/{id}/confirm")
+    ResponseEntity<@NonNull DefaultResponse<RecurrenceResponseDTO>> confirm(@PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("Recurrence confirmed successfully", service.confirm(id)));
+    }
 }

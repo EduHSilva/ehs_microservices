@@ -71,6 +71,11 @@ public class TransactionController {
         return ResponseEntity.ok(new DefaultResponse<Void>("Transaction successfully deleted"));
     }
 
+    @PostMapping(BASE_URL + "/{id}/confirm")
+    ResponseEntity<@NonNull DefaultResponse<TransactionResponseDTO>> confirm(@PathVariable UUID id) {
+        return ResponseEntity.ok(new DefaultResponse<>("Transaction confirmed successfully", service.confirm(id)));
+    }
+
     @PostMapping(BASE_URL + "/import/preview")
     ResponseEntity<@NonNull DefaultResponse<StatementImportPreviewResponse>> previewImport(
             @RequestBody @Valid StatementImportRequest request) {

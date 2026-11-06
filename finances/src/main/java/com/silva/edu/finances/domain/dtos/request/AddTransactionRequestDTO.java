@@ -1,5 +1,6 @@
 package com.silva.edu.finances.domain.dtos.request;
 
+import com.silva.edu.finances.domain.enums.TransactionStatus;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -16,6 +17,7 @@ public record AddTransactionRequestDTO(
         @NotBlank String title,
         UUID recurrencyID,
         @NotNull Date executionDate,
-        @jakarta.validation.constraints.Size(max = 80) String accountId
+        @jakarta.validation.constraints.Size(max = 80) String accountId,
+        TransactionStatus status
 ) {
 }

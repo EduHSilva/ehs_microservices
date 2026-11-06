@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -28,6 +29,10 @@ public class MonthlyGoal {
     private BigDecimal amount;
     @Column(name = "period_month", nullable = false, length = 7)
     private String periodMonth;
+    @Column(name = "dt_inicio")
+    private LocalDate dtInicio;
+    @Column(name = "dt_fim")
+    private LocalDate dtFim;
     @Column(nullable = false)
     private boolean active = true;
     @Column(name = "created_at", nullable = false, updatable = false)

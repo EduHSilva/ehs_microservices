@@ -19,6 +19,7 @@ public class TransactionResponseDTO {
     private boolean income;
     private BigDecimal value;
     private String category;
+    private UUID categoryID;
     private String classification;
     private String recurrence;
     private Date executionDate;
@@ -31,7 +32,9 @@ public class TransactionResponseDTO {
         this.accountId = transaction.getAccountId();
         if (transaction.getCategory() != null) {
             this.category = transaction.getCategory().getTitle();
-            this.classification = transaction.getCategory().getClassification().name();
+            this.categoryID = transaction.getCategory().getId();
+            this.classification = transaction.getCategory().getClassification() == null
+                    ? null : transaction.getCategory().getClassification().name();
         }
         if (transaction.getRecurrence() != null) {
             this.recurrence = transaction.getRecurrence().getTitle();

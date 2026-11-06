@@ -40,6 +40,8 @@ public class Category implements Serializable {
     private CategoryStatus status;
     private String color;
     private int goal;
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean income;
     @Enumerated(EnumType.STRING)
     private CategoryClassification classification;
     @Column(name = "user_id")

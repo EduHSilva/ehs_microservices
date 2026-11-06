@@ -45,12 +45,13 @@ public class RecurrenceServiceImpl implements RecurrenceService {
                 ? accountService.getOrCreatePersonalDefault() : request.accountId().trim();
         accountService.requireAccess(accountId);
         r.setAccountId(accountId);
-        r.setStatus(RecurrenceStatus.ACTIVE);
+        r.setStatus(request.status() == null ? RecurrenceStatus.ACTIVE : request.status());
+        if (r.getStatus() == RecurrenceStatus.DELETED)
+            throw new IllegalArgumentException("Recurrences cannot be created as DELETED");
         validateInstallments(request.type(), request.installments(), request.payed());
 
-        Category category = categoryRepository.findByIdAndUserId(request.categoryID(), UserContext.getUser())
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), request.categoryID()));
-
+        Category category = findCategory(request.categoryID());
+        requireCategoryDirection(category, request.income());
         r.setCategory(category);
         r.setUserId(UserContext.getUser());
         repository.save(r);
@@ -86,12 +87,51 @@ public class RecurrenceServiceImpl implements RecurrenceService {
         recurrence.setPayed(request.payed());
         recurrence.setTitle(request.title());
         recurrence.setValue(request.value());
+        boolean hasCategory = recurrence.getCategory() != null;
+        if (hasCategory && (request.categoryID() != null || request.income() != null))
+            throw new IllegalArgumentException("Category and type can only be changed when the recurrence has no category");
+        if (!hasCategory) {
+            if (request.categoryID() != null) {
+                Category category = findCategory(request.categoryID());
+                requireCategoryDirection(category, request.income() == null ? category.isIncome() : request.income());
+                recurrence.setCategory(category);
+                recurrence.setIncome(category.isIncome());
+            } else if (request.income() != null) {
+                recurrence.setIncome(request.income());
+            }
+        }
+        if (request.status() != null) {
+            if (request.status() == RecurrenceStatus.DELETED)
+                throw new IllegalArgumentException("Use the delete endpoint to remove a recurrence");
+            recurrence.setStatus(request.status());
+        }
+        return new RecurrenceResponseDTO(repository.save(recurrence));
+    }
+
+    @Override
+    public RecurrenceResponseDTO confirm(UUID id) {
+        Recurrence recurrence = findEntity(id);
+        if (recurrence.getStatus() != RecurrenceStatus.PENDING)
+            throw new IllegalArgumentException("Only pending recurrences can be confirmed");
+        recurrence.setStatus(RecurrenceStatus.ACTIVE);
         return new RecurrenceResponseDTO(repository.save(recurrence));
     }
 
     private Recurrence findEntity(UUID id) {
         return repository.findByIdAndUserId(id, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Recurrence.class.getSimpleName(), id));
+    }
+
+    private Category findCategory(UUID categoryId) {
+        return categoryRepository.findByIdAndUserId(categoryId, UserContext.getUser())
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), categoryId));
+    }
+
+    private void requireCategoryDirection(Category category, boolean income) {
+        if (category.isIncome() != income)
+            throw new IllegalArgumentException(income
+                    ? "Income recurrences require an income category"
+                    : "Expense recurrences require an expense category");
     }
 
     private void validateInstallments(RecurrenceType type, Integer installments, Integer payed) {

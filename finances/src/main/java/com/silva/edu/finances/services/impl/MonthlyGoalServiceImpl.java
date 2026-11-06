@@ -45,8 +45,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
     @Override @Transactional(readOnly = true)
     public Page<MonthlyGoalResponse> list(String accountId, String periodMonth, int page, int size) {
         accountService.requireAccess(accountId);
-        return goals.findAllByUserIdAndAccountIdAndPeriodMonth(UserContext.getUser(), accountId, periodMonth,
-                PageRequest.of(page, size)).map(this::response);
+        YearMonth month = YearMonth.parse(periodMonth);
+        return goals.findApplicable(UserContext.getUser(), accountId, periodMonth,
+                month.atDay(1), month.atEndOfMonth(), PageRequest.of(page, size)).map(this::response);
     }
 
     @Override public MonthlyGoalResponse create(MonthlyGoalRequest request) {
@@ -79,6 +80,8 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         YearMonth month = YearMonth.parse(periodMonth);
         LocalDate start = month.atDay(1);
         LocalDate end = month.plusMonths(1).atDay(1);
+        if (!appliesTo(goal, start, month.atEndOfMonth()))
+            throw new IllegalArgumentException("Goal does not apply to the requested month");
         BigDecimal base = transactions.sumConfirmedIncome(goal.getUserId(), goal.getAccountId(),
                 java.util.Date.from(start.atStartOfDay().toInstant(ZoneOffset.UTC)),
                 java.util.Date.from(end.atStartOfDay().toInstant(ZoneOffset.UTC)));
@@ -130,17 +133,41 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
     private void validate(MonthlyGoalRequest request) {
         if (request.mode() == GoalMode.PERCENT_INCOME && request.amount().compareTo(BigDecimal.valueOf(100)) > 0)
             throw new IllegalArgumentException("Income percentage must be between 0 and 100");
+        if (request.dtInicio() == null && request.periodMonth() == null)
+            throw new IllegalArgumentException("Either periodMonth or dtInicio is required");
+        if (request.dtInicio() != null && request.dtFim() != null && request.dtFim().isBefore(request.dtInicio()))
+            throw new IllegalArgumentException("dtFim cannot be before dtInicio");
     }
     private void copy(MonthlyGoalRequest request, MonthlyGoal goal) {
+        YearMonth month = request.dtInicio() != null
+                ? YearMonth.from(request.dtInicio()) : YearMonth.parse(request.periodMonth());
+        LocalDate start = request.dtInicio() != null ? request.dtInicio() : month.atDay(1);
+        LocalDate end;
+        if (request.dtInicio() != null) {
+            end = request.dtFim();
+        } else {
+            end = request.dtFim() != null ? request.dtFim() : month.atEndOfMonth();
+        }
         goal.setAccountId(request.accountId().trim());
         goal.setTitle(request.title().trim());
         goal.setMode(request.mode());
         goal.setAmount(request.amount());
-        goal.setPeriodMonth(request.periodMonth());
+        goal.setPeriodMonth(month.toString());
+        goal.setDtInicio(start);
+        goal.setDtFim(end);
         goal.setActive(request.active());
     }
+    private boolean appliesTo(MonthlyGoal goal, LocalDate start, LocalDate end) {
+        if (goal.getDtInicio() == null) return goal.getPeriodMonth().equals(YearMonth.from(start).toString());
+        return !goal.getDtInicio().isAfter(end) && (goal.getDtFim() == null || !goal.getDtFim().isBefore(start));
+    }
     private MonthlyGoalResponse response(MonthlyGoal g) {
+        YearMonth legacyMonth = YearMonth.parse(g.getPeriodMonth());
+        LocalDate start = g.getDtInicio() != null ? g.getDtInicio() : legacyMonth.atDay(1);
+        LocalDate end = g.getDtFim() != null ? g.getDtFim()
+                : (g.getDtInicio() == null ? legacyMonth.atEndOfMonth() : null);
+        boolean recurring = end == null || YearMonth.from(end).isAfter(YearMonth.from(start));
         return new MonthlyGoalResponse(g.getId(), g.getAccountId(), g.getTitle(), g.getMode(),
-                g.getAmount(), g.getPeriodMonth(), g.isActive());
+                g.getAmount(), g.getPeriodMonth(), start, end, recurring, g.isActive());
     }
 }

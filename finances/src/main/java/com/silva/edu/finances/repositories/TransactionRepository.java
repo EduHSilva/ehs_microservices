@@ -29,6 +29,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
                                       @Param("asOf") Date asOf);
     org.springframework.data.domain.Page<Transaction> findAllByAccountIdAndExecutionDateBetween(
             String accountId, Date start, Date end, Pageable pageable);
+    List<Transaction> findAllByAccountIdAndStatusAndExecutionDateBetweenOrderByExecutionDateAsc(
+            String accountId, com.silva.edu.finances.domain.enums.TransactionStatus status, Date start, Date end);
     @Query("select t.income, coalesce(sum(t.value), 0), count(t.id) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.recurrence is null and t.executionDate >= :start and t.executionDate < :end group by t.income")
     List<Object[]> sumVariableHistory(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                       @Param("start") Date start, @Param("end") Date end);

@@ -18,4 +18,6 @@ public interface TransactionService {
     TransactionResponseDTO findById(UUID id);
 
     TransactionResponseDTO update(UUID id, UpdateTransactionRequestDTO request);
+
+    TransactionResponseDTO confirm(UUID id);
 }

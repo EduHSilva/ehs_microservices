@@ -32,8 +32,10 @@ public class RecurrenceResponseDTO {
 
     public RecurrenceResponseDTO(Recurrence recurrence) {
         BeanUtils.copyProperties(recurrence, this);
-        this.category = recurrence.getCategory().getTitle();
-        this.categoryID = recurrence.getCategory().getId();
+        if (recurrence.getCategory() != null) {
+            this.category = recurrence.getCategory().getTitle();
+            this.categoryID = recurrence.getCategory().getId();
+        }
     }
 
 }

@@ -44,14 +44,16 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionResponseDTO save(AddTransactionRequestDTO request) {
         Transaction transaction = new Transaction();
         BeanUtils.copyProperties(request, transaction);
-        transaction.setStatus(TransactionStatus.OK);
+        transaction.setStatus(request.status() == null ? TransactionStatus.OK : request.status());
+        if (transaction.getStatus() == TransactionStatus.DELETED)
+            throw new IllegalArgumentException("Transactions cannot be created as DELETED");
         String accountId = request.accountId() == null || request.accountId().isBlank()
                 ? accountService.getOrCreatePersonalDefault() : request.accountId().trim();
         accountService.requireAccess(accountId);
         transaction.setAccountId(accountId);
 
-        Category category = categoryRepository.findByIdAndUserId(request.categoryID(), UserContext.getUser())
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), request.categoryID()));
+        Category category = findCategory(request.categoryID());
+        requireCategoryDirection(category, request.income());
         transaction.setCategory(category);
 
         if (request.recurrencyID() != null) {
@@ -94,11 +96,50 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.executionDate() != null) {
             transaction.setExecutionDate(request.executionDate());
         }
+        boolean hasCategory = transaction.getCategory() != null;
+        if (hasCategory && (request.categoryID() != null || request.income() != null))
+            throw new IllegalArgumentException("Category and type can only be changed when the transaction has no category");
+        if (!hasCategory) {
+            if (request.categoryID() != null) {
+                Category category = findCategory(request.categoryID());
+                requireCategoryDirection(category, request.income() == null ? category.isIncome() : request.income());
+                transaction.setCategory(category);
+                transaction.setIncome(category.isIncome());
+            } else if (request.income() != null) {
+                transaction.setIncome(request.income());
+            }
+        }
+        if (request.status() != null) {
+            if (request.status() == TransactionStatus.DELETED)
+                throw new IllegalArgumentException("Use the delete endpoint to remove a transaction");
+            transaction.setStatus(request.status());
+        }
+        return new TransactionResponseDTO(repository.save(transaction));
+    }
+
+    @Override
+    public TransactionResponseDTO confirm(UUID id) {
+        Transaction transaction = findEntity(id);
+        if (transaction.getStatus() != TransactionStatus.PENDING)
+            throw new IllegalArgumentException("Only pending transactions can be confirmed");
+        transaction.setStatus(TransactionStatus.OK);
         return new TransactionResponseDTO(repository.save(transaction));
     }
 
     private Transaction findEntity(UUID id) {
         return repository.findByIdAndUserId(id, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Transaction.class.getSimpleName(), id));
+    }
+
+    private Category findCategory(UUID categoryId) {
+        return categoryRepository.findByIdAndUserId(categoryId, UserContext.getUser())
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), categoryId));
+    }
+
+    private void requireCategoryDirection(Category category, boolean income) {
+        if (category.isIncome() != income)
+            throw new IllegalArgumentException(income
+                    ? "Income transactions require an income category"
+                    : "Expense transactions require an expense category");
     }
 }
