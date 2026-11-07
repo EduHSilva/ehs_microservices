@@ -46,6 +46,14 @@ public class Task {
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
 
+    /** Optional project this task belongs to (id from the study service). */
+    @Column(name = "project_id")
+    private UUID projectId;
+
+    /** Optional project stage this task belongs to (id from the study service). */
+    @Column(name = "stage_id")
+    private UUID stageId;
+
     @Column(name = "user_id")
     private UUID userId;
 }

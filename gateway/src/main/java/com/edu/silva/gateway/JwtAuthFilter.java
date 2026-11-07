@@ -71,6 +71,14 @@ public class JwtAuthFilter implements GlobalFilter {
         }
         List<String> roles = jwt.getClaim("roles").asList(String.class);
 
+        boolean notificationsRoute = "notifications".equalsIgnoreCase(service)
+                || (route != null && "notifications".equalsIgnoreCase(route.getId()));
+        if (notificationsRoute && (path.startsWith("/admin") || path.startsWith("/notifications/admin"))
+                && (roles == null || !roles.contains("ADMIN"))) {
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
+
         for (Map.Entry<String, String> entry : routeRoles.entrySet()) {
             if (service != null && entry.getKey().equalsIgnoreCase(service) && (roles == null || !roles.contains("ADMIN"))) {
                 if (roles == null || !roles.contains(entry.getValue())) {

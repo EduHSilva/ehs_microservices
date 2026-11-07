@@ -1,5 +1,6 @@
 package com.silva.edu.finances.domain.entities;
 
+import com.silva.edu.finances.domain.catalog.DefaultCategories.DefaultCategory;
 import com.silva.edu.finances.domain.enums.CategoryClassification;
 import com.silva.edu.finances.domain.enums.CategoryStatus;
 import jakarta.persistence.*;
@@ -44,6 +45,23 @@ public class Category implements Serializable {
     private boolean income;
     @Enumerated(EnumType.STRING)
     private CategoryClassification classification;
+    @Column(name = "default_key")
+    private String defaultKey;
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean customized;
     @Column(name = "user_id")
     private UUID userId;
+
+    public static Category fromDefault(DefaultCategory entry, UUID userId) {
+        Category category = new Category();
+        category.setTitle(entry.title());
+        category.setColor(entry.color());
+        category.setIncome(entry.income());
+        category.setGoal(0);
+        category.setClassification(entry.classification());
+        category.setStatus(CategoryStatus.ACTIVE);
+        category.setDefaultKey(entry.key());
+        category.setUserId(userId);
+        return category;
+    }
 }

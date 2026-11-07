@@ -19,9 +19,11 @@ public class CategoryResponseDTO {
     private int goal;
     private boolean income;
     private CategoryClassification classification;
+    private String defaultKey;
 
     public CategoryResponseDTO(Category category) {
         BeanUtils.copyProperties(category, this);
+        if (category.isCustomized()) this.defaultKey = null;
     }
 
 }

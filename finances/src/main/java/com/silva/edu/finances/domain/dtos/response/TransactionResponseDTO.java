@@ -20,6 +20,7 @@ public class TransactionResponseDTO {
     private BigDecimal value;
     private String category;
     private UUID categoryID;
+    private String categoryKey;
     private String classification;
     private String recurrence;
     private Date executionDate;
@@ -33,6 +34,8 @@ public class TransactionResponseDTO {
         if (transaction.getCategory() != null) {
             this.category = transaction.getCategory().getTitle();
             this.categoryID = transaction.getCategory().getId();
+            this.categoryKey = transaction.getCategory().isCustomized()
+                    ? null : transaction.getCategory().getDefaultKey();
             this.classification = transaction.getCategory().getClassification() == null
                     ? null : transaction.getCategory().getClassification().name();
         }

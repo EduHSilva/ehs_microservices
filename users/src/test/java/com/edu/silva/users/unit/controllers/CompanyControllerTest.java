@@ -41,7 +41,7 @@ class CompanyControllerTest {
         Page<CompanyResponseDTO> page =
                 new PageImpl<>(companies, PageRequest.of(0, 10), companies.size());
 
-        when(service.findAll(0, 10)).thenReturn(page);
+        when(service.search(null, 0, 10, "createdDate", "desc")).thenReturn(page);
 
         client.get()
                 .uri("/companies")
@@ -50,6 +50,18 @@ class CompanyControllerTest {
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Find all companies successfully")
                 .jsonPath("$.data.items").isArray();
+    }
+
+    @Test
+    void shouldExportCompaniesCsv() {
+        when(service.exportCsv(null)).thenReturn("\uFEFF\"id\"\n");
+
+        client.get()
+                .uri("/companies/export")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueMatches("Content-Disposition", "attachment;.*empresas\\.csv.*")
+                .expectHeader().valueMatches("Content-Type", "text/csv.*");
     }
 
     @Test
@@ -81,5 +93,17 @@ class CompanyControllerTest {
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Company successfully updated")
                 .jsonPath("$.data").isNotEmpty();
+    }
+
+    @Test
+    void shouldDeleteCompany() {
+        UUID id = UUID.randomUUID();
+
+        client.delete()
+                .uri("/companies/" + id)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Company successfully deleted");
     }
 }

@@ -13,7 +13,7 @@ import java.util.UUID;
 public record AddTransactionRequestDTO(
         boolean income,
         @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
-        @NotNull UUID categoryID,
+        UUID categoryID,
         @NotBlank String title,
         UUID recurrencyID,
         @NotNull Date executionDate,

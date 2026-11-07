@@ -105,6 +105,8 @@ public class CashflowProjectionServiceImpl implements CashflowProjectionService 
             series.add(new CashflowProjectionResponse.Point(date, balance, flow.income, flow.expenses,
                     estimatedIncome, estimatedExpenses));
         }
+        items.sort(Comparator.comparing(CashflowProjectionResponse.Item::date)
+                .thenComparing(CashflowProjectionResponse.Item::title, String.CASE_INSENSITIVE_ORDER));
         String confidence = sampleCount >= 24 ? "HIGH" : sampleCount >= 6 ? "MEDIUM" : "LOW";
         return new CashflowProjectionResponse(accountId, horizonDays, Instant.now(), account.balance(), balance,
                 confidence, List.of("Saldo atual = saldo de abertura + transações confirmadas até hoje.",

@@ -26,4 +26,6 @@ public class GoalContribution {
     private LocalDate date;
     @Column(name = "transaction_id", unique = true)
     private UUID transactionId;
+    @Column(name = "auto_created", nullable = false, columnDefinition = "boolean default false")
+    private boolean autoCreated;
 }

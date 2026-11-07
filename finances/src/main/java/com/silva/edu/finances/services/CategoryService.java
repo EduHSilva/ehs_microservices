@@ -4,6 +4,7 @@ import com.silva.edu.finances.domain.dtos.request.AddCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.CategoryResponseDTO;
 import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
+import com.silva.edu.finances.domain.entities.Category;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 
@@ -19,4 +20,6 @@ public interface CategoryService {
     CategoryResponseDTO findById(UUID id);
 
     CategoryResponseDTO update(UUID id, UpdateCategoryRequestDTO request);
+
+    Category ensureInvestmentCategory(UUID userId);
 }

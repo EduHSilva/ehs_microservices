@@ -27,6 +27,6 @@ public class UserResponseDTO {
     public UserResponseDTO(User user) {
         BeanUtils.copyProperties(user, this);
 
-        this.companyName = user.getCompany().getName();
+        this.companyName = user.getCompany() == null ? null : user.getCompany().getName();
     }
 }

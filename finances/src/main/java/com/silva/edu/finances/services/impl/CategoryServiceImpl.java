@@ -1,5 +1,7 @@
 package com.silva.edu.finances.services.impl;
 
+import com.silva.edu.finances.domain.catalog.DefaultCategories;
+import com.silva.edu.finances.domain.catalog.DefaultCategories.DefaultCategory;
 import com.silva.edu.finances.domain.dtos.request.AddCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.CategoryResponseDTO;
@@ -22,11 +24,12 @@ import java.util.UUID;
 @Service
 @Transactional
 public class CategoryServiceImpl implements CategoryService {
-
     private final CategoryRepository repository;
+    private final CategoryDefaultSeeder defaultSeeder;
 
-    public CategoryServiceImpl(CategoryRepository repository) {
+    public CategoryServiceImpl(CategoryRepository repository, CategoryDefaultSeeder defaultSeeder) {
         this.repository = repository;
+        this.defaultSeeder = defaultSeeder;
     }
 
     @Override
@@ -51,8 +54,22 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Page<@NonNull CategoryResponseDTO> findAll(int page, int size) {
+        seedDefaults(UserContext.getUser());
         Pageable pageable = PageRequest.of(page, size);
-        return repository.findAll(pageable).map(CategoryResponseDTO::new);
+        return repository.findAllByUserId(UserContext.getUser(), pageable).map(CategoryResponseDTO::new);
+    }
+
+    @Override
+    public Category ensureInvestmentCategory(UUID userId) {
+        seedDefaults(userId);
+        return repository.findFirstByUserIdAndClassification(userId, CategoryClassification.INVESTMENT)
+                .orElseGet(() -> {
+                    DefaultCategory entry = DefaultCategories.findByKey(DefaultCategories.INVESTMENT_KEY)
+                            .orElseThrow();
+                    Category category = Category.fromDefault(entry, userId);
+                    category.setDefaultKey(null);
+                    return repository.save(category);
+                });
     }
 
     @Override
@@ -63,6 +80,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponseDTO update(UUID id, UpdateCategoryRequestDTO request) {
         Category category = findEntity(id);
+        if (!request.title().equals(category.getTitle())) {
+            category.setCustomized(category.getDefaultKey() != null && !isCatalogTitle(category.getDefaultKey(), request.title()));
+        }
         category.setTitle(request.title());
         category.setColor(request.color());
         if (request.income() != null) category.setIncome(request.income());
@@ -70,6 +90,17 @@ public class CategoryServiceImpl implements CategoryService {
         if (request.classification() != null) category.setClassification(request.classification());
         else if (category.getClassification() == null) category.setClassification(CategoryClassification.ESSENTIAL);
         return new CategoryResponseDTO(repository.save(category));
+    }
+
+    private void seedDefaults(UUID userId) {
+        if (!defaultSeeder.needsSeed(userId)) return;
+        defaultSeeder.seed(userId);
+    }
+
+    private boolean isCatalogTitle(String defaultKey, String title) {
+        return DefaultCategories.findByKey(defaultKey)
+                .map(entry -> entry.title().equalsIgnoreCase(title.trim()))
+                .orElse(false);
     }
 
     private Category findEntity(UUID id) {

@@ -29,8 +29,18 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
                                       @Param("asOf") Date asOf);
     org.springframework.data.domain.Page<Transaction> findAllByAccountIdAndExecutionDateBetween(
             String accountId, Date start, Date end, Pageable pageable);
-    List<Transaction> findAllByAccountIdAndStatusAndExecutionDateBetweenOrderByExecutionDateAsc(
-            String accountId, com.silva.edu.finances.domain.enums.TransactionStatus status, Date start, Date end);
+    List<Transaction> findAllByAccountIdAndStatusAndExecutionDateLessThanEqualOrderByExecutionDateAsc(
+            String accountId, com.silva.edu.finances.domain.enums.TransactionStatus status, Date to);
+    @Query("select t from Transaction t where t.accountId = :accountId and t.recurrence is not null and t.executionDate >= :start and t.executionDate < :end")
+    List<Transaction> findAllRecurrenceLinkedByAccountId(@Param("accountId") String accountId,
+                                                         @Param("start") Date start, @Param("end") Date end);
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("update Transaction t set t.status = com.silva.edu.finances.domain.enums.TransactionStatus.DELETED where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING")
+    int deletePendingByRecurrence(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId);
+    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate < :asOf group by t.income")
+    List<Object[]> sumByClassification(@Param("userId") UUID userId, @Param("accountId") String accountId,
+                                       @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
+                                       @Param("asOf") Date asOf);
     @Query("select t.income, coalesce(sum(t.value), 0), count(t.id) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.recurrence is null and t.executionDate >= :start and t.executionDate < :end group by t.income")
     List<Object[]> sumVariableHistory(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                       @Param("start") Date start, @Param("end") Date end);

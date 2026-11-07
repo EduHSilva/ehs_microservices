@@ -4,15 +4,19 @@ import com.silva.edu.finances.domain.dtos.request.GoalContributionRequest;
 import com.silva.edu.finances.domain.dtos.request.MonthlyGoalRequest;
 import com.silva.edu.finances.domain.dtos.response.MonthlyGoalResponse;
 import com.silva.edu.finances.domain.dtos.response.MonthlyGoalSummaryResponse;
+import com.silva.edu.finances.domain.entities.Category;
 import com.silva.edu.finances.domain.entities.GoalContribution;
 import com.silva.edu.finances.domain.entities.MonthlyGoal;
+import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.GoalMode;
+import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.config.UserContext;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.GoalContributionRepository;
 import com.silva.edu.finances.repositories.MonthlyGoalRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.MonthlyGoalService;
+import com.silva.edu.finances.services.CategoryService;
 import com.silva.edu.finances.services.FinanceAccountService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +37,16 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
     private final GoalContributionRepository contributions;
     private final TransactionRepository transactions;
     private final FinanceAccountService accountService;
+    private final CategoryService categories;
 
     public MonthlyGoalServiceImpl(MonthlyGoalRepository goals, GoalContributionRepository contributions,
-                                  TransactionRepository transactions, FinanceAccountService accountService) {
+                                  TransactionRepository transactions, FinanceAccountService accountService,
+                                  CategoryService categories) {
         this.goals = goals;
         this.contributions = contributions;
         this.transactions = transactions;
         this.accountService = accountService;
+        this.categories = categories;
     }
 
     @Override @Transactional(readOnly = true)
@@ -69,7 +76,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
 
     @Override public void delete(UUID id) {
         MonthlyGoal goal = findGoal(id);
-        contributions.deleteAllByGoalIdAndUserId(id, UserContext.getUser());
+        UUID userId = UserContext.getUser();
+        contributions.findAllByGoalIdAndUserId(id, userId).forEach(this::deleteGeneratedTransaction);
+        contributions.deleteAllByGoalIdAndUserId(id, userId);
         goals.delete(goal);
     }
 
@@ -99,31 +108,57 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
 
     @Override public void contribute(UUID id, GoalContributionRequest request) {
         MonthlyGoal goal = findGoal(id);
-        if (request.transactionId() != null) {
-            if (contributions.existsByTransactionId(request.transactionId()))
-                throw new IllegalArgumentException("Transaction already linked to a goal contribution");
-            var transaction = transactions.findByIdAndUserId(request.transactionId(), UserContext.getUser())
-                    .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", request.transactionId()));
-            if (!goal.getAccountId().equals(transaction.getAccountId()))
-                throw new IllegalArgumentException("Transaction and goal accounts do not match");
-            if (transaction.isIncome() || transaction.getStatus() != com.silva.edu.finances.domain.enums.TransactionStatus.OK
-                    || transaction.getValue().compareTo(request.amount()) != 0
-                    || transaction.getExecutionDate().toInstant().atZone(ZoneOffset.UTC).toLocalDate().compareTo(request.date()) != 0)
-                throw new IllegalArgumentException("Linked contribution must match a confirmed expense transaction");
-        }
+        accountService.requireAccess(goal.getAccountId());
+        UUID userId = UserContext.getUser();
         GoalContribution contribution = new GoalContribution();
-        contribution.setUserId(UserContext.getUser());
+        contribution.setUserId(userId);
         contribution.setGoal(goal);
         contribution.setAmount(request.amount());
         contribution.setDate(request.date());
-        contribution.setTransactionId(request.transactionId());
+        if (request.transactionId() != null) {
+            if (contributions.existsByTransactionId(request.transactionId()))
+                throw new IllegalArgumentException("Transaction already linked to a goal contribution");
+            var transaction = transactions.findByIdAndUserId(request.transactionId(), userId)
+                    .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", request.transactionId()));
+            if (!goal.getAccountId().equals(transaction.getAccountId()))
+                throw new IllegalArgumentException("Transaction and goal accounts do not match");
+            if (transaction.isIncome() || transaction.getStatus() != TransactionStatus.OK
+                    || transaction.getValue().compareTo(request.amount()) != 0
+                    || transaction.getExecutionDate().toInstant().atZone(ZoneOffset.UTC).toLocalDate().compareTo(request.date()) != 0)
+                throw new IllegalArgumentException("Linked contribution must match a confirmed expense transaction");
+            contribution.setTransactionId(transaction.getId());
+        } else {
+            contribution.setTransactionId(saveContributionTransaction(goal, request, userId).getId());
+            contribution.setAutoCreated(true);
+        }
         contributions.save(contribution);
     }
 
     @Override public void removeContribution(UUID contributionId) {
         GoalContribution contribution = contributions.findByIdAndUserId(contributionId, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("GoalContribution", contributionId));
+        deleteGeneratedTransaction(contribution);
         contributions.delete(contribution);
+    }
+
+    private Transaction saveContributionTransaction(MonthlyGoal goal, GoalContributionRequest request, UUID userId) {
+        Category investmentCategory = categories.ensureInvestmentCategory(userId);
+        Transaction transaction = new Transaction();
+        transaction.setUserId(userId);
+        transaction.setAccountId(goal.getAccountId());
+        transaction.setTitle("Aporte: " + goal.getTitle());
+        transaction.setValue(request.amount());
+        transaction.setIncome(false);
+        transaction.setCategory(investmentCategory);
+        transaction.setExecutionDate(java.util.Date.from(request.date().atStartOfDay(ZoneOffset.UTC).toInstant()));
+        transaction.setStatus(TransactionStatus.OK);
+        return transactions.save(transaction);
+    }
+
+    private void deleteGeneratedTransaction(GoalContribution contribution) {
+        if (!contribution.isAutoCreated() || contribution.getTransactionId() == null) return;
+        transactions.findByIdAndUserId(contribution.getTransactionId(), contribution.getUserId())
+                .ifPresent(transactions::delete);
     }
 
     private MonthlyGoal findGoal(UUID id) {

@@ -14,7 +14,7 @@ public interface TaskService {
 
     void delete(UUID id);
 
-    Page<@NonNull TaskResponseDTO> findAll(int page, int size, Date start, Date end);
+    Page<@NonNull TaskResponseDTO> findAll(int page, int size, Date start, Date end, UUID projectId, UUID stageId);
 
     TaskResponseDTO findById(UUID id);
 

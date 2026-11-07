@@ -45,6 +45,8 @@ public class TaskServiceImpl implements TaskService {
         task.setStartDate(dto.startDate() == null ? new java.util.Date() : dto.startDate());
         task.setEndDate(dto.endDate());
         task.setStatus(TaskStatus.PENDING);
+        task.setProjectId(dto.projectId());
+        task.setStageId(dto.stageId());
         task.setUserId(UserContext.getUser());
         repository.save(task);
         return toResponse(task, false, null, null);
@@ -56,7 +58,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Page<@NonNull TaskResponseDTO> findAll(int page, int size, Date start, Date end) {
+    public Page<@NonNull TaskResponseDTO> findAll(int page, int size, Date start, Date end, UUID projectId, UUID stageId) {
         Pageable pageable = PageRequest.of(page, size);
         Date effectiveStart = atStartOfDay(start == null ? LocalDate.now() : asLocalDate(start));
         Date effectiveEnd = atEndOfDay(end == null
@@ -67,7 +69,14 @@ public class TaskServiceImpl implements TaskService {
             return Page.empty(pageable);
         }
 
-        Page<Task> tasks = repository.findAllOverlappingPeriod(effectiveStart, effectiveEnd, pageable);
+        Page<Task> tasks;
+        if (stageId != null) {
+            tasks = repository.findAllOverlappingPeriodByStageId(effectiveStart, effectiveEnd, stageId, pageable);
+        } else if (projectId != null) {
+            tasks = repository.findAllOverlappingPeriodByProjectId(effectiveStart, effectiveEnd, projectId, pageable);
+        } else {
+            tasks = repository.findAllOverlappingPeriod(effectiveStart, effectiveEnd, pageable);
+        }
         return tasks.map(task -> toResponse(task, true, effectiveStart, effectiveEnd));
     }
 
@@ -91,6 +100,12 @@ public class TaskServiceImpl implements TaskService {
         task.setStartDate(request.startDate() == null ? task.getStartDate() : request.startDate());
         if (request.endDate() != null) {
             task.setEndDate(request.endDate());
+        }
+        if (request.projectId() != null) {
+            task.setProjectId(request.projectId());
+        }
+        if (request.stageId() != null) {
+            task.setStageId(request.stageId());
         }
 
         if (request.status() != null) {

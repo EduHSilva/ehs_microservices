@@ -1,7 +1,9 @@
 package com.silva.edu.finances.repositories;
 
 import com.silva.edu.finances.domain.entities.Recurrence;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 
 import java.util.UUID;
 import java.util.Optional;
@@ -17,6 +19,9 @@ public interface RecurrenceRepository extends JpaRepository<Recurrence, UUID> {
     Optional<Recurrence> findByIdAndUserId(UUID id, UUID userId);
     Page<Recurrence> findAllByAccountId(String accountId, Pageable pageable);
     List<Recurrence> findAllByAccountIdAndStatus(String accountId, RecurrenceStatus status);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Recurrence r where r.accountId = :accountId and r.status = :status")
+    List<Recurrence> findAllForUpdate(@Param("accountId") String accountId, @Param("status") RecurrenceStatus status);
     @Modifying
     @Query("update Recurrence r set r.accountId = :accountId where r.userId = :userId and r.accountId is null")
     int assignLegacyRecurrences(@Param("userId") UUID userId, @Param("accountId") String accountId);

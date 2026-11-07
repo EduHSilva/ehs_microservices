@@ -3,7 +3,7 @@ package com.edu.silva.study.domain.dto.responses
 import java.util.Date
 import java.util.UUID
 
-data class ProjectMilestoneResponseDTO(
+data class ProjectVersionResponseDTO(
     val id: UUID,
     val title: String,
     val dueDate: Date

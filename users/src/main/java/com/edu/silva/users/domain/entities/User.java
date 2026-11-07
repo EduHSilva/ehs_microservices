@@ -40,6 +40,8 @@ public class User implements UserDetails {
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private List<UserRole> roles = new ArrayList<>();
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int tokenVersion = 0;
     @ToString.Exclude
     @ManyToOne
     private Company company;

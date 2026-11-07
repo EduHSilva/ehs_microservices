@@ -9,9 +9,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @RestController()
@@ -28,10 +31,22 @@ public class CompanyController {
     @GetMapping(BASE_URL)
     ResponseEntity<@NonNull DefaultResponse<PageResponse<CompanyResponseDTO>>> all(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "createdDate") String sort,
+            @RequestParam(defaultValue = "desc") String direction
     ) {
-        Page<@NonNull CompanyResponseDTO> company = service.findAll(page, size);
+        Page<@NonNull CompanyResponseDTO> company = service.search(q, page, size, sort, direction);
         return ResponseEntity.ok(DefaultResponse.paged("Find all companies successfully", company, BASE_URL));
+    }
+
+    @GetMapping(BASE_URL + "/export")
+    ResponseEntity<byte[]> export(@RequestParam(required = false) String q) {
+        byte[] csv = service.exportCsv(q).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"empresas.csv\"")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(csv);
     }
     @GetMapping(BASE_URL + "/{id}")
     ResponseEntity<@NonNull DefaultResponse<CompanyResponseDTO>> one(@PathVariable UUID id) {
@@ -40,5 +55,11 @@ public class CompanyController {
     @PutMapping(BASE_URL + "/{id}")
     ResponseEntity<@NonNull DefaultResponse<CompanyResponseDTO>> update(@RequestBody @Valid UpdateCompanyRequestDTO request, @PathVariable UUID id) {
         return ResponseEntity.ok(new DefaultResponse<>("Company successfully updated", service.update(id, request), BASE_URL, id));
+    }
+
+    @DeleteMapping(BASE_URL + "/{id}")
+    ResponseEntity<@NonNull DefaultResponse<Void>> delete(@PathVariable UUID id) {
+        service.delete(id);
+        return ResponseEntity.ok(new DefaultResponse<>("Company successfully deleted"));
     }
 }

@@ -6,6 +6,8 @@ import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
 import com.silva.edu.finances.domain.entities.Category;
 import com.silva.edu.finances.domain.entities.Recurrence;
 import com.silva.edu.finances.domain.entities.Transaction;
+import com.silva.edu.finances.domain.enums.RecurrenceStatus;
+import com.silva.edu.finances.domain.enums.RecurrenceType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
@@ -52,9 +54,11 @@ public class TransactionServiceImpl implements TransactionService {
         accountService.requireAccess(accountId);
         transaction.setAccountId(accountId);
 
-        Category category = findCategory(request.categoryID());
-        requireCategoryDirection(category, request.income());
-        transaction.setCategory(category);
+        if (request.categoryID() != null) {
+            Category category = findCategory(request.categoryID());
+            requireCategoryDirection(category, request.income());
+            transaction.setCategory(category);
+        }
 
         if (request.recurrencyID() != null) {
             Recurrence rec = recurrenceRepository.findByIdAndUserId(request.recurrencyID(), UserContext.getUser())
@@ -123,6 +127,15 @@ public class TransactionServiceImpl implements TransactionService {
         if (transaction.getStatus() != TransactionStatus.PENDING)
             throw new IllegalArgumentException("Only pending transactions can be confirmed");
         transaction.setStatus(TransactionStatus.OK);
+        Recurrence recurrence = transaction.getRecurrence();
+        if (recurrence != null && recurrence.getType() == RecurrenceType.INSTALLMENT) {
+            int payed = (recurrence.getPayed() == null ? 0 : recurrence.getPayed()) + 1;
+            recurrence.setPayed(payed);
+            if (recurrence.getInstallments() != null && payed >= recurrence.getInstallments()) {
+                recurrence.setStatus(RecurrenceStatus.PAYED);
+            }
+            recurrenceRepository.save(recurrence);
+        }
         return new TransactionResponseDTO(repository.save(transaction));
     }
 

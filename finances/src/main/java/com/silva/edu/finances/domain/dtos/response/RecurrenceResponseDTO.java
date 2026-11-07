@@ -20,6 +20,7 @@ public class RecurrenceResponseDTO {
     private String title;
     private String category;
     private UUID categoryID;
+    private String categoryKey;
     private int day;
     private RecurrenceType type;
     private BigDecimal value;
@@ -35,6 +36,8 @@ public class RecurrenceResponseDTO {
         if (recurrence.getCategory() != null) {
             this.category = recurrence.getCategory().getTitle();
             this.categoryID = recurrence.getCategory().getId();
+            this.categoryKey = recurrence.getCategory().isCustomized()
+                    ? null : recurrence.getCategory().getDefaultKey();
         }
     }
 

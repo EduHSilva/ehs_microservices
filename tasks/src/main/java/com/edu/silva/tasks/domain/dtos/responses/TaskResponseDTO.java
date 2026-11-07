@@ -24,6 +24,10 @@ public class TaskResponseDTO {
     private Date endDate;
     private TaskType type;
     private TaskStatus status;
+    @Schema(description = "Project this task belongs to (id from the study service).")
+    private UUID projectId;
+    @Schema(description = "Project stage this task belongs to (id from the study service).")
+    private UUID stageId;
     @Schema(description = "Accumulated completion statistics. Present for DAILY tasks.")
     private DailyTaskStatisticsDTO dailyStatistics;
     @Schema(description = "Daily completion records. In the task list, only records inside the effective start/end interval are returned; in task detail, the full history is returned.")

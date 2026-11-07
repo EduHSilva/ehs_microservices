@@ -2,7 +2,8 @@ package com.silva.edu.finances.domain.enums;
 
 public enum CategoryClassification {
     ESSENTIAL("essential"),
-    RECREATION("recreation");
+    RECREATION("recreation"),
+    INVESTMENT("investment");
 
 
     private final String classification;

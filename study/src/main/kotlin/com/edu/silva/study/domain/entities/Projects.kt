@@ -36,7 +36,7 @@ class Projects(
     var userId: UUID? = null,
 
     @OneToMany(mappedBy = "project", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var milestones: MutableList<ProjectMilestone> = mutableListOf(),
+    var versions: MutableList<ProjectVersion> = mutableListOf(),
 
     @OneToMany(mappedBy = "project", cascade = [CascadeType.ALL], orphanRemoval = true)
     var stages: MutableList<ProjectStage> = mutableListOf(),

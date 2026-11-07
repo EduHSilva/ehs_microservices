@@ -10,6 +10,7 @@ import com.silva.edu.finances.domain.enums.RecurrenceType;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
+import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.RecurrenceService;
 import com.silva.edu.finances.services.FinanceAccountService;
 import com.silva.edu.finances.infra.config.UserContext;
@@ -29,12 +30,18 @@ public class RecurrenceServiceImpl implements RecurrenceService {
 
     private final RecurrenceRepository repository;
     private final CategoryRepository categoryRepository;
+    private final TransactionRepository transactionRepository;
     private final FinanceAccountService accountService;
+    private final RecurrenceMaterializer materializer;
 
-    public RecurrenceServiceImpl(RecurrenceRepository repository, CategoryRepository categoryRepository, FinanceAccountService accountService) {
+    public RecurrenceServiceImpl(RecurrenceRepository repository, CategoryRepository categoryRepository,
+                                 TransactionRepository transactionRepository, FinanceAccountService accountService,
+                                 RecurrenceMaterializer materializer) {
         this.repository = repository;
         this.categoryRepository = categoryRepository;
+        this.transactionRepository = transactionRepository;
         this.accountService = accountService;
+        this.materializer = materializer;
     }
 
     @Override
@@ -60,12 +67,19 @@ public class RecurrenceServiceImpl implements RecurrenceService {
 
     @Override
     public void delete(UUID id) {
-        repository.delete(findEntity(id));
+        Recurrence recurrence = findEntity(id);
+        transactionRepository.deletePendingByRecurrence(id, UserContext.getUser());
+        repository.delete(recurrence);
     }
 
     @Override
     public Page<@NonNull RecurrenceResponseDTO> findAll(int page, int size, String accountId) {
-        if (accountId != null && !accountId.isBlank()) accountService.requireAccess(accountId);
+        if (accountId != null && !accountId.isBlank()) {
+            accountService.requireAccess(accountId);
+            materializer.materialize(accountId);
+        } else {
+            accountService.listMine().forEach(account -> materializer.materialize(account.id()));
+        }
         Pageable pageable = PageRequest.of(page, size);
         var result = accountId == null || accountId.isBlank()
                 ? repository.findAll(pageable)

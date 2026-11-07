@@ -16,9 +16,9 @@ import java.util.Date
 import java.util.UUID
 
 @Entity
-@Table(name = "project_milestones")
+@Table(name = "project_versions")
 @Filter(name = "userFilter", condition = "user_id = :userId")
-class ProjectMilestone(
+class ProjectVersion(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID? = null,

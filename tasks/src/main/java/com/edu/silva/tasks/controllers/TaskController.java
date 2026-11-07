@@ -49,9 +49,13 @@ public class TaskController {
             @Parameter(description = "First date of the filter interval (yyyy-MM-dd). Defaults to today.", example = "2026-10-02")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date start,
             @Parameter(description = "Last date of the filter interval (yyyy-MM-dd). Defaults to seven days after start.", example = "2026-10-09")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date end
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date end,
+            @Parameter(description = "Only tasks linked to this project (id from the study service).")
+            @RequestParam(required = false) UUID projectId,
+            @Parameter(description = "Only tasks linked to this project stage (id from the study service). Takes precedence over projectId.")
+            @RequestParam(required = false) UUID stageId
     ) {
-        Page<@NonNull TaskResponseDTO> users = service.findAll(page, size, start, end);
+        Page<@NonNull TaskResponseDTO> users = service.findAll(page, size, start, end, projectId, stageId);
         return ResponseEntity.ok(DefaultResponse.paged("Find all tasks successfully", users, BASE_URL));
     }
 

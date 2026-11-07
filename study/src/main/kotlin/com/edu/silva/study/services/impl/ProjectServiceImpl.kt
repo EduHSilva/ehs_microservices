@@ -1,10 +1,10 @@
 package com.edu.silva.study.services.impl
 
 import com.edu.silva.study.domain.dto.requests.ProjectRequestDTO
-import com.edu.silva.study.domain.dto.responses.ProjectMilestoneResponseDTO
+import com.edu.silva.study.domain.dto.responses.ProjectVersionResponseDTO
 import com.edu.silva.study.domain.dto.responses.ProjectResponseDTO
 import com.edu.silva.study.domain.dto.responses.ProjectStageResponseDTO
-import com.edu.silva.study.domain.entities.ProjectMilestone
+import com.edu.silva.study.domain.entities.ProjectVersion
 import com.edu.silva.study.domain.entities.ProjectStage
 import com.edu.silva.study.domain.entities.Projects
 import com.edu.silva.study.infra.exceptions.EntityNotFoundException
@@ -73,7 +73,7 @@ class ProjectServiceImpl(
         return ProjectResponseDTO(
             id = id!!,
             title = title,
-            milestone = milestones.map { it.toResponse() }.toCollection(ArrayList()),
+            versions = versions.map { it.toResponse() }.toCollection(ArrayList()),
             stages = stages.map { it.toResponse() }.toCollection(ArrayList()),
             status = status,
             progress = progress,
@@ -81,8 +81,8 @@ class ProjectServiceImpl(
         )
     }
 
-    private fun ProjectMilestone.toResponse(): ProjectMilestoneResponseDTO {
-        return ProjectMilestoneResponseDTO(
+    private fun ProjectVersion.toResponse(): ProjectVersionResponseDTO {
+        return ProjectVersionResponseDTO(
             id = id!!,
             title = title,
             dueDate = dueDate ?: Date()

@@ -6,7 +6,7 @@ import java.util.UUID
 data class ProjectResponseDTO(
     val id: UUID,
     val title: String,
-    val milestone: ArrayList<ProjectMilestoneResponseDTO>,
+    val versions: ArrayList<ProjectVersionResponseDTO>,
     val stages: ArrayList<ProjectStageResponseDTO>,
     val status: ProjectStatus,
     val progress: Int,

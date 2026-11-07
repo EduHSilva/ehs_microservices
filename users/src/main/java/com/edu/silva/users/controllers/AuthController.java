@@ -48,4 +48,10 @@ public class AuthController {
     public ResponseEntity<DefaultResponse<LoginResponseDTO>> login(@RequestBody @Valid AuthRequestDTO dto) {
         return ResponseEntity.ok(new DefaultResponse<>("Auth successfully verified", service.login(dto)));
     }
+
+    @PostMapping("logout-all")
+    public ResponseEntity<DefaultResponse<Void>> logoutAll(@AuthenticationPrincipal User user) {
+        service.invalidateSessions(user.getId());
+        return ResponseEntity.ok(new DefaultResponse<>("Sessions successfully invalidated"));
+    }
 }
