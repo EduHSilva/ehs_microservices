@@ -11,12 +11,14 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Profile("!test")
 public class SchemaCompatibilityInitializer implements ApplicationRunner {
     private record EnumCheck(String table, String column, Class<? extends Enum<?>> type) { }
 
