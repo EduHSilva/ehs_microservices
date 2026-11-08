@@ -7,12 +7,14 @@ import com.edu.silva.study.domain.dto.responses.ProjectStageResponseDTO
 import com.edu.silva.study.domain.entities.ProjectVersion
 import com.edu.silva.study.domain.entities.ProjectStage
 import com.edu.silva.study.domain.entities.Projects
+import com.edu.silva.study.domain.enums.ProjectStatus
 import com.edu.silva.study.infra.exceptions.EntityNotFoundException
 import com.edu.silva.study.infra.exceptions.InvalidRequestException
 import com.edu.silva.study.repositories.ProjectRepository
 import com.edu.silva.study.infra.config.UserContext
 import com.edu.silva.study.services.ProjectService
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -27,8 +29,13 @@ class ProjectServiceImpl(
 ) : ProjectService {
 
     override fun findAll(page: Int, size: Int): Page<ProjectResponseDTO> {
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"))
-        return repository.findAll(pageable).map { it.toResponse() }
+        // In-progress projects first (alphabetical), finished ones at the end of the list.
+        val ordered = repository.findAllByUserId(UserContext.getUser(), Sort.by(Sort.Direction.ASC, "title"))
+            .sortedWith(compareBy<Projects>({ it.status == ProjectStatus.DONE }, { it.title.lowercase() }))
+        val pageable = PageRequest.of(page, size)
+        val from = minOf(page * size, ordered.size)
+        val to = minOf(from + size, ordered.size)
+        return PageImpl(ordered.subList(from, to).map { it.toResponse() }, pageable, ordered.size.toLong())
     }
 
     override fun findById(id: UUID?): ProjectResponseDTO {
@@ -41,7 +48,7 @@ class ProjectServiceImpl(
         }
         val project = Projects(
             title = request.title,
-            status = request.status,
+            status = request.status ?: ProjectStatus.WAITING,
             advisor = request.advisor,
             userId = UserContext.getUser()
         )
@@ -54,9 +61,14 @@ class ProjectServiceImpl(
         }
         val project = findEntity(id)
         project.title = request.title
-        project.status = request.status
-        request.advisor?.let { project.advisor = it }
+        request.status?.let { project.status = it }
+        // Null means "clear the advisor", which is a valid edit (the front sends it explicitly).
+        project.advisor = request.advisor
         return repository.save(project).toResponse()
+    }
+
+    override fun delete(id: UUID?) {
+        repository.delete(findEntity(id))
     }
 
     private fun findEntity(id: UUID?): Projects {

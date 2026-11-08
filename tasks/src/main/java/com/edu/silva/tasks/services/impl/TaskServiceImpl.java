@@ -9,6 +9,7 @@ import com.edu.silva.tasks.domain.entities.Task;
 import com.edu.silva.tasks.domain.entities.TaskCompletion;
 import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
+import com.edu.silva.tasks.infra.config.RequestTimeZone;
 import com.edu.silva.tasks.infra.config.UserContext;
 import com.edu.silva.tasks.infra.exceptions.CustomExceptions;
 import com.edu.silva.tasks.repositories.TaskRepository;
@@ -22,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.UUID;
 import java.util.Date;
 
@@ -54,13 +54,13 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        repository.delete(findEntity(id));
     }
 
     @Override
     public Page<@NonNull TaskResponseDTO> findAll(int page, int size, Date start, Date end, UUID projectId, UUID stageId) {
         Pageable pageable = PageRequest.of(page, size);
-        Date effectiveStart = atStartOfDay(start == null ? LocalDate.now() : asLocalDate(start));
+        Date effectiveStart = atStartOfDay(start == null ? RequestTimeZone.today() : asLocalDate(start));
         Date effectiveEnd = atEndOfDay(end == null
                 ? asLocalDate(effectiveStart).plusDays(7)
                 : asLocalDate(end));
@@ -69,13 +69,14 @@ public class TaskServiceImpl implements TaskService {
             return Page.empty(pageable);
         }
 
+        UUID userId = UserContext.getUser();
         Page<Task> tasks;
         if (stageId != null) {
-            tasks = repository.findAllOverlappingPeriodByStageId(effectiveStart, effectiveEnd, stageId, pageable);
+            tasks = repository.findAllOverlappingPeriodByStageId(userId, effectiveStart, effectiveEnd, stageId, pageable);
         } else if (projectId != null) {
-            tasks = repository.findAllOverlappingPeriodByProjectId(effectiveStart, effectiveEnd, projectId, pageable);
+            tasks = repository.findAllOverlappingPeriodByProjectId(userId, effectiveStart, effectiveEnd, projectId, pageable);
         } else {
-            tasks = repository.findAllOverlappingPeriod(effectiveStart, effectiveEnd, pageable);
+            tasks = repository.findAllOverlappingPeriod(userId, effectiveStart, effectiveEnd, pageable);
         }
         return tasks.map(task -> toResponse(task, true, effectiveStart, effectiveEnd));
     }
@@ -119,12 +120,12 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private Task findEntity(UUID id) {
-        return repository.findById(id)
+        return repository.findByIdAndUserId(id, UserContext.getUser())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Task.class.getSimpleName(), id));
     }
 
     private void updateStatus(Task task, TaskStatus status, LocalDate completionDate) {
-        LocalDate date = completionDate == null ? LocalDate.now() : completionDate;
+        LocalDate date = completionDate == null ? RequestTimeZone.today() : completionDate;
 
         // A single task keeps the day it was executed, so the calendar can show it only there.
         // Reopening it clears the day and it goes back to covering the whole period.
@@ -161,8 +162,8 @@ public class TaskServiceImpl implements TaskService {
             response.setType(TaskType.UNIQUE);
         }
         if (response.getType() == TaskType.DAILY
-                && isScheduledOn(task, LocalDate.now())
-                && completionRepository.existsByTaskIdAndCompletionDate(task.getId(), LocalDate.now())) {
+                && isScheduledOn(task, RequestTimeZone.today())
+                && completionRepository.existsByTaskIdAndCompletionDate(task.getId(), RequestTimeZone.today())) {
             response.setStatus(TaskStatus.DONE);
         }
         if (includeDailyStatistics && response.getType() == TaskType.DAILY) {
@@ -180,8 +181,8 @@ public class TaskServiceImpl implements TaskService {
                 filterStart == null ? LocalDate.MIN : asLocalDate(filterStart)
         );
         LocalDate end = min(
-                task.getEndDate() == null ? LocalDate.now() : asLocalDate(task.getEndDate()),
-                filterEnd == null ? LocalDate.now() : asLocalDate(filterEnd)
+                task.getEndDate() == null ? RequestTimeZone.today() : asLocalDate(task.getEndDate()),
+                filterEnd == null ? RequestTimeZone.today() : asLocalDate(filterEnd)
         );
         if (start.isAfter(end)) {
             return java.util.List.of();
@@ -194,7 +195,7 @@ public class TaskServiceImpl implements TaskService {
 
     private DailyTaskStatisticsDTO dailyStatistics(Task task) {
         LocalDate start = asLocalDate(task.getStartDate() != null ? task.getStartDate() : task.getCreatedDate());
-        LocalDate today = LocalDate.now();
+        LocalDate today = RequestTimeZone.today();
         LocalDate lastScheduledDay = task.getEndDate() == null
                 ? today
                 : min(asLocalDate(task.getEndDate()), today);
@@ -221,9 +222,9 @@ public class TaskServiceImpl implements TaskService {
 
     private LocalDate asLocalDate(java.util.Date value) {
         if (value == null) {
-            return LocalDate.now();
+            return RequestTimeZone.today();
         }
-        return value.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return value.toInstant().atZone(RequestTimeZone.get()).toLocalDate();
     }
 
     private LocalDate min(LocalDate first, LocalDate second) {
@@ -235,11 +236,11 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private Date atStartOfDay(LocalDate date) {
-        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atStartOfDay(RequestTimeZone.get()).toInstant());
     }
 
     private Date atEndOfDay(LocalDate date) {
-        return Date.from(date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant());
+        return Date.from(date.plusDays(1).atStartOfDay(RequestTimeZone.get()).minusNanos(1).toInstant());
     }
 
     private boolean isScheduledOn(Task task, LocalDate date) {
@@ -251,7 +252,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void validateCompletionDate(Task task, LocalDate date) {
-        if (date.isAfter(LocalDate.now())) {
+        if (date.isAfter(RequestTimeZone.today())) {
             throw new CustomExceptions.InvalidTaskCompletionException("Completion date cannot be in the future");
         }
         if (!isScheduledOn(task, date)) {

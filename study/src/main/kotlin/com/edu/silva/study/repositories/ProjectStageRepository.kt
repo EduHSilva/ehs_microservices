@@ -6,5 +6,5 @@ import java.util.UUID
 
 interface ProjectStageRepository : JpaRepository<ProjectStage, UUID> {
     fun findByIdAndUserId(id: UUID, userId: UUID): java.util.Optional<ProjectStage>
-    fun findAllByOrderByCreatedDateDesc(): List<ProjectStage>
+    fun findAllByUserIdOrderByCreatedDateDesc(userId: UUID): List<ProjectStage>
 }

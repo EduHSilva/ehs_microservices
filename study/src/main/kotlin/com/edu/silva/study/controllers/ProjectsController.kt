@@ -78,4 +78,10 @@ class ProjectsController {
             )
         )
     }
+
+    @DeleteMapping("$BASE_URL/{id}")
+    fun delete(@PathVariable id: UUID?): ResponseEntity<DefaultResponse<Void>> {
+        service.delete(id)
+        return ResponseEntity.ok(DefaultResponse<Void>("Project successfully deleted"))
+    }
 }

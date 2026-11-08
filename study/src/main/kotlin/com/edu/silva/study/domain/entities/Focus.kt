@@ -6,9 +6,6 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.Column
-import org.hibernate.annotations.Filter
-import org.hibernate.annotations.FilterDef
-import org.hibernate.annotations.ParamDef
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
 import java.util.Date
@@ -16,8 +13,6 @@ import java.util.UUID
 
 @Entity
 @Table(name = "focus_sessions")
-@FilterDef(name = "userFilter", parameters = [ParamDef(name = "userId", type = UUID::class)])
-@Filter(name = "userFilter", condition = "user_id = :userId")
 class Focus(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

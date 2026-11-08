@@ -38,7 +38,7 @@ class DashboardServiceImpl(
         return DashboardResponseDTO(
             weeklyProgress = calculateWeeklyProgress(tasks, weekStart, weekEnd),
             tasks = tasks.take(10),
-            notes = notesRepository.findTop5ByOrderByCreatedDateDesc().map { it.toResponse() }
+            notes = notesRepository.findTop5ByUserIdOrderByCreatedDateDesc(userId).map { it.toResponse() }
         )
     }
 

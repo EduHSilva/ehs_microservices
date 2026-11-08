@@ -19,14 +19,6 @@ import java.util.UUID;
 @Table(name = "tasks")
 @SQLDelete(sql = "UPDATE tasks SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
-@Filter(
-        name = "userFilter",
-        condition = "user_id = :userId"
-)
-@FilterDef(
-        name = "userFilter",
-        parameters = @ParamDef(name = "userId", type = UUID.class)
-)
 public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

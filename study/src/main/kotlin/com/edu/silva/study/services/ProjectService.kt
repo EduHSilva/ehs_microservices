@@ -13,4 +13,6 @@ interface ProjectService {
     fun add(request: ProjectRequestDTO?): ProjectResponseDTO?
 
     fun update(id: UUID?, request: ProjectRequestDTO?): ProjectResponseDTO?
+
+    fun delete(id: UUID?)
 }

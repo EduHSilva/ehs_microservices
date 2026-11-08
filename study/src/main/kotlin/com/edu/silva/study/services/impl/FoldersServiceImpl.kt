@@ -24,7 +24,7 @@ class FoldersServiceImpl(
 
     override fun findAll(page: Int, size: Int): Page<FolderResponseDTO> {
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"))
-        return repository.findAll(pageable).map { it.toResponse() }
+        return repository.findAllByUserId(UserContext.getUser(), pageable).map { it.toResponse() }
     }
 
     override fun findById(id: UUID?): FolderResponseDTO {

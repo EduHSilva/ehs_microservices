@@ -9,5 +9,6 @@ import java.util.UUID
 
 interface FocusRepository : JpaRepository<Focus, UUID> {
     fun findByIdAndUserId(id: UUID, userId: UUID): java.util.Optional<Focus>
-    fun findByCompletedAtBetween(start: Date, end: Date, pageable: Pageable): Page<Focus>
+    fun findAllByUserId(userId: UUID, pageable: Pageable): Page<Focus>
+    fun findByUserIdAndCompletedAtBetween(userId: UUID, start: Date, end: Date, pageable: Pageable): Page<Focus>
 }

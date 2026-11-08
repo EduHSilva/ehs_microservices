@@ -1,12 +1,9 @@
 package com.edu.silva.study.infra.config
 
-import jakarta.persistence.EntityManager
-import jakarta.persistence.PersistenceContext
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.hibernate.Session
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import java.io.IOException
@@ -14,8 +11,6 @@ import java.util.UUID
 
 @Component
 class HibernateUserFilter : OncePerRequestFilter() {
-    @PersistenceContext
-    private lateinit var entityManager: EntityManager
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val path = request.requestURI
@@ -44,9 +39,6 @@ class HibernateUserFilter : OncePerRequestFilter() {
 
         try {
             UserContext.setUser(userId)
-            entityManager.unwrap(Session::class.java)
-                .enableFilter("userFilter")
-                .setParameter("userId", userId)
             filterChain.doFilter(request, response)
         } finally {
             UserContext.clear()

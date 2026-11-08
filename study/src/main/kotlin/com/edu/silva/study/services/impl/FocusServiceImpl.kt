@@ -25,11 +25,12 @@ class FocusServiceImpl(
 
     override fun findAll(date: Date?, page: Int, size: Int): Page<FocusResponseDTO> {
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "completedAt"))
+        val userId = UserContext.getUser()
         val sessions = if (date == null) {
-            repository.findAll(pageable)
+            repository.findAllByUserId(userId, pageable)
         } else {
             val day = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-            repository.findByCompletedAtBetween(startOfDay(day), endOfDay(day), pageable)
+            repository.findByUserIdAndCompletedAtBetween(userId, startOfDay(day), endOfDay(day), pageable)
         }
         return sessions.map { it.toResponse() }
     }

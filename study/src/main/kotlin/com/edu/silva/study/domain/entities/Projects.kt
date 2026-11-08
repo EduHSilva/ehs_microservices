@@ -11,7 +11,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.persistence.Column
-import org.hibernate.annotations.Filter
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
 import java.util.Date
@@ -19,7 +18,6 @@ import java.util.UUID
 
 @Entity
 @Table(name = "projects")
-@Filter(name = "userFilter", condition = "user_id = :userId")
 class Projects(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
