@@ -44,7 +44,7 @@ class OwnerAccessTest {
     }
 
     @Test
-    @WithMockUser(username = "owner", roles = "CRM")
+    @WithMockUser(username = "owner", roles = "BUDGETS")
     void shouldAllowOwner() {
         UUID id = UUID.randomUUID();
 
@@ -68,7 +68,7 @@ class OwnerAccessTest {
     }
 
     @Test
-    @WithMockUser(username = "other", roles = "CRM")
+    @WithMockUser(username = "other", roles = "BUDGETS")
     void shouldBlockNonOwner() {
         UUID id = UUID.randomUUID();
 

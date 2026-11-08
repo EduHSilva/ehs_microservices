@@ -23,7 +23,7 @@
         <module>gateway</module>
         <module>users</module>
         <module>payments</module>
-        <module>crm</module>
+        <module>budgets</module>
         <module>notifications</module>
         <module>finances</module>
         <module>tasks</module>

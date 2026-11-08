@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.*;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.UUID;
 
@@ -45,6 +46,10 @@ public class Task {
     private TaskType type;
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
+
+    /** Day a single task was completed; null while pending or for DAILY tasks. */
+    @Column(name = "completed_date")
+    private LocalDate completedDate;
 
     /** Optional project this task belongs to (id from the study service). */
     @Column(name = "project_id")

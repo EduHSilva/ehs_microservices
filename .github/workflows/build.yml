@@ -72,7 +72,7 @@ jobs:
           - gateway
           - users
           - payments
-          - crm
+          - budgets
           - notifications
           - finances
           - tasks

@@ -52,7 +52,7 @@ class UserControllerAccessTest {
 
     @Test
     void shouldBlockNonAdminFromListingUsers() {
-        authenticate(UserRole.CRM, UUID.randomUUID());
+        authenticate(UserRole.BUDGETS, UUID.randomUUID());
 
         assertThrows(AccessDeniedException.class, () -> controller.all(0, 10, null, null, null, "createdDate", "desc"));
     }
@@ -67,7 +67,7 @@ class UserControllerAccessTest {
 
     @Test
     void shouldBlockNonAdminFromDeletingUsers() {
-        authenticate(UserRole.CRM, UUID.randomUUID());
+        authenticate(UserRole.BUDGETS, UUID.randomUUID());
 
         assertThrows(AccessDeniedException.class, () -> controller.delete(UUID.randomUUID()));
     }
@@ -84,7 +84,7 @@ class UserControllerAccessTest {
     @Test
     void shouldAllowUserToReadOwnData() {
         UUID ownId = UUID.randomUUID();
-        authenticate(UserRole.CRM, ownId);
+        authenticate(UserRole.BUDGETS, ownId);
         when(service.findById(ownId)).thenReturn(new UserResponseDTO());
 
         assertDoesNotThrow(() -> controller.one(ownId));
@@ -92,7 +92,7 @@ class UserControllerAccessTest {
 
     @Test
     void shouldBlockUserFromReadingAnotherUser() {
-        authenticate(UserRole.CRM, UUID.randomUUID());
+        authenticate(UserRole.BUDGETS, UUID.randomUUID());
 
         assertThrows(AccessDeniedException.class, () -> controller.one(UUID.randomUUID()));
     }
@@ -100,7 +100,7 @@ class UserControllerAccessTest {
     @Test
     void shouldAllowUserToUpdateOwnData() {
         UUID ownId = UUID.randomUUID();
-        authenticate(UserRole.CRM, ownId);
+        authenticate(UserRole.BUDGETS, ownId);
         when(service.update(eq(ownId), any())).thenReturn(new UserResponseDTO());
 
         assertDoesNotThrow(() -> controller.update(new UpdateUserRequestDTO("new name"), ownId));
@@ -108,7 +108,7 @@ class UserControllerAccessTest {
 
     @Test
     void shouldBlockUserFromUpdatingAnotherUser() {
-        authenticate(UserRole.CRM, UUID.randomUUID());
+        authenticate(UserRole.BUDGETS, UUID.randomUUID());
 
         assertThrows(
                 AccessDeniedException.class,

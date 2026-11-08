@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.BeanUtils;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +25,8 @@ public class TaskResponseDTO {
     private Date endDate;
     private TaskType type;
     private TaskStatus status;
+    @Schema(description = "Day a single task was completed. Null while pending and for DAILY tasks.")
+    private LocalDate completedDate;
     @Schema(description = "Project this task belongs to (id from the study service).")
     private UUID projectId;
     @Schema(description = "Project stage this task belongs to (id from the study service).")

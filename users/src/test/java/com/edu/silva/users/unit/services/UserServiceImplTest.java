@@ -88,7 +88,7 @@ class UserServiceImplTest {
     @Test
     void shouldSaveUserSuccessfully() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.CRM, null
+                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, null
         );
 
         when(repository.findByEmail("edu@test.com")).thenReturn(null);
@@ -109,7 +109,7 @@ class UserServiceImplTest {
         Company company = new Company();
         company.setId(companyID);
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.CRM, companyID
+                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, companyID
         );
 
         when(repository.findByEmail("edu@test.com")).thenReturn(null);
@@ -128,7 +128,7 @@ class UserServiceImplTest {
     @Test
     void shouldThrowWhenCompanyNotFound() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.CRM, UUID.randomUUID()
+                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, UUID.randomUUID()
         );
 
         when(companyRepository.findById(UUID.randomUUID())).thenReturn(Optional.empty());
@@ -139,7 +139,7 @@ class UserServiceImplTest {
     @Test
     void shouldThrowWhenEmailAlreadyExists() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.CRM, null
+                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, null
         );
 
         when(repository.findByEmail("edu@test.com")).thenReturn(new User());
@@ -159,7 +159,7 @@ class UserServiceImplTest {
     @Test
     void shouldReturnUserWhenFound() {
         UUID id = UUID.randomUUID();
-        User user = new User("Eduardo", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Eduardo", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         Company company = new Company();
         company.setName("test");
         user.setCompany(company);
@@ -181,7 +181,7 @@ class UserServiceImplTest {
     void shouldUpdateUser() {
         UUID id = UUID.randomUUID();
 
-        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         Company company = new Company();
         company.setName("Teste");
         user.setCompany(company);
@@ -209,7 +209,7 @@ class UserServiceImplTest {
     void shouldUpdateUserEmailAndRolesAsAdmin() {
         authenticateAsAdmin();
         UUID id = UUID.randomUUID();
-        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         Company company = new Company();
         company.setName("Teste");
         user.setCompany(company);
@@ -217,7 +217,7 @@ class UserServiceImplTest {
         UpdateUserRequestDTO req = new UpdateUserRequestDTO(
                 "NewName",
                 "new@test.com",
-                List.of(UserRole.ADMIN, UserRole.CRM)
+                List.of(UserRole.ADMIN, UserRole.BUDGETS)
         );
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -228,19 +228,19 @@ class UserServiceImplTest {
 
         assertEquals("NewName", updated.getUsername());
         assertEquals("new@test.com", updated.getEmail());
-        assertEquals(List.of(UserRole.ADMIN, UserRole.CRM), updated.getRoles());
+        assertEquals(List.of(UserRole.ADMIN, UserRole.BUDGETS), updated.getRoles());
     }
 
     @Test
     void shouldAllowUserToAddNonAdminRoles() {
         authenticateAsUser();
         UUID id = UUID.randomUUID();
-        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
 
         UpdateUserRequestDTO req = new UpdateUserRequestDTO(
                 "Old",
                 null,
-                List.of(UserRole.CRM, UserRole.STUDY)
+                List.of(UserRole.BUDGETS, UserRole.STUDY)
         );
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -248,19 +248,19 @@ class UserServiceImplTest {
 
         UserResponseDTO updated = service.update(id, req);
 
-        assertEquals(List.of(UserRole.CRM, UserRole.STUDY), updated.getRoles());
+        assertEquals(List.of(UserRole.BUDGETS, UserRole.STUDY), updated.getRoles());
     }
 
     @Test
     void shouldBlockUserFromAssigningAdminRole() {
         authenticateAsUser();
         UUID id = UUID.randomUUID();
-        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
 
         UpdateUserRequestDTO req = new UpdateUserRequestDTO(
                 "Old",
                 null,
-                List.of(UserRole.ADMIN, UserRole.CRM)
+                List.of(UserRole.ADMIN, UserRole.BUDGETS)
         );
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -273,7 +273,7 @@ class UserServiceImplTest {
     void shouldThrowWhenUpdatingWithEmailFromAnotherUser() {
         authenticateAsUser();
         UUID id = UUID.randomUUID();
-        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         User other = new User();
         other.setId(UUID.randomUUID());
 
@@ -288,7 +288,7 @@ class UserServiceImplTest {
     @Test
     void shouldConfirmUserSuccessfully() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.WAITING_CONFIRMATION);
         Company company = new Company();
         company.setName("test");
@@ -304,7 +304,7 @@ class UserServiceImplTest {
     @Test
     void shouldNotConfirmWhenStatusInvalid() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.OK);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -315,7 +315,7 @@ class UserServiceImplTest {
     @Test
     void shouldReleaseUserBySettingStatusOk() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.WAITING_CONFIRMATION);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -330,7 +330,7 @@ class UserServiceImplTest {
     @Test
     void shouldBlockUserAndInvalidateSessions() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.OK);
         user.setTokenVersion(2);
 
@@ -346,7 +346,7 @@ class UserServiceImplTest {
     @Test
     void shouldRejectStatusOutsideOkAndBlocked() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.OK);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -359,7 +359,7 @@ class UserServiceImplTest {
     @Test
     void shouldResendConfirmationWhenWaitingConfirmation() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.WAITING_CONFIRMATION);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -372,7 +372,7 @@ class UserServiceImplTest {
     @Test
     void shouldRejectResendWhenStatusIsNotWaitingConfirmation() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.OK);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -384,7 +384,7 @@ class UserServiceImplTest {
     @Test
     void shouldRejectResendWithinCooldown() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.WAITING_CONFIRMATION);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -397,7 +397,7 @@ class UserServiceImplTest {
     @Test
     void shouldInvalidateSessionsIncrementingTokenVersion() {
         UUID id = UUID.randomUUID();
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setTokenVersion(5);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -412,7 +412,7 @@ class UserServiceImplTest {
     @Test
     void shouldSoftDeleteUserById() {
         UUID id = UUID.randomUUID();
-        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         user.setStatus(UserStatus.OK);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
@@ -427,7 +427,7 @@ class UserServiceImplTest {
 
     @Test
     void shouldSearchUsersWithFilters() {
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         Company company = new Company();
         company.setName("Test");
         user.setCompany(company);
@@ -435,7 +435,7 @@ class UserServiceImplTest {
         when(repository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(user)));
 
-        Page<UserResponseDTO> result = service.search("edu", UserStatus.OK, UserRole.CRM, 0, 10, "username", "asc");
+        Page<UserResponseDTO> result = service.search("edu", UserStatus.OK, UserRole.BUDGETS, 0, 10, "username", "asc");
 
         assertEquals(1, result.getContent().size());
         assertEquals("Edu", result.getContent().get(0).getUsername());
@@ -443,7 +443,7 @@ class UserServiceImplTest {
 
     @Test
     void shouldExportUsersCsv() {
-        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.CRM));
+        User user = new User("Edu", "edu@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
         Company company = new Company();
         company.setName("Test");
         user.setCompany(company);

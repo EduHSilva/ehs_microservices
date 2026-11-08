@@ -94,6 +94,9 @@ public class TaskServiceImpl implements TaskService {
         }
         if (request.type() != null) {
             task.setType(request.type());
+            if (request.type() == TaskType.DAILY) {
+                task.setCompletedDate(null);
+            }
         } else if (task.getType() == null) {
             task.setType(TaskType.UNIQUE);
         }
@@ -121,12 +124,16 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void updateStatus(Task task, TaskStatus status, LocalDate completionDate) {
+        LocalDate date = completionDate == null ? LocalDate.now() : completionDate;
+
+        // A single task keeps the day it was executed, so the calendar can show it only there.
+        // Reopening it clears the day and it goes back to covering the whole period.
         if (task.getType() != TaskType.DAILY) {
+            task.setCompletedDate(status == TaskStatus.DONE ? date : null);
             task.setStatus(status);
             return;
         }
 
-        LocalDate date = completionDate == null ? LocalDate.now() : completionDate;
         validateCompletionDate(task, date);
         if (status == TaskStatus.DONE) {
             if (!completionRepository.existsByTaskIdAndCompletionDate(task.getId(), date)) {

@@ -80,7 +80,7 @@ class AuthControllerTest {
     void shouldSaveUser() {
         RegisterRequestDTO requestDTO = new RegisterRequestDTO(
                 "admin@gmail.com", RandomStringUtils.random(10),
-                RandomStringUtils.random(10), UserRole.CRM, null);
+                RandomStringUtils.random(10), UserRole.BUDGETS, null);
         when(userService.save(requestDTO)).thenReturn(new UserResponseDTO());
 
         client.post()

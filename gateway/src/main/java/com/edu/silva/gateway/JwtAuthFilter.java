@@ -30,7 +30,7 @@ public class JwtAuthFilter implements GlobalFilter {
     }
 
     Map<String, String> routeRoles = Map.of(
-            "crm", "CRM",
+            "budgets", "BUDGETS",
             "finances", "FINANCES",
             "fitness", "ROLE_FITNESS"
     );

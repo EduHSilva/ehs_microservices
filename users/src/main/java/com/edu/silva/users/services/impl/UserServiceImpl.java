@@ -110,7 +110,7 @@ public class UserServiceImpl implements UserService {
                 // todo internacionalizar
                 case HEALTH_NUTRITIONIST -> companyName = dto.username() + " nutricionista";
                 case HEALTH_PERSONAL -> companyName = dto.username() + " personal";
-                case CRM -> companyName = dto.username();
+                case BUDGETS -> companyName = dto.username();
             }
 
             if (companyName != null) {

@@ -30,6 +30,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS obrigatória}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 15s
@@ -173,11 +174,11 @@ services:
       - backend
 
   # --------------------------------------------------
-  # CRM
+  # BUDGETS
   # --------------------------------------------------
 
-  crm:
-    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/crm:${IMAGE_TAG:-latest}
+  budgets:
+    image: ${GHCR_IMAGE_PREFIX:?GHCR_IMAGE_PREFIX obrigatória}/budgets:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       service-discover:
@@ -189,7 +190,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
 
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/crm
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/budgets
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatória}
 

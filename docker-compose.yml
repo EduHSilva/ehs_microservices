@@ -34,6 +34,7 @@ services:
 
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
 
     healthcheck:
       test: [ "CMD","rabbitmq-diagnostics","check_running" ]
@@ -170,13 +171,13 @@ services:
       - "8282:8282"
 
 
-  crm:
+  budgets:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        SERVICE_NAME: crm
-    container_name: crm
+        SERVICE_NAME: budgets
+    container_name: budgets
     restart: unless-stopped
     depends_on:
       service-discover:
@@ -190,15 +191,15 @@ services:
       retries: 5
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/crm
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/budgets
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-    ports:
-      - "8383:8383"
+    expose:
+      - "8383"
 
 
   notifications:
