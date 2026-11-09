@@ -58,12 +58,13 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Page<@NonNull TaskResponseDTO> findAll(int page, int size, Date start, Date end, UUID projectId, UUID stageId) {
+    public Page<@NonNull TaskResponseDTO> findAll(int page, int size, LocalDate start, LocalDate end, UUID projectId, UUID stageId) {
         Pageable pageable = PageRequest.of(page, size);
-        Date effectiveStart = atStartOfDay(start == null ? RequestTimeZone.today() : asLocalDate(start));
-        Date effectiveEnd = atEndOfDay(end == null
-                ? asLocalDate(effectiveStart).plusDays(7)
-                : asLocalDate(end));
+        // start/end chegam como dias de calendário do cliente, então não passam por conversão de fuso.
+        LocalDate startDay = start == null ? RequestTimeZone.today() : start;
+        LocalDate endDay = end == null ? startDay.plusDays(7) : end;
+        Date effectiveStart = atStartOfDay(startDay);
+        Date effectiveEnd = atEndOfDay(endDay);
 
         if (effectiveEnd.before(effectiveStart)) {
             return Page.empty(pageable);

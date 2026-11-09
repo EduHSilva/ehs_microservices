@@ -7,6 +7,7 @@ import com.edu.silva.study.domain.dto.responses.NoteResponseDTO
 import com.edu.silva.study.domain.dto.responses.TaskResponseDTO
 import com.edu.silva.study.domain.dto.responses.WeeklyProgress
 import com.edu.silva.study.domain.entities.Notes
+import com.edu.silva.study.infra.config.RequestTimeZone
 import com.edu.silva.study.repositories.NotesRepository
 import com.edu.silva.study.services.DashboardService
 import org.springframework.beans.factory.annotation.Value
@@ -30,19 +31,20 @@ class DashboardServiceImpl(
     private val tasksClient = RestClient.create(tasksServiceUrl)
 
     override fun get(userId: UUID): DashboardResponseDTO {
-        val today = LocalDate.now()
+        val zone = RequestTimeZone.get()
+        val today = RequestTimeZone.today()
         val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val weekEnd = weekStart.plusDays(6)
-        val tasks = fetchTasks(userId, weekStart, weekEnd)
+        val tasks = fetchTasks(userId, weekStart, weekEnd, zone)
 
         return DashboardResponseDTO(
-            weeklyProgress = calculateWeeklyProgress(tasks, weekStart, weekEnd),
+            weeklyProgress = calculateWeeklyProgress(tasks, weekStart, weekEnd, zone),
             tasks = tasks.take(10),
             notes = notesRepository.findTop5ByUserIdOrderByCreatedDateDesc(userId).map { it.toResponse() }
         )
     }
 
-    private fun fetchTasks(userId: UUID, start: LocalDate, end: LocalDate): List<TaskResponseDTO> {
+    private fun fetchTasks(userId: UUID, start: LocalDate, end: LocalDate, zone: ZoneId): List<TaskResponseDTO> {
         val response = tasksClient.get()
             .uri { builder ->
                 builder.path("/")
@@ -53,6 +55,7 @@ class DashboardServiceImpl(
                     .build()
             }
             .header("X-User-ID", userId.toString())
+            .header("X-Time-Zone", zone.id)
             .retrieve()
             .body(object : ParameterizedTypeReference<DefaultResponse<PageResponse<TaskResponseDTO>>>() {})
             ?: error("Tasks service returned an empty response")
@@ -60,13 +63,18 @@ class DashboardServiceImpl(
         return response.data?.items ?: emptyList()
     }
 
-    private fun calculateWeeklyProgress(tasks: List<TaskResponseDTO>, start: LocalDate, end: LocalDate): WeeklyProgress {
+    private fun calculateWeeklyProgress(
+        tasks: List<TaskResponseDTO>,
+        start: LocalDate,
+        end: LocalDate,
+        zone: ZoneId
+    ): WeeklyProgress {
         var total = 0
         var completed = 0
         for (task in tasks) {
             if (task.type == "DAILY") {
-                val firstDay = maxOf(start, task.startDate?.toLocalDate() ?: start)
-                val lastDay = minOf(end, task.endDate?.toLocalDate() ?: end)
+                val firstDay = maxOf(start, task.startDate?.toLocalDate(zone) ?: start)
+                val lastDay = minOf(end, task.endDate?.toLocalDate(zone) ?: end)
                 if (!firstDay.isAfter(lastDay)) {
                     total += (lastDay.toEpochDay() - firstDay.toEpochDay() + 1).toInt()
                     completed += task.dailyCompletions.orEmpty()
@@ -90,5 +98,5 @@ class DashboardServiceImpl(
         content = content
     )
 
-    private fun Date.toLocalDate(): LocalDate = toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+    private fun Date.toLocalDate(zone: ZoneId): LocalDate = toInstant().atZone(zone).toLocalDate()
 }

@@ -4,6 +4,7 @@ import com.edu.silva.common.DefaultResponse
 import com.edu.silva.common.PageResponse
 import com.edu.silva.study.domain.dto.requests.FocusRequestDTO
 import com.edu.silva.study.domain.dto.responses.FocusResponseDTO
+import com.edu.silva.study.infra.config.RequestTimeZone
 import com.edu.silva.study.services.FocusService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -11,7 +12,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
 
@@ -32,7 +32,7 @@ class FocusController {
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) date: LocalDate
     ): ResponseEntity<DefaultResponse<PageResponse<FocusResponseDTO?>?>> {
-        val dateAtStartOfDay = Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant())
+        val dateAtStartOfDay = Date.from(date.atStartOfDay(RequestTimeZone.get()).toInstant())
         val folders: Page<FocusResponseDTO>? = service.findAll(dateAtStartOfDay, page, size)
         return ResponseEntity.ok(
             DefaultResponse.paged<FocusResponseDTO>(

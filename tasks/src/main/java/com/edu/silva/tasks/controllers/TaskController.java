@@ -18,7 +18,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
-import java.util.Date;
+import java.time.LocalDate;
 
 @RestController
 @Tag(name = "Tasks", description = "Create, manage and track one-time and daily tasks")
@@ -47,9 +47,9 @@ public class TaskController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "First date of the filter interval (yyyy-MM-dd). Defaults to today.", example = "2026-10-02")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @Parameter(description = "Last date of the filter interval (yyyy-MM-dd). Defaults to seven days after start.", example = "2026-10-09")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date end,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
             @Parameter(description = "Only tasks linked to this project (id from the study service).")
             @RequestParam(required = false) UUID projectId,
             @Parameter(description = "Only tasks linked to this project stage (id from the study service). Takes precedence over projectId.")

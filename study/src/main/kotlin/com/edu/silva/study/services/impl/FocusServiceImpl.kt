@@ -4,6 +4,7 @@ import com.edu.silva.study.domain.dto.requests.FocusRequestDTO
 import com.edu.silva.study.domain.dto.responses.FocusResponseDTO
 import com.edu.silva.study.domain.entities.Focus
 import com.edu.silva.study.infra.exceptions.EntityNotFoundException
+import com.edu.silva.study.infra.config.RequestTimeZone
 import com.edu.silva.study.repositories.FocusRepository
 import com.edu.silva.study.infra.config.UserContext
 import com.edu.silva.study.services.FocusService
@@ -13,7 +14,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
 
@@ -29,7 +29,7 @@ class FocusServiceImpl(
         val sessions = if (date == null) {
             repository.findAllByUserId(userId, pageable)
         } else {
-            val day = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            val day = date.toInstant().atZone(RequestTimeZone.get()).toLocalDate()
             repository.findByUserIdAndCompletedAtBetween(userId, startOfDay(day), endOfDay(day), pageable)
         }
         return sessions.map { it.toResponse() }
@@ -74,10 +74,10 @@ class FocusServiceImpl(
     }
 
     private fun startOfDay(day: LocalDate): Date {
-        return Date.from(day.atStartOfDay(ZoneId.systemDefault()).toInstant())
+        return Date.from(day.atStartOfDay(RequestTimeZone.get()).toInstant())
     }
 
     private fun endOfDay(day: LocalDate): Date {
-        return Date.from(day.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant())
+        return Date.from(day.plusDays(1).atStartOfDay(RequestTimeZone.get()).minusNanos(1).toInstant())
     }
 }
