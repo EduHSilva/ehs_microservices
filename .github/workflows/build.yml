@@ -19,7 +19,7 @@ jobs:
 
   test-java:
     name: Test Java
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["ubuntu-latest", "self-hosted"]')[github.repository == 'github/docs-internal'] }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
 
   test-go:
     name: Test Go
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["ubuntu-latest", "self-hosted"]')[github.repository == 'github/docs-internal'] }}
 
     defaults:
       run:
@@ -61,7 +61,7 @@ jobs:
   build-java-images:
     name: Build Java - ${{ matrix.service }}
     needs: test-java
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["ubuntu-latest", "self-hosted"]')[github.repository == 'github/docs-internal'] }}
 
     strategy:
       fail-fast: false
@@ -110,7 +110,7 @@ jobs:
   build-fitness-image:
     name: Build Fitness
     needs: test-go
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON('["ubuntu-latest", "self-hosted"]')[github.repository == 'github/docs-internal'] }}
 
     steps:
       - uses: actions/checkout@v4
