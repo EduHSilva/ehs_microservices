@@ -29,9 +29,14 @@ class ProjectServiceImpl(
 ) : ProjectService {
 
     override fun findAll(page: Int, size: Int): Page<ProjectResponseDTO> {
-        // In-progress projects first (alphabetical), finished ones at the end of the list.
+        // Waiting first, then in progress and finished at the end; each group alphabetical.
         val ordered = repository.findAllByUserId(UserContext.getUser(), Sort.by(Sort.Direction.ASC, "title"))
-            .sortedWith(compareBy<Projects>({ it.status == ProjectStatus.DONE }, { it.title.lowercase() }))
+            .sortedWith(
+                compareBy<Projects>(
+                    { when (it.status) { ProjectStatus.WAITING -> 0; ProjectStatus.WORKING -> 1; ProjectStatus.DONE -> 2 } },
+                    { it.title.lowercase() }
+                )
+            )
         val pageable = PageRequest.of(page, size)
         val from = minOf(page * size, ordered.size)
         val to = minOf(from + size, ordered.size)

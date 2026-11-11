@@ -58,6 +58,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional
     public Page<@NonNull TaskResponseDTO> findAll(int page, int size, LocalDate start, LocalDate end, UUID projectId, UUID stageId) {
         Pageable pageable = PageRequest.of(page, size);
         // start/end chegam como dias de calendário do cliente, então não passam por conversão de fuso.
@@ -79,12 +80,18 @@ public class TaskServiceImpl implements TaskService {
         } else {
             tasks = repository.findAllOverlappingPeriod(userId, effectiveStart, effectiveEnd, pageable);
         }
+        // O atraso é derivado do prazo: toda leitura recalcula e persiste a mudança. Como as
+        // entidades estão gerenciadas pela transação, o flush grava o novo status no commit.
+        tasks.getContent().forEach(this::refreshDelayedStatus);
         return tasks.map(task -> toResponse(task, true, effectiveStart, effectiveEnd));
     }
 
     @Override
+    @Transactional
     public TaskResponseDTO findById(UUID id) {
-        return toResponse(findEntity(id), true, null, null);
+        Task task = findEntity(id);
+        refreshDelayedStatus(task);
+        return toResponse(task, true, null, null);
     }
 
     @Override
@@ -116,6 +123,8 @@ public class TaskServiceImpl implements TaskService {
         if (request.status() != null) {
             updateStatus(task, request.status(), request.completionDate());
         }
+        // Estender o prazo tira o atraso; mover para PENDING uma tarefa vencida devolve DELAYED.
+        refreshDelayedStatus(task);
 
         return toResponse(repository.save(task), true, null, null);
     }
@@ -136,6 +145,14 @@ public class TaskServiceImpl implements TaskService {
             return;
         }
 
+        // A DAILY has no DELAYED: WORKING only means "in progress" and does not depend on a
+        // valid completion day, so moving out of DONE just clears today's record.
+        if (status == TaskStatus.WORKING) {
+            completionRepository.deleteByTaskIdAndCompletionDate(task.getId(), date);
+            task.setStatus(TaskStatus.WORKING);
+            return;
+        }
+
         validateCompletionDate(task, date);
         if (status == TaskStatus.DONE) {
             if (!completionRepository.existsByTaskIdAndCompletionDate(task.getId(), date)) {
@@ -148,12 +165,31 @@ public class TaskServiceImpl implements TaskService {
             completionRepository.deleteByTaskIdAndCompletionDate(task.getId(), date);
         } else {
             throw new CustomExceptions.InvalidTaskCompletionException(
-                    "Daily tasks only accept DONE or PENDING as a completion status"
+                    "Daily tasks only accept PENDING, WORKING or DONE as a completion status"
             );
         }
 
-        // A daily task is never permanently DONE: its status is derived per day.
-        task.setStatus(TaskStatus.PENDING);
+        // A daily task is never permanently DONE: its status is derived per day. Keep WORKING so
+        // an in-progress recurrence goes back to its lane when today's completion is undone.
+        task.setStatus(task.getStatus() == TaskStatus.WORKING ? TaskStatus.WORKING : TaskStatus.PENDING);
+    }
+
+    /**
+     * O atraso de uma tarefa UNIQUE é derivado do prazo, não escolhido no cliente: uma tarefa
+     * vencida e ainda não iniciada vira DELAYED, e estender o prazo a devolve para PENDING.
+     * WORKING e DONE são estados explícitos e nunca são sobrescritos; DAILY não tem atraso.
+     */
+    private void refreshDelayedStatus(Task task) {
+        if (task.getType() == TaskType.DAILY) {
+            return;
+        }
+        boolean pastDue = task.getEndDate() != null
+                && asLocalDate(task.getEndDate()).isBefore(RequestTimeZone.today());
+        if (pastDue && task.getStatus() == TaskStatus.PENDING) {
+            task.setStatus(TaskStatus.DELAYED);
+        } else if (!pastDue && task.getStatus() == TaskStatus.DELAYED) {
+            task.setStatus(TaskStatus.PENDING);
+        }
     }
 
     private TaskResponseDTO toResponse(Task task, boolean includeDailyStatistics, Date filterStart, Date filterEnd) {

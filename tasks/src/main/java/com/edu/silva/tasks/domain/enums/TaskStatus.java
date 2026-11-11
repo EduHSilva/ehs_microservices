@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum TaskStatus {
     PENDING("pending"),
+    WORKING("working"),
     DONE("done"),
     DELAYED("delayed"),
     DELETED("deleted");
