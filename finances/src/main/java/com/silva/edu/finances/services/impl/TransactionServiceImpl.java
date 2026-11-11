@@ -122,10 +122,15 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public TransactionResponseDTO confirm(UUID id) {
+    public TransactionResponseDTO confirm(UUID id, java.math.BigDecimal value) {
         Transaction transaction = findEntity(id);
         if (transaction.getStatus() != TransactionStatus.PENDING)
             throw new IllegalArgumentException("Only pending transactions can be confirmed");
+        if (value != null) {
+            if (value.signum() <= 0)
+                throw new IllegalArgumentException("Transaction value must be greater than zero");
+            transaction.setValue(value);
+        }
         transaction.setStatus(TransactionStatus.OK);
         Recurrence recurrence = transaction.getRecurrence();
         if (recurrence != null && recurrence.getType() == RecurrenceType.INSTALLMENT) {

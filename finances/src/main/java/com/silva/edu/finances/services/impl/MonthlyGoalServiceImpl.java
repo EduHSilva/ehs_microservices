@@ -102,8 +102,19 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         BigDecimal difference = expected.subtract(realized);
         BigDecimal progress = expected.signum() == 0 ? BigDecimal.ZERO
                 : realized.multiply(BigDecimal.valueOf(100)).divide(expected, 2, RoundingMode.HALF_UP);
+
+        BigDecimal initialBalance = goal.getInitialBalance() == null ? BigDecimal.ZERO : goal.getInitialBalance();
+        BigDecimal objective = goal.getObjective();
+        LocalDate savingStart = goal.getDtInicio() != null ? goal.getDtInicio()
+                : YearMonth.parse(goal.getPeriodMonth()).atDay(1);
+        BigDecimal accumulated = contributions.sumForGoalAndPeriod(id, goal.getUserId(), savingStart, end);
+        if (accumulated == null) accumulated = BigDecimal.ZERO;
+        BigDecimal saved = initialBalance.add(accumulated);
+        BigDecimal objectiveProgress = objective == null || objective.signum() == 0 ? BigDecimal.ZERO
+                : saved.multiply(BigDecimal.valueOf(100)).divide(objective, 2, RoundingMode.HALF_UP);
+
         return new MonthlyGoalSummaryResponse(id, goal.getAccountId(), goal.getTitle(), periodMonth,
-                base, expected, realized, difference, progress);
+                base, expected, realized, difference, progress, initialBalance, objective, saved, objectiveProgress);
     }
 
     @Override public void contribute(UUID id, GoalContributionRequest request) {
@@ -187,6 +198,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         goal.setTitle(request.title().trim());
         goal.setMode(request.mode());
         goal.setAmount(request.amount());
+        goal.setInitialBalance(request.initialBalance() == null ? BigDecimal.ZERO : request.initialBalance());
+        goal.setObjective(request.objective() == null || request.objective().signum() <= 0
+                ? null : request.objective());
         goal.setPeriodMonth(month.toString());
         goal.setDtInicio(start);
         goal.setDtFim(end);
@@ -202,7 +216,8 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         LocalDate end = g.getDtFim() != null ? g.getDtFim()
                 : (g.getDtInicio() == null ? legacyMonth.atEndOfMonth() : null);
         boolean recurring = end == null || YearMonth.from(end).isAfter(YearMonth.from(start));
+        BigDecimal initialBalance = g.getInitialBalance() == null ? BigDecimal.ZERO : g.getInitialBalance();
         return new MonthlyGoalResponse(g.getId(), g.getAccountId(), g.getTitle(), g.getMode(),
-                g.getAmount(), g.getPeriodMonth(), start, end, recurring, g.isActive());
+                g.getAmount(), initialBalance, g.getObjective(), g.getPeriodMonth(), start, end, recurring, g.isActive());
     }
 }

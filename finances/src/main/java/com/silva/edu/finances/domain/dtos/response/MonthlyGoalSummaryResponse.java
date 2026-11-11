@@ -5,5 +5,6 @@ import java.util.UUID;
 
 public record MonthlyGoalSummaryResponse(UUID goalId, String accountId, String title, String periodMonth,
                                          BigDecimal incomeBase, BigDecimal expected, BigDecimal realized,
-                                         BigDecimal difference, BigDecimal progress) {
+                                         BigDecimal difference, BigDecimal progress, BigDecimal initialBalance,
+                                         BigDecimal objective, BigDecimal saved, BigDecimal objectiveProgress) {
 }

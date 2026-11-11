@@ -5,8 +5,10 @@ import com.silva.edu.finances.domain.dtos.request.UpdateRecurrenceRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.RecurrenceResponseDTO;
 import com.silva.edu.finances.domain.entities.Category;
 import com.silva.edu.finances.domain.entities.Recurrence;
+import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
+import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
@@ -22,6 +24,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -123,12 +131,69 @@ public class RecurrenceServiceImpl implements RecurrenceService {
     }
 
     @Override
-    public RecurrenceResponseDTO confirm(UUID id) {
+    public RecurrenceResponseDTO confirm(UUID id, BigDecimal value) {
         Recurrence recurrence = findEntity(id);
         if (recurrence.getStatus() != RecurrenceStatus.PENDING)
             throw new IllegalArgumentException("Only pending recurrences can be confirmed");
-        recurrence.setStatus(RecurrenceStatus.ACTIVE);
+        BigDecimal amount = value == null ? recurrence.getValue() : value;
+        if (amount == null || amount.signum() <= 0)
+            throw new IllegalArgumentException("Recurrence value must be greater than zero");
+
+        recordOccurrence(recurrence, amount);
+        if (recurrence.getStatus() != RecurrenceStatus.PAYED)
+            recurrence.setStatus(RecurrenceStatus.ACTIVE);
         return new RecurrenceResponseDTO(repository.save(recurrence));
+    }
+
+    /**
+     * Records the occurrence being confirmed without changing the recurrence template, so a value
+     * informed at confirmation time applies only to this launch.
+     */
+    private void recordOccurrence(Recurrence recurrence, BigDecimal amount) {
+        LocalDate due = currentOccurrenceDate(recurrence.getDay());
+        YearMonth month = YearMonth.from(due);
+        Date start = toDate(month.atDay(1));
+        Date end = toDate(month.plusMonths(1).atDay(1));
+        List<Transaction> occurrences = transactionRepository.findRecurrenceOccurrences(
+                recurrence.getId(), recurrence.getUserId(), start, end);
+        Transaction occurrence = occurrences.stream()
+                .filter(transaction -> transaction.getStatus() == TransactionStatus.PENDING)
+                .findFirst()
+                .orElse(null);
+
+        // Already confirmed for this month: do not duplicate the launch.
+        if (occurrence == null && !occurrences.isEmpty()) return;
+
+        if (occurrence == null) {
+            occurrence = new Transaction();
+            occurrence.setUserId(recurrence.getUserId());
+            occurrence.setAccountId(recurrence.getAccountId());
+            occurrence.setTitle(recurrence.getTitle());
+            occurrence.setIncome(recurrence.isIncome());
+            occurrence.setCategory(recurrence.getCategory());
+            occurrence.setRecurrence(recurrence);
+            occurrence.setExecutionDate(toDate(due));
+        }
+        occurrence.setValue(amount);
+        occurrence.setStatus(TransactionStatus.OK);
+        transactionRepository.save(occurrence);
+
+        if (recurrence.getType() == RecurrenceType.INSTALLMENT) {
+            int payed = (recurrence.getPayed() == null ? 0 : recurrence.getPayed()) + 1;
+            recurrence.setPayed(payed);
+            if (recurrence.getInstallments() != null && payed >= recurrence.getInstallments()) {
+                recurrence.setStatus(RecurrenceStatus.PAYED);
+            }
+        }
+    }
+
+    private static LocalDate currentOccurrenceDate(int day) {
+        YearMonth month = YearMonth.from(LocalDate.now(ZoneOffset.UTC));
+        return month.atDay(Math.min(day, month.lengthOfMonth()));
+    }
+
+    private static Date toDate(LocalDate date) {
+        return Date.from(date.atStartOfDay(ZoneOffset.UTC).toInstant());
     }
 
     private Recurrence findEntity(UUID id) {

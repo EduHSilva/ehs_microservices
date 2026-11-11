@@ -6,6 +6,7 @@ import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public interface TransactionService {
@@ -19,5 +20,5 @@ public interface TransactionService {
 
     TransactionResponseDTO update(UUID id, UpdateTransactionRequestDTO request);
 
-    TransactionResponseDTO confirm(UUID id);
+    TransactionResponseDTO confirm(UUID id, BigDecimal value);
 }

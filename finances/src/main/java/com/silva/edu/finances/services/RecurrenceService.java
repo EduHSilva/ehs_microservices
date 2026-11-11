@@ -9,6 +9,7 @@ import com.silva.edu.finances.domain.dtos.response.RecurrenceResponseDTO;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public interface RecurrenceService {
@@ -22,5 +23,5 @@ public interface RecurrenceService {
 
     RecurrenceResponseDTO update(UUID id, UpdateRecurrenceRequestDTO request);
 
-    RecurrenceResponseDTO confirm(UUID id);
+    RecurrenceResponseDTO confirm(UUID id, BigDecimal value);
 }

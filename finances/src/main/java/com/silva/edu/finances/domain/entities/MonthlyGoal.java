@@ -27,6 +27,10 @@ public class MonthlyGoal {
     private GoalMode mode;
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
+    @Column(name = "initial_balance", precision = 19, scale = 4)
+    private BigDecimal initialBalance = BigDecimal.ZERO;
+    @Column(precision = 19, scale = 4)
+    private BigDecimal objective;
     @Column(name = "period_month", nullable = false, length = 7)
     private String periodMonth;
     @Column(name = "dt_inicio")

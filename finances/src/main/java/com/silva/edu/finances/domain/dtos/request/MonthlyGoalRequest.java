@@ -11,6 +11,8 @@ public record MonthlyGoalRequest(
         @NotBlank @Size(max = 80) String accountId,
         @NotNull GoalMode mode,
         @NotNull @DecimalMin("0.01") @Digits(integer = 15, fraction = 4) BigDecimal amount,
+        @DecimalMin("0") @Digits(integer = 15, fraction = 4) BigDecimal initialBalance,
+        @DecimalMin("0") @Digits(integer = 15, fraction = 4) BigDecimal objective,
         @Pattern(regexp = "\\d{4}-(0[1-9]|1[0-2])") String periodMonth,
         LocalDate dtInicio,
         LocalDate dtFim,

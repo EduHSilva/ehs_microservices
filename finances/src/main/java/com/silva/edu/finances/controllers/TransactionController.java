@@ -3,6 +3,7 @@ package com.silva.edu.finances.controllers;
 import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.common.PageResponse;
 import com.silva.edu.finances.domain.dtos.request.AddTransactionRequestDTO;
+import com.silva.edu.finances.domain.dtos.request.ConfirmTransactionRequest;
 import com.silva.edu.finances.domain.dtos.request.UpdateTransactionRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
 import com.silva.edu.finances.domain.dtos.request.StatementImportRequest;
@@ -72,8 +73,11 @@ public class TransactionController {
     }
 
     @PostMapping(BASE_URL + "/{id}/confirm")
-    ResponseEntity<@NonNull DefaultResponse<TransactionResponseDTO>> confirm(@PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse<>("Transaction confirmed successfully", service.confirm(id)));
+    ResponseEntity<@NonNull DefaultResponse<TransactionResponseDTO>> confirm(
+            @PathVariable UUID id,
+            @RequestBody(required = false) @Valid ConfirmTransactionRequest request) {
+        java.math.BigDecimal value = request == null ? null : request.value();
+        return ResponseEntity.ok(new DefaultResponse<>("Transaction confirmed successfully", service.confirm(id, value)));
     }
 
     @PostMapping(BASE_URL + "/import/preview")

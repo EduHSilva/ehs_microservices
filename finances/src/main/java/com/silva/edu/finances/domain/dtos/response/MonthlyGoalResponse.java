@@ -6,6 +6,6 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public record MonthlyGoalResponse(UUID id, String accountId, String title, GoalMode mode, BigDecimal amount,
-                                 String periodMonth, LocalDate dtInicio, LocalDate dtFim, boolean recurring,
-                                 boolean active) {
+                                 BigDecimal initialBalance, BigDecimal objective, String periodMonth,
+                                 LocalDate dtInicio, LocalDate dtFim, boolean recurring, boolean active) {
 }

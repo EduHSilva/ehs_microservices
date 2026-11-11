@@ -34,6 +34,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query("select t from Transaction t where t.accountId = :accountId and t.recurrence is not null and t.executionDate >= :start and t.executionDate < :end")
     List<Transaction> findAllRecurrenceLinkedByAccountId(@Param("accountId") String accountId,
                                                          @Param("start") Date start, @Param("end") Date end);
+    @Query("select t from Transaction t where t.recurrence.id = :recurrenceId and t.userId = :userId and t.executionDate >= :start and t.executionDate < :end order by t.executionDate asc")
+    List<Transaction> findRecurrenceOccurrences(@Param("recurrenceId") UUID recurrenceId,
+                                                @Param("userId") UUID userId,
+                                                @Param("start") Date start, @Param("end") Date end);
     @org.springframework.data.jpa.repository.Modifying
     @Query("update Transaction t set t.status = com.silva.edu.finances.domain.enums.TransactionStatus.DELETED where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING")
     int deletePendingByRecurrence(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId);

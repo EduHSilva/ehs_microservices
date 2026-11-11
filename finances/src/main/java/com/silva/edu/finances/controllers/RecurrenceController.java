@@ -4,6 +4,7 @@ import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.common.PageResponse;
 import com.silva.edu.finances.domain.dtos.request.AddCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.AddRecurrenceRequestDTO;
+import com.silva.edu.finances.domain.dtos.request.ConfirmRecurrenceRequest;
 import com.silva.edu.finances.domain.dtos.request.UpdateCategoryRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateRecurrenceRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.CategoryResponseDTO;
@@ -68,7 +69,10 @@ public class RecurrenceController {
     }
 
     @PostMapping(BASE_URL + "/{id}/confirm")
-    ResponseEntity<@NonNull DefaultResponse<RecurrenceResponseDTO>> confirm(@PathVariable UUID id) {
-        return ResponseEntity.ok(new DefaultResponse<>("Recurrence confirmed successfully", service.confirm(id)));
+    ResponseEntity<@NonNull DefaultResponse<RecurrenceResponseDTO>> confirm(
+            @PathVariable UUID id,
+            @RequestBody(required = false) @Valid ConfirmRecurrenceRequest request) {
+        java.math.BigDecimal value = request == null ? null : request.value();
+        return ResponseEntity.ok(new DefaultResponse<>("Recurrence confirmed successfully", service.confirm(id, value)));
     }
 }
