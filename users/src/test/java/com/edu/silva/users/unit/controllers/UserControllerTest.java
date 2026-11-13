@@ -129,11 +129,16 @@ class UserControllerTest {
     void shouldConfirmEmail() {
         UUID userId = UUID.randomUUID();
 
+        // A página /user/confirm/ chama este endpoint e mostra o resultado; por ser rota
+        // pública, a resposta não pode carregar dados do usuário.
         client.get()
                 .uri("/confirm/" + userId)
                 .exchange()
-                .expectStatus().is3xxRedirection()
-                .expectHeader().valueEquals("Location", "/confirm.html");    }
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Conta confirmada com sucesso")
+                .jsonPath("$.data").isEmpty();
+    }
 
 
 }

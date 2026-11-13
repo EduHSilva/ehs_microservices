@@ -107,4 +107,33 @@ class JwtAuthFilterTest {
         verify(response).setStatusCode(HttpStatus.FORBIDDEN);
         verify(chain, never()).filter(any());
     }
+
+    @Test
+    void shouldAllowConfirmationLinkWithoutToken() {
+        when(request.getURI()).thenReturn(URI.create("/confirm/00000000-0000-0000-0000-000000000000"));
+        when(request.getHeaders()).thenReturn(new HttpHeaders());
+        when(route.getUri()).thenReturn(URI.create("lb://users"));
+        when(chain.filter(exchange)).thenReturn(Mono.empty());
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(exchange);
+        verify(response, never()).setStatusCode(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void shouldForbidTasksWhenTokenIsFromAnotherApp() {
+        when(request.getURI()).thenReturn(URI.create("/tasks"));
+        when(route.getUri()).thenReturn(URI.create("lb://tasks"));
+        bearerToken("token");
+        when(jwtUtil.validateToken("token")).thenReturn(jwt);
+        when(jwt.getClaim("roles")).thenReturn(rolesClaim);
+        when(rolesClaim.asList(String.class)).thenReturn(List.of("FINANCES"));
+        when(jwt.getAudience()).thenReturn(List.of("FINANCES"));
+
+        filter.filter(exchange, chain).block();
+
+        verify(response).setStatusCode(HttpStatus.FORBIDDEN);
+        verify(chain, never()).filter(any());
+    }
 }
