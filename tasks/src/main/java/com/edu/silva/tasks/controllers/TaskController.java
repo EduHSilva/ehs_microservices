@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.time.LocalDate;
 
 @RestController
-@Tag(name = "Tasks", description = "Create, manage and track one-time and daily tasks")
+@Tag(name = "Tasks", description = "Create, manage and track one-time, daily and recurring tasks")
 public class TaskController {
     private final TaskService service;
 
@@ -39,8 +39,10 @@ public class TaskController {
                     task.startDate <= end AND (task.endDate is empty OR task.endDate >= start).
 
                     When start is omitted, it defaults to today. When end is omitted, it defaults to seven days after start.
-                    For DAILY tasks, dailyCompletions contains only completions whose completionDate falls within the effective interval.
-                    dailyStatistics contains the task's accumulated daily statistics.
+                    For recurring tasks (DAILY, WEEKLY, MONTHLY, WEEKLY_GOAL), dailyCompletions contains only completions
+                    whose completionDate falls within the effective interval, and completion is accepted only on
+                    scheduled days (WEEKLY_GOAL accepts any day up to its weekly target).
+                    dailyStatistics contains the task's accumulated statistics based on scheduled days.
                     """
     )
     ResponseEntity<@NonNull DefaultResponse<PageResponse<TaskResponseDTO>>> all(

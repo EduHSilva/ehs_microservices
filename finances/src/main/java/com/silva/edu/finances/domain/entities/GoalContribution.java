@@ -28,4 +28,6 @@ public class GoalContribution {
     private UUID transactionId;
     @Column(name = "auto_created", nullable = false, columnDefinition = "boolean default false")
     private boolean autoCreated;
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean adjustment;
 }

@@ -97,7 +97,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         if (base == null) base = BigDecimal.ZERO;
         BigDecimal expected = goal.getMode() == GoalMode.FIXED ? goal.getAmount()
                 : base.multiply(goal.getAmount()).divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
-        BigDecimal realized = contributions.sumForGoalAndPeriod(id, goal.getUserId(), start, end);
+        BigDecimal realized = contributions.sumRealizedForGoalAndPeriod(id, goal.getUserId(), start, end);
         if (realized == null) realized = BigDecimal.ZERO;
         BigDecimal difference = expected.subtract(realized);
         BigDecimal progress = expected.signum() == 0 ? BigDecimal.ZERO
@@ -127,6 +127,8 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         contribution.setAmount(request.amount());
         contribution.setDate(request.date());
         if (request.transactionId() != null) {
+            if (Boolean.TRUE.equals(request.adjustment()))
+                throw new IllegalArgumentException("Adjustment contributions cannot link a transaction");
             if (contributions.existsByTransactionIdAndUserId(request.transactionId(), userId))
                 throw new IllegalArgumentException("Transaction already linked to a goal contribution");
             var transaction = transactions.findByIdAndUserId(request.transactionId(), userId)
@@ -138,6 +140,8 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
                     || transaction.getExecutionDate().toInstant().atZone(ZoneOffset.UTC).toLocalDate().compareTo(request.date()) != 0)
                 throw new IllegalArgumentException("Linked contribution must match a confirmed expense transaction");
             contribution.setTransactionId(transaction.getId());
+        } else if (Boolean.TRUE.equals(request.adjustment())) {
+            contribution.setAdjustment(true);
         } else {
             contribution.setTransactionId(saveContributionTransaction(goal, request, userId).getId());
             contribution.setAutoCreated(true);

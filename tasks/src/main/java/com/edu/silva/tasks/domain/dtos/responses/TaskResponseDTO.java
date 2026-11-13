@@ -25,13 +25,19 @@ public class TaskResponseDTO {
     private Date endDate;
     private TaskType type;
     private TaskStatus status;
-    @Schema(description = "Day a single task was completed. Null while pending and for DAILY tasks.")
+    @Schema(description = "Day a single task was completed. Null while pending and for recurring tasks.")
     private LocalDate completedDate;
+    @Schema(description = "ISO weekdays (1 = Monday .. 7 = Sunday) for WEEKLY tasks.")
+    private List<Integer> recurrenceDays;
+    @Schema(description = "Day of month (1..31) for MONTHLY tasks. Months shorter than the day use their last day.")
+    private Integer recurrenceDayOfMonth;
+    @Schema(description = "Completions expected per week for WEEKLY_GOAL tasks.")
+    private Integer weeklyGoal;
     @Schema(description = "Project this task belongs to (id from the study service).")
     private UUID projectId;
     @Schema(description = "Project stage this task belongs to (id from the study service).")
     private UUID stageId;
-    @Schema(description = "Accumulated completion statistics. Present for DAILY tasks.")
+    @Schema(description = "Accumulated completion statistics. Present for recurring tasks.")
     private DailyTaskStatisticsDTO dailyStatistics;
     @Schema(description = "Daily completion records. In the task list, only records inside the effective start/end interval are returned; in task detail, the full history is returned.")
     private List<DailyTaskCompletionDTO> dailyCompletions;

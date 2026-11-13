@@ -10,6 +10,7 @@ import org.hibernate.annotations.*;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -39,9 +40,22 @@ public class Task {
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
 
-    /** Day a single task was completed; null while pending or for DAILY tasks. */
+    /** Day a single task was completed; null while pending and for recurring tasks. */
     @Column(name = "completed_date")
     private LocalDate completedDate;
+
+    /** ISO weekdays (1 = Monday .. 7 = Sunday) used by WEEKLY tasks. */
+    @Convert(converter = WeekdayListConverter.class)
+    @Column(name = "recurrence_days", length = 32)
+    private List<Integer> recurrenceDays;
+
+    /** Day of month (1..31) used by MONTHLY tasks. */
+    @Column(name = "recurrence_day_of_month")
+    private Integer recurrenceDayOfMonth;
+
+    /** Completions expected per week for WEEKLY_GOAL tasks. */
+    @Column(name = "weekly_goal")
+    private Integer weeklyGoal;
 
     /** Optional project this task belongs to (id from the study service). */
     @Column(name = "project_id")

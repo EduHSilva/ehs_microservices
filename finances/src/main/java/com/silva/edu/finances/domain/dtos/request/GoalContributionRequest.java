@@ -11,6 +11,7 @@ import java.util.UUID;
 public record GoalContributionRequest(
         @NotNull @DecimalMin("0.01") @Digits(integer = 15, fraction = 4) BigDecimal amount,
         @NotNull LocalDate date,
-        UUID transactionId
+        UUID transactionId,
+        Boolean adjustment
 ) {
 }
