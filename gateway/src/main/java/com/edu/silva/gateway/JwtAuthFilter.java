@@ -2,6 +2,7 @@ package com.edu.silva.gateway;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edu.silva.common.Logger;
+import com.edu.silva.common.enums.AppScope;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
 
@@ -28,12 +30,6 @@ public class JwtAuthFilter implements GlobalFilter {
     public JwtAuthFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
-
-    Map<String, String> routeRoles = Map.of(
-            "budgets", "BUDGETS",
-            "finances", "FINANCES",
-            "fitness", "ROLE_FITNESS"
-    );
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -79,12 +75,18 @@ public class JwtAuthFilter implements GlobalFilter {
             return exchange.getResponse().setComplete();
         }
 
-        for (Map.Entry<String, String> entry : routeRoles.entrySet()) {
-            if (service != null && entry.getKey().equalsIgnoreCase(service) && (roles == null || !roles.contains("ADMIN"))) {
-                if (roles == null || !roles.contains(entry.getValue())) {
-                    exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                    return exchange.getResponse().setComplete();
-                }
+        Optional<AppScope> appScope = AppScope.fromService(service);
+        if (appScope.isPresent()) {
+            AppScope app = appScope.get();
+            List<String> audience = jwt.getAudience();
+            boolean audienceMatches = audience != null && audience.stream()
+                    .anyMatch(aud -> app.name().equalsIgnoreCase(aud));
+
+            // O token precisa ter sido emitido para esta aplicação (aud) e o
+            // usuário precisa ter a role exigida por ela.
+            if (!audienceMatches || !app.allows(roles)) {
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
             }
         }
 

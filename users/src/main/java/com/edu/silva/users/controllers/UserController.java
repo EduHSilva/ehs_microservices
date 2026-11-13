@@ -3,6 +3,7 @@ package com.edu.silva.users.controllers;
 import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.common.PageResponse;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.UpdateUserRolesRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserStatusRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserStatsResponseDTO;
@@ -93,6 +94,16 @@ public class UserController {
     @OnlyAdmin
     ResponseEntity<@NonNull DefaultResponse<UserResponseDTO>> updateStatus(@RequestBody @Valid UpdateUserStatusRequestDTO request, @PathVariable UUID id) {
         return ResponseEntity.ok(new DefaultResponse<>("User status successfully updated", service.updateStatus(id, request.status()), BASE_URL, id));
+    }
+
+    @PostMapping("/{id}/roles")
+    @OnlyAdmin
+    ResponseEntity<@NonNull DefaultResponse<UserResponseDTO>> addRoles(
+            @RequestBody @Valid UpdateUserRolesRequestDTO request,
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(new DefaultResponse<>(
+                "User roles successfully updated", service.addRoles(id, request.roles()), BASE_URL, id));
     }
 
     @PostMapping("/{id}/resend-confirmation")

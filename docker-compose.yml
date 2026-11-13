@@ -137,6 +137,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: guest
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      SERVER_URL: ${SERVER_URL:-http://localhost}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     ports:
@@ -367,6 +368,7 @@ services:
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/account:/usr/share/nginx/html/account:ro
       - ./infra/certbot/www:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
     networks:

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redefinir senha — EHS Solutions</title>
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="robots" content="noindex">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --danger: #b91c1c;
+      --success: #047857;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --surface: #111a2e;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --border: #1e293b;
+        --primary: #818cf8;
+        --primary-hover: #6366f1;
+        --danger: #f87171;
+        --success: #34d399;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    .card {
+      width: min(440px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 20px 45px -30px rgba(15, 23, 42, .45);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+    .brand-mark {
+      display: grid; place-items: center;
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--primary); color: #fff; font-weight: 800;
+    }
+    .brand span { color: var(--muted); font-size: .85rem; }
+    h1 { font-size: 1.35rem; margin: 0 0 6px; }
+    .subtitle { color: var(--muted); font-size: .92rem; margin: 0 0 22px; }
+    label { display: block; font-size: .875rem; font-weight: 600; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+    input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: transparent; }
+    .field + .field { margin-top: 16px; }
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: var(--primary-hover); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .message {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: .9rem;
+      display: none;
+    }
+    .message.error { display: block; color: var(--danger); border: 1px solid currentColor; }
+    .message.success { display: block; color: var(--success); border: 1px solid currentColor; }
+    .hint { color: var(--muted); font-size: .82rem; margin-top: 8px; }
+    .footer { margin-top: 22px; font-size: .85rem; color: var(--muted); text-align: center; }
+    a { color: var(--primary); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <span class="brand-mark">EHS</span>
+      <span><strong>EHS Solutions</strong><br><span>Redefinição de senha</span></span>
+    </div>
+
+    <section id="request-view">
+      <h1>Esqueceu sua senha?</h1>
+      <p class="subtitle">Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha.</p>
+      <form id="request-form" novalidate>
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="voce@email.com" required>
+        </div>
+        <button id="request-submit" type="submit">Enviar link</button>
+      </form>
+      <div id="request-message" class="message" role="status"></div>
+      <p class="hint">Por segurança, a resposta é a mesma exista ou não uma conta com este e-mail.</p>
+    </section>
+
+    <section id="reset-view" class="hidden">
+      <h1>Crie uma nova senha</h1>
+      <p class="subtitle">Escolha uma senha com pelo menos 8 caracteres.</p>
+      <form id="reset-form" novalidate>
+        <div class="field">
+          <label for="password">Nova senha</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+        </div>
+        <div class="field">
+          <label for="confirm">Confirme a nova senha</label>
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="8" required>
+        </div>
+        <button id="reset-submit" type="submit">Salvar nova senha</button>
+      </form>
+      <div id="reset-message" class="message" role="status"></div>
+    </section>
+
+    <section id="done-view" class="hidden">
+      <h1>Senha alterada</h1>
+      <p class="subtitle">Sua nova senha já está valendo. Volte ao aplicativo EHS e entre com ela.</p>
+      <div id="done-message" class="message success" role="status">Tudo certo! Você já pode fazer login.</div>
+    </section>
+
+    <p class="footer">
+      <a href="/app/privacidade/">Política de privacidade</a> ·
+      <a href="/app/">Aplicativos EHS</a>
+    </p>
+  </main>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search)
+      var token = params.get('token')
+      var views = {
+        request: document.getElementById('request-view'),
+        reset: document.getElementById('reset-view'),
+        done: document.getElementById('done-view')
+      }
+
+      function show(name) {
+        Object.keys(views).forEach(function (key) {
+          views[key].classList.toggle('hidden', key !== name)
+        })
+      }
+
+      function setMessage(el, text, type) {
+        el.textContent = text
+        el.className = 'message ' + type
+      }
+
+      function clearMessage(el) {
+        el.textContent = ''
+        el.className = 'message'
+      }
+
+      async function postJson(path, body) {
+        var response = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        var payload = null
+        try {
+          payload = await response.json()
+        } catch (error) {
+          payload = null
+        }
+        return { ok: response.ok, status: response.status, payload: payload }
+      }
+
+      function errorText(response, fallback) {
+        if (response && response.payload && response.payload.message) return response.payload.message
+        return fallback
+      }
+
+      // Fluxo: link com token -> definir nova senha
+      if (token) {
+        show('reset')
+
+        document.getElementById('reset-form').addEventListener('submit', async function (event) {
+          event.preventDefault()
+          var message = document.getElementById('reset-message')
+          var submit = document.getElementById('reset-submit')
+          var password = document.getElementById('password').value
+          var confirm = document.getElementById('confirm').value
+          clearMessage(message)
+
+          if (password.length < 8) {
+            setMessage(message, 'A senha deve ter pelo menos 8 caracteres.', 'error')
+            return
+          }
+          if (password !== confirm) {
+            setMessage(message, 'As senhas não são iguais.', 'error')
+            return
+          }
+
+          submit.disabled = true
+          submit.textContent = 'Salvando...'
+          try {
+            var result = await postJson('/users/auth/password/reset', { token: token, newPassword: password })
+            if (!result.ok) {
+              setMessage(message, errorText(result, 'Link inválido ou expirado. Solicite um novo.'), 'error')
+              return
+            }
+            show('done')
+            window.history.replaceState({}, document.title, window.location.pathname)
+          } catch (error) {
+            setMessage(message, 'Não foi possível falar com o servidor. Tente novamente.', 'error')
+          } finally {
+            submit.disabled = false
+            submit.textContent = 'Salvar nova senha'
+          }
+        })
+        return
+      }
+
+      // Fluxo: pedir link por e-mail
+      show('request')
+
+      document.getElementById('request-form').addEventListener('submit', async function (event) {
+        event.preventDefault()
+        var message = document.getElementById('request-message')
+        var submit = document.getElementById('request-submit')
+        var email = document.getElementById('email').value.trim()
+        clearMessage(message)
+
+        if (!email || email.indexOf('@') < 1) {
+          setMessage(message, 'Informe um e-mail válido.', 'error')
+          return
+        }
+
+        submit.disabled = true
+        submit.textContent = 'Enviando...'
+        try {
+          var result = await postJson('/users/auth/password/forgot', { email: email })
+          if (!result.ok) {
+            setMessage(message, errorText(result, 'Não foi possível enviar o link agora.'), 'error')
+            return
+          }
+          setMessage(message, 'Se os dados informados estiverem corretos, enviaremos as instruções por e-mail.', 'success')
+        } catch (error) {
+          setMessage(message, 'Não foi possível falar com o servidor. Tente novamente.', 'error')
+        } finally {
+          submit.disabled = false
+          submit.textContent = 'Enviar link'
+        }
+      })
+    })()
+  </script>
+</body>
+</html>

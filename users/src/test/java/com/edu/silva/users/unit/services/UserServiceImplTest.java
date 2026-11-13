@@ -1,7 +1,16 @@
 package com.edu.silva.users.unit.services;
 
+import com.edu.silva.common.enums.AppScope;
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.edu.silva.users.domain.dtos.requests.AppAccessRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ConfirmTokenRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ResetPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
+import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserStatsResponseDTO;
 import com.edu.silva.users.domain.entities.Company;
@@ -10,12 +19,14 @@ import com.edu.silva.users.domain.enums.UserRole;
 import com.edu.silva.users.domain.enums.UserStatus;
 import com.edu.silva.users.domain.producers.UserProducer;
 import com.edu.silva.users.infra.exceptions.CustomExceptions;
+import com.edu.silva.users.infra.security.TokenService;
 import com.edu.silva.users.repositories.CompanyRepository;
 import com.edu.silva.users.repositories.UserRepository;
 import com.edu.silva.users.services.impl.UserServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -26,6 +37,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -38,6 +51,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -51,6 +66,12 @@ class UserServiceImplTest {
 
     @Mock
     private UserProducer producer;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private TokenService tokenService;
 
     @InjectMocks
     private UserServiceImpl service;
@@ -88,19 +109,22 @@ class UserServiceImplTest {
     @Test
     void shouldSaveUserSuccessfully() {
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, null
+                "Edu@test.com", "Eduardo", "123", UserRole.BUDGETS, null
         );
 
-        when(repository.findByEmail("edu@test.com")).thenReturn(null);
-        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.empty());
 
-        UserResponseDTO saved = service.save(dto);
+        service.save(dto);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(repository).save(captor.capture());
+        User saved = captor.getValue();
 
         assertEquals("Eduardo", saved.getUsername());
+        assertEquals("edu@test.com", saved.getEmail());
         assertEquals(UserStatus.WAITING_CONFIRMATION, saved.getStatus());
 
         verify(producer, times(1)).publishMessageEmail(any(User.class));
-        verify(repository, times(1)).save(any(User.class));
     }
 
     @Test
@@ -112,39 +136,85 @@ class UserServiceImplTest {
                 "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, companyID
         );
 
-        when(repository.findByEmail("edu@test.com")).thenReturn(null);
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.empty());
         when(companyRepository.findById(companyID)).thenReturn(Optional.of(company));
-        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserResponseDTO saved = service.save(dto);
+        service.save(dto);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(repository).save(captor.capture());
+        User saved = captor.getValue();
 
         assertEquals("Eduardo", saved.getUsername());
         assertEquals(UserStatus.WAITING_CONFIRMATION, saved.getStatus());
+        assertEquals(company, saved.getCompany());
 
         verify(producer, times(1)).publishMessageEmail(any(User.class));
-        verify(repository, times(1)).save(any(User.class));
     }
 
     @Test
     void shouldThrowWhenCompanyNotFound() {
+        UUID companyID = UUID.randomUUID();
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, UUID.randomUUID()
+                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, companyID
         );
 
-        when(companyRepository.findById(UUID.randomUUID())).thenReturn(Optional.empty());
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.empty());
+        when(companyRepository.findById(companyID)).thenReturn(Optional.empty());
 
         assertThrows(CustomExceptions.EntityNotFoundException.class, () -> service.save(dto));
+        verify(repository, never()).save(any());
     }
 
     @Test
-    void shouldThrowWhenEmailAlreadyExists() {
+    void shouldLinkAppAccessWithoutCreatingDuplicateAccount() {
+        User existing = new User("Edu", "edu@test.com", "encoded", new java.util.ArrayList<>(List.of(UserRole.STUDY)));
+        existing.setId(UUID.randomUUID());
+        existing.setStatus(UserStatus.OK);
+
         RegisterRequestDTO dto = new RegisterRequestDTO(
-                "edu@test.com", "Eduardo", "123", UserRole.BUDGETS, null
+                "EDU@test.com", "Eduardo", "outra-senha", UserRole.FINANCES, null
         );
 
-        when(repository.findByEmail("edu@test.com")).thenReturn(new User());
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(existing));
+        when(tokenService.generateAppAccessToken(existing, AppScope.FINANCES, "FINANCES")).thenReturn("token");
 
-        assertThrows(CustomExceptions.EmailAlreadyExistsException.class, () -> service.save(dto));
+        service.save(dto);
+
+        verify(repository, never()).save(any());
+        verify(producer).publishAppAccessEmail(existing, "FINANCES", "FINANCES", "token");
+
+        // A senha original nunca é alterada.
+        assertEquals("encoded", existing.getPassword());
+        assertEquals(List.of(UserRole.STUDY), existing.getRoles());
+    }
+
+    @Test
+    void shouldNotCreateDuplicateNorSendEmailForBlockedUser() {
+        User existing = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.STUDY));
+        existing.setStatus(UserStatus.BLOCKED);
+
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(existing));
+
+        service.save(new RegisterRequestDTO("edu@test.com", "Edu", "123", UserRole.FINANCES, null));
+
+        verify(repository, never()).save(any());
+        verify(producer, never()).publishAppAccessEmail(any(), any(), any(), any());
+        verify(producer, never()).publishMessageEmail(any());
+    }
+
+    @Test
+    void shouldNotCreateDuplicateNorSendEmailForDeletedUser() {
+        User existing = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.STUDY));
+        existing.setStatus(UserStatus.DELETED);
+
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(existing));
+
+        service.save(new RegisterRequestDTO("edu@test.com", "Edu", "123", UserRole.FINANCES, null));
+
+        verify(repository, never()).save(any());
+        verify(producer, never()).publishAppAccessEmail(any(), any(), any(), any());
+        verify(producer, never()).publishMessageEmail(any());
     }
 
     @Test
@@ -154,6 +224,7 @@ class UserServiceImplTest {
         );
 
         assertThrows(CustomExceptions.InvalidRoleException.class, () -> service.save(dto));
+        verify(repository, never()).save(any());
     }
 
     @Test
@@ -216,23 +287,71 @@ class UserServiceImplTest {
 
         UpdateUserRequestDTO req = new UpdateUserRequestDTO(
                 "NewName",
-                "new@test.com",
-                List.of(UserRole.ADMIN, UserRole.BUDGETS)
+                "New@test.com",
+                List.of(UserRole.BUDGETS, UserRole.STUDY)
         );
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
-        when(repository.findByEmail("new@test.com")).thenReturn(null);
+        when(repository.findAnyByEmail("new@test.com")).thenReturn(Optional.empty());
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserResponseDTO updated = service.update(id, req);
 
         assertEquals("NewName", updated.getUsername());
         assertEquals("new@test.com", updated.getEmail());
-        assertEquals(List.of(UserRole.ADMIN, UserRole.BUDGETS), updated.getRoles());
+        assertEquals(List.of(UserRole.BUDGETS, UserRole.STUDY), updated.getRoles());
+        // Roles mudaram: força novo login.
+        assertEquals(1, user.getTokenVersion());
     }
 
     @Test
-    void shouldAllowUserToAddNonAdminRoles() {
+    void shouldNotForceReloginWhenRolesDoNotChange() {
+        authenticateAsAdmin();
+        UUID id = UUID.randomUUID();
+        User user = new User("Old", "old@test.com", "123", List.of(UserRole.BUDGETS, UserRole.STUDY));
+
+        UpdateUserRequestDTO req = new UpdateUserRequestDTO(
+                "Old", null, List.of(UserRole.STUDY, UserRole.BUDGETS));
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.update(id, req);
+
+        assertEquals(0, user.getTokenVersion());
+    }
+
+    @Test
+    void shouldRejectAddingAdminRoleEvenForAdmin() {
+        authenticateAsAdmin();
+        UUID id = UUID.randomUUID();
+        User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
+
+        UpdateUserRequestDTO req = new UpdateUserRequestDTO(
+                "Old", null, List.of(UserRole.BUDGETS, UserRole.ADMIN));
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidRoleException.class, () -> service.update(id, req));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectRemovingAdminRole() {
+        authenticateAsAdmin();
+        UUID id = UUID.randomUUID();
+        User user = new User("Old", "old@test.com", "123", List.of(UserRole.ADMIN, UserRole.BUDGETS));
+
+        UpdateUserRequestDTO req = new UpdateUserRequestDTO("Old", null, List.of(UserRole.BUDGETS));
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidRoleException.class, () -> service.update(id, req));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldBlockNonAdminFromChangingRoles() {
         authenticateAsUser();
         UUID id = UUID.randomUUID();
         User user = new User("Old", "old@test.com", "123", Collections.singletonList(UserRole.BUDGETS));
@@ -244,11 +363,9 @@ class UserServiceImplTest {
         );
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
-        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserResponseDTO updated = service.update(id, req);
-
-        assertEquals(List.of(UserRole.BUDGETS, UserRole.STUDY), updated.getRoles());
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.update(id, req));
+        verify(repository, never()).save(any());
     }
 
     @Test
@@ -265,7 +382,7 @@ class UserServiceImplTest {
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
 
-        assertThrows(CustomExceptions.InvalidRoleException.class, () -> service.update(id, req));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.update(id, req));
         verify(repository, never()).save(any());
     }
 
@@ -280,7 +397,7 @@ class UserServiceImplTest {
         UpdateUserRequestDTO req = new UpdateUserRequestDTO("NewName", "used@test.com", null);
 
         when(repository.findById(id)).thenReturn(Optional.of(user));
-        when(repository.findByEmail("used@test.com")).thenReturn(other);
+        when(repository.findAnyByEmail("used@test.com")).thenReturn(Optional.of(other));
 
         assertThrows(CustomExceptions.EmailAlreadyExistsException.class, () -> service.update(id, req));
     }
@@ -518,5 +635,304 @@ class UserServiceImplTest {
 
         assertEquals(2, result.getContent().size());
         verify(repository).findAll(pageable);
+    }
+
+    @Test
+    void shouldLoginWhenUserHasRoleForRequestedApp() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.FINANCES));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.OK);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(tokenService.generateToken(user, AppScope.FINANCES)).thenReturn("jwt-token");
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LoginResponseDTO result = service.login(
+                new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES));
+
+        assertEquals("jwt-token", result.token());
+        assertEquals(List.of("FINANCES"), result.roles());
+        assertEquals(List.of("FINANCES"), result.apps());
+        verify(tokenService).generateToken(user, AppScope.FINANCES);
+    }
+
+    @Test
+    void shouldRejectLoginWhenUserLacksRoleForRequestedApp() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.STUDY));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.OK);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        assertThrows(CustomExceptions.AppAccessDeniedException.class,
+                () -> service.login(new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES)));
+
+        verify(tokenService, never()).generateToken(any(User.class), any(AppScope.class));
+        verify(repository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldAllowAdminToLoginToAnyApp() {
+        User user = new User("Admin", "admin@test.com", "encoded", List.of(UserRole.ADMIN));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.OK);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(tokenService.generateToken(user, AppScope.STUDY)).thenReturn("jwt-token");
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LoginResponseDTO result = service.login(
+                new AuthRequestDTO("admin@test.com", "123", null, AppScope.STUDY));
+
+        assertEquals("jwt-token", result.token());
+        verify(tokenService).generateToken(user, AppScope.STUDY);
+    }
+
+    @Test
+    void shouldRejectLoginWhenUserIsNotActive() {
+        User user = new User("Blocked", "blocked@test.com", "encoded", List.of(UserRole.FINANCES));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.BLOCKED);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        assertThrows(CustomExceptions.AccountNotActiveException.class,
+                () -> service.login(new AuthRequestDTO("blocked@test.com", "123", null, AppScope.FINANCES)));
+
+        verify(tokenService, never()).generateToken(any(User.class), any(AppScope.class));
+        verify(repository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldAddRolesIncrementally() {
+        authenticateAsAdmin();
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.BUDGETS));
+        user.setId(id);
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.addRoles(id, List.of(UserRole.STUDY));
+
+        assertEquals(List.of(UserRole.BUDGETS, UserRole.STUDY), user.getRoles());
+        assertEquals(1, user.getTokenVersion());
+        verify(repository).save(user);
+    }
+
+    @Test
+    void shouldRejectAdminRoleThroughAddRoles() {
+        authenticateAsAdmin();
+        UUID id = UUID.randomUUID();
+
+        assertThrows(CustomExceptions.InvalidRoleException.class,
+                () -> service.addRoles(id, List.of(UserRole.ADMIN)));
+
+        verify(repository, never()).findById(any());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldSendAppAccessEmailWhenRequestingAccess() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.STUDY));
+        user.setStatus(UserStatus.OK);
+
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(user));
+        when(tokenService.generateAppAccessToken(user, AppScope.FINANCES, "FINANCES")).thenReturn("token");
+
+        service.requestAppAccess(new AppAccessRequestDTO("EDU@test.com", AppScope.FINANCES, null));
+
+        verify(producer).publishAppAccessEmail(user, "FINANCES", "FINANCES", "token");
+    }
+
+    @Test
+    void shouldStaySilentWhenRequestingAccessForUnknownEmail() {
+        when(repository.findAnyByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+        service.requestAppAccess(new AppAccessRequestDTO("ghost@test.com", AppScope.FINANCES, null));
+
+        verifyNoInteractions(producer);
+        verify(tokenService, never()).generateAppAccessToken(any(), any(), any());
+    }
+
+    @Test
+    void shouldRejectAdminAppOnAccessRequest() {
+        assertThrows(CustomExceptions.InvalidRoleException.class,
+                () -> service.requestAppAccess(new AppAccessRequestDTO("edu@test.com", AppScope.ADMIN, null)));
+    }
+
+    @Test
+    void shouldConfirmAppAccessAddingRoleAndActivatingAccount() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", "encoded", new java.util.ArrayList<>(List.of(UserRole.STUDY)));
+        user.setId(id);
+        user.setStatus(UserStatus.WAITING_CONFIRMATION);
+
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        Claim appClaim = mock(Claim.class);
+        Claim roleClaim = mock(Claim.class);
+
+        when(tokenService.verifyActionToken("token", TokenService.PURPOSE_APP_ACCESS)).thenReturn(jwt);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(jwt.getClaim("app")).thenReturn(appClaim);
+        when(appClaim.asString()).thenReturn("FINANCES");
+        when(jwt.getClaim("role")).thenReturn(roleClaim);
+        when(roleClaim.asString()).thenReturn("FINANCES");
+        when(tokenService.tokenVersion(jwt)).thenReturn(0);
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.confirmAppAccess(new ConfirmTokenRequestDTO("token"));
+
+        assertEquals(UserStatus.OK, user.getStatus());
+        assertTrue(user.getRoles().contains(UserRole.FINANCES));
+        assertTrue(user.getRoles().contains(UserRole.STUDY));
+        assertEquals(1, user.getTokenVersion());
+    }
+
+    @Test
+    void shouldRejectAppAccessTokenWithWrongVersion() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", "encoded", new java.util.ArrayList<>(List.of(UserRole.STUDY)));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        when(tokenService.verifyActionToken("token", TokenService.PURPOSE_APP_ACCESS)).thenReturn(jwt);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(tokenService.tokenVersion(jwt)).thenReturn(7);
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidTokenException.class,
+                () -> service.confirmAppAccess(new ConfirmTokenRequestDTO("token")));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectAppAccessTokenContainingAdminRole() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", "encoded", new java.util.ArrayList<>(List.of(UserRole.STUDY)));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        Claim appClaim = mock(Claim.class);
+        Claim roleClaim = mock(Claim.class);
+
+        when(tokenService.verifyActionToken("token", TokenService.PURPOSE_APP_ACCESS)).thenReturn(jwt);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(jwt.getClaim("app")).thenReturn(appClaim);
+        when(appClaim.asString()).thenReturn("FINANCES");
+        when(jwt.getClaim("role")).thenReturn(roleClaim);
+        when(roleClaim.asString()).thenReturn("ADMIN");
+        when(tokenService.tokenVersion(jwt)).thenReturn(0);
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidTokenException.class,
+                () -> service.confirmAppAccess(new ConfirmTokenRequestDTO("token")));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldSendPasswordResetEmailForActiveUser() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.BUDGETS));
+        user.setStatus(UserStatus.OK);
+
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(user));
+        when(tokenService.generatePasswordResetToken(user)).thenReturn("reset-token");
+
+        service.forgotPassword(new ForgotPasswordRequestDTO("EDU@test.com"));
+
+        verify(producer).publishPasswordResetEmail(user, "reset-token");
+    }
+
+    @Test
+    void shouldStaySilentWhenEmailDoesNotExistOnPasswordResetRequest() {
+        when(repository.findAnyByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+        service.forgotPassword(new ForgotPasswordRequestDTO("ghost@test.com"));
+
+        verifyNoInteractions(producer);
+        verify(tokenService, never()).generatePasswordResetToken(any());
+    }
+
+    @Test
+    void shouldStaySilentWhenUserIsBlockedOnPasswordResetRequest() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.BUDGETS));
+        user.setStatus(UserStatus.BLOCKED);
+
+        when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(user));
+
+        service.forgotPassword(new ForgotPasswordRequestDTO("edu@test.com"));
+
+        verify(tokenService, never()).generatePasswordResetToken(any());
+        verifyNoInteractions(producer);
+    }
+
+    @Test
+    void shouldResetPasswordAndInvalidateToken() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", "old-encoded", List.of(UserRole.BUDGETS));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        when(tokenService.verifyActionToken("token", TokenService.PURPOSE_PASSWORD_RESET)).thenReturn(jwt);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(tokenService.tokenVersion(jwt)).thenReturn(0);
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.resetPassword(new ResetPasswordRequestDTO("token", "novaSenha123"));
+
+        assertNotNull(user.getPassword());
+        assertFalse("old-encoded".equals(user.getPassword()));
+        assertTrue(user.getPassword().startsWith("$2"));
+        assertEquals(1, user.getTokenVersion());
+        verify(repository).save(user);
+    }
+
+    @Test
+    void shouldRejectAlreadyUsedPasswordResetToken() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", "old-encoded", List.of(UserRole.BUDGETS));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+        // Token emitido com ver=0, mas a senha já foi trocada (ver=1).
+        user.setTokenVersion(1);
+
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        when(tokenService.verifyActionToken("token", TokenService.PURPOSE_PASSWORD_RESET)).thenReturn(jwt);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(tokenService.tokenVersion(jwt)).thenReturn(0);
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidTokenException.class,
+                () -> service.resetPassword(new ResetPasswordRequestDTO("token", "novaSenha123")));
+
+        assertEquals("old-encoded", user.getPassword());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectInvalidPasswordResetToken() {
+        when(tokenService.verifyActionToken("bad", TokenService.PURPOSE_PASSWORD_RESET)).thenReturn(null);
+
+        assertThrows(CustomExceptions.InvalidTokenException.class,
+                () -> service.resetPassword(new ResetPasswordRequestDTO("bad", "novaSenha123")));
+
+        verify(repository, never()).save(any());
     }
 }

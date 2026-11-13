@@ -45,6 +45,21 @@ public class EmailConsumer {
                     btnLabel = i18n.getMessage("welcome.button", locale, dto.getUsername());
                     break;
 
+                case APP_ACCESS:
+                    String app = dto.getVariables() == null
+                            ? ""
+                            : String.valueOf(dto.getVariables().getOrDefault("app", ""));
+                    subject = i18n.getMessage("appAccess.subject", locale);
+                    body = i18n.getMessage("appAccess.body", locale, dto.getUsername(), app);
+                    btnLabel = i18n.getMessage("appAccess.button", locale);
+                    break;
+
+                case PASSWORD_RESET:
+                    subject = i18n.getMessage("passwordReset.subject", locale);
+                    body = i18n.getMessage("passwordReset.body", locale, dto.getUsername());
+                    btnLabel = i18n.getMessage("passwordReset.button", locale);
+                    break;
+
                 default:
                     throw new IllegalArgumentException("Invalid email type");
             }

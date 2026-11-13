@@ -1,6 +1,7 @@
 package com.edu.silva.users.infra.security;
 
 import com.edu.silva.users.domain.entities.User;
+import com.edu.silva.users.domain.enums.UserStatus;
 import com.edu.silva.users.repositories.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -40,6 +41,10 @@ public class SecurityFilter extends OncePerRequestFilter {
             }
             Optional<User> user = userRepository.findById(UUID.fromString(decoded.getSubject()));
             if (user.isEmpty()) return;
+            if (user.get().getStatus() != UserStatus.OK) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             if (user.get().getTokenVersion() != tokenService.tokenVersion(decoded)) {
                 filterChain.doFilter(request, response);
                 return;

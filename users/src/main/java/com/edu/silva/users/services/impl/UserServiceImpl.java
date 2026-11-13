@@ -1,9 +1,15 @@
 package com.edu.silva.users.services.impl;
 
 import com.edu.silva.common.AuditLogger;
+import com.edu.silva.common.enums.AppScope;
 import com.edu.silva.common.enums.Status;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.edu.silva.users.domain.dtos.requests.AppAccessRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ConfirmTokenRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ResetPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
@@ -34,6 +40,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -51,8 +58,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -81,15 +92,41 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public UserResponseDTO save(RegisterRequestDTO dto) {
-        if (repository.findByEmail(dto.email()) != null) {
-            throw new CustomExceptions.EmailAlreadyExistsException(dto.email());
-        }
-        if (dto.role().equals(UserRole.ADMIN)) {
+    public void save(RegisterRequestDTO dto) {
+        if (dto.role() == UserRole.ADMIN) {
             throw new CustomExceptions.InvalidRoleException("User cannot register with admin role");
         }
+
+        String email = normalizeEmail(dto.email());
+
+        // Busca inclusive DELETED para nunca criar e-mail duplicado. A resposta
+        // pública é sempre genérica (não revela se o e-mail já existe).
+        Optional<User> existingUser = repository.findAnyByEmail(email);
+
+        if (existingUser.isPresent()) {
+            User existing = existingUser.get();
+
+            // Conta bloqueada ou removida: não cria duplicata, não envia e-mail.
+            if (existing.getStatus() == UserStatus.BLOCKED || existing.getStatus() == UserStatus.DELETED) {
+                return;
+            }
+
+            // Conta existente: envia link de confirmação para adicionar a role
+            // sem tocar na senha atual. Se já possui a role, nada a fazer.
+            if (existing.getRoles().contains(dto.role())) {
+                return;
+            }
+
+            AppScope app = AppScope.fromRole(dto.role().name())
+                    .orElseThrow(() -> new CustomExceptions.InvalidRoleException("Role não vinculada a uma aplicação"));
+
+            String token = tokenService.generateAppAccessToken(existing, app, dto.role().name());
+            producer.publishAppAccessEmail(existing, app.name(), dto.role().name(), token);
+            return;
+        }
+
         String encryptedPassword = new BCryptPasswordEncoder().encode(dto.password());
-        User user = new User(dto.username(), dto.email(), encryptedPassword, Collections.singletonList(dto.role()));
+        User user = new User(dto.username(), email, encryptedPassword, Collections.singletonList(dto.role()));
         user.setStatus(UserStatus.WAITING_CONFIRMATION);
 
         Company company = null;
@@ -124,7 +161,6 @@ public class UserServiceImpl implements UserService {
         }
 
         producer.publishMessageEmail(user);
-        return new UserResponseDTO(user);
     }
 
     @Override
@@ -306,18 +342,36 @@ public class UserServiceImpl implements UserService {
                     user.setUsername(updateUserRequest.username());
 
                     if (updateUserRequest.email() != null && !updateUserRequest.email().isBlank()) {
-                        var existing = repository.findByEmail(updateUserRequest.email());
-                        if (existing != null && !((User) existing).getId().equals(id)) {
-                            throw new CustomExceptions.EmailAlreadyExistsException(updateUserRequest.email());
+                        String email = normalizeEmail(updateUserRequest.email());
+                        // Inclui DELETED: o e-mail não pode ser reutilizado e o
+                        // índice único é case-sensitive no banco.
+                        var existing = repository.findAnyByEmail(email);
+                        if (existing.isPresent() && !existing.get().getId().equals(id)) {
+                            throw new CustomExceptions.EmailAlreadyExistsException(email);
                         }
-                        user.setEmail(updateUserRequest.email());
+                        user.setEmail(email);
                     }
 
                     if (updateUserRequest.roles() != null && !updateUserRequest.roles().isEmpty()) {
-                        if (updateUserRequest.roles().contains(UserRole.ADMIN) && !isAdmin()) {
-                            throw new CustomExceptions.InvalidRoleException("Somente administradores podem atribuir a permissão ADMIN");
+                        if (!isAdmin()) {
+                            throw new AccessDeniedException("Somente administradores podem alterar permissões");
                         }
-                        user.setRoles(new ArrayList<>(updateUserRequest.roles()));
+
+                        List<UserRole> newRoles = new ArrayList<>(new LinkedHashSet<>(updateUserRequest.roles()));
+                        boolean hadAdmin = user.getRoles().contains(UserRole.ADMIN);
+                        boolean hasAdmin = newRoles.contains(UserRole.ADMIN);
+
+                        // ADMIN é concedida exclusivamente via seed: não pode ser
+                        // adicionada nem removida pela API.
+                        if (hadAdmin != hasAdmin) {
+                            throw new CustomExceptions.InvalidRoleException("A role ADMIN só pode ser alterada via seed");
+                        }
+
+                        if (!new LinkedHashSet<>(user.getRoles()).equals(new LinkedHashSet<>(newRoles))) {
+                            user.setRoles(newRoles);
+                            // Roles vão no token: invalida sessões para forçar novo login.
+                            user.setTokenVersion(user.getTokenVersion() + 1);
+                        }
                     }
 
                     User saved = repository.save(user);
@@ -396,6 +450,188 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @OnlyAdmin
+    @Transactional
+    public UserResponseDTO addRoles(UUID id, List<UserRole> roles) {
+        if (roles == null || roles.isEmpty()) {
+            throw new CustomExceptions.InvalidRoleException("Informe ao menos uma role");
+        }
+        if (roles.contains(UserRole.ADMIN)) {
+            throw new CustomExceptions.InvalidRoleException("A role ADMIN só pode ser atribuída via seed");
+        }
+
+        User user = repository.findById(id)
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(User.class.getSimpleName(), id));
+
+        Set<UserRole> merged = new LinkedHashSet<>(user.getRoles());
+        boolean changed = merged.addAll(roles);
+
+        if (changed) {
+            user.setRoles(new ArrayList<>(merged));
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            repository.save(user);
+            AuditLogger.log(currentActor(), "USER_ROLES_ADD", User.class.getSimpleName(), id,
+                    Map.of("roles", roles.stream().map(Enum::name).toList()));
+        }
+
+        return new UserResponseDTO(user);
+    }
+
+    /**
+     * Solicita acesso a uma aplicação para um e-mail já existente. A resposta é
+     * sempre a mesma (genérica), exista ou não a conta, para não permitir
+     * enumeração de e-mails.
+     */
+    @Override
+    public void requestAppAccess(AppAccessRequestDTO dto) {
+        if (dto.app() == AppScope.ADMIN) {
+            throw new CustomExceptions.InvalidRoleException("A aplicação ADMIN não aceita solicitações");
+        }
+
+        UserRole role = resolveRole(dto.app(), dto.role());
+        String email = normalizeEmail(dto.email());
+
+        repository.findAnyByEmail(email)
+                .filter(user -> user.getStatus() == UserStatus.OK
+                        || user.getStatus() == UserStatus.WAITING_CONFIRMATION)
+                .filter(user -> !user.getRoles().contains(role))
+                .ifPresent(user -> {
+                    String token = tokenService.generateAppAccessToken(user, dto.app(), role.name());
+                    producer.publishAppAccessEmail(user, dto.app().name(), role.name(), token);
+                    AuditLogger.log("anonymous", "USER_APP_ACCESS_REQUEST", User.class.getSimpleName(), user.getId(),
+                            Map.of("app", dto.app().name(), "role", role.name()));
+                });
+    }
+
+    @Override
+    @Transactional
+    public void confirmAppAccess(ConfirmTokenRequestDTO dto) {
+        DecodedJWT jwt = tokenService.verifyActionToken(dto.token(), TokenService.PURPOSE_APP_ACCESS);
+        if (jwt == null) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+
+        UUID id = parseUuid(jwt.getSubject());
+        User user = repository.findById(id)
+                .orElseThrow(CustomExceptions.InvalidTokenException::new);
+
+        if (tokenService.tokenVersion(jwt) != user.getTokenVersion()
+                || user.getStatus() == UserStatus.BLOCKED) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+
+        AppScope app = AppScope.fromName(jwt.getClaim("app").asString())
+                .orElseThrow(CustomExceptions.InvalidTokenException::new);
+        UserRole role = parseRole(jwt.getClaim("role").asString());
+
+        if (role == UserRole.ADMIN || !app.requiredRoles().contains(role.name())) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+
+        UserStatus previousStatus = user.getStatus();
+        Set<UserRole> merged = new LinkedHashSet<>(user.getRoles());
+        boolean roleAdded = merged.add(role);
+        boolean statusChanged = user.getStatus() == UserStatus.WAITING_CONFIRMATION;
+
+        if (roleAdded) {
+            user.setRoles(new ArrayList<>(merged));
+        }
+        if (statusChanged) {
+            user.setStatus(UserStatus.OK);
+        }
+        if (roleAdded || statusChanged) {
+            // O token de ação é de uso único e as roles vão no JWT: força novo login.
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            repository.save(user);
+        }
+
+        AuditLogger.log(id.toString(), "USER_APP_ACCESS_CONFIRM", User.class.getSimpleName(), id,
+                Map.of("app", app.name(), "role", role.name(),
+                        "from", String.valueOf(previousStatus),
+                        "to", String.valueOf(user.getStatus())));
+    }
+
+    /**
+     * Envia o link de redefinição de senha. A resposta é a mesma para qualquer
+     * e-mail, exista ou não a conta.
+     */
+    @Override
+    public void forgotPassword(ForgotPasswordRequestDTO dto) {
+        String email = normalizeEmail(dto.email());
+
+        repository.findAnyByEmail(email)
+                .filter(user -> user.getStatus() == UserStatus.OK)
+                .ifPresent(user -> {
+                    String token = tokenService.generatePasswordResetToken(user);
+                    producer.publishPasswordResetEmail(user, token);
+                    AuditLogger.log("anonymous", "USER_PASSWORD_RESET_REQUEST",
+                            User.class.getSimpleName(), user.getId(), Map.of());
+                });
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequestDTO dto) {
+        DecodedJWT jwt = tokenService.verifyActionToken(dto.token(), TokenService.PURPOSE_PASSWORD_RESET);
+        if (jwt == null) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+
+        UUID id = parseUuid(jwt.getSubject());
+        User user = repository.findById(id)
+                .orElseThrow(CustomExceptions.InvalidTokenException::new);
+
+        // O token é de uso único: qualquer mudança de tokenVersion o invalida.
+        if (tokenService.tokenVersion(jwt) != user.getTokenVersion()
+                || user.getStatus() != UserStatus.OK) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+
+        user.setPassword(new BCryptPasswordEncoder().encode(dto.newPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        repository.save(user);
+
+        AuditLogger.log(id.toString(), "USER_PASSWORD_RESET", User.class.getSimpleName(), id, Map.of());
+    }
+
+    private UserRole resolveRole(AppScope app, UserRole requested) {
+        if (requested == UserRole.ADMIN) {
+            throw new CustomExceptions.InvalidRoleException("A role ADMIN só pode ser atribuída via seed");
+        }
+        if (requested != null) {
+            if (!app.requiredRoles().contains(requested.name())) {
+                throw new CustomExceptions.InvalidRoleException(
+                        "A role " + requested.name() + " não pertence à aplicação " + app.name());
+            }
+            return requested;
+        }
+        if (app.requiredRoles().size() == 1) {
+            return parseRole(app.requiredRoles().iterator().next());
+        }
+        throw new CustomExceptions.InvalidRoleException("Informe a role desejada para a aplicação " + app.name());
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private UUID parseUuid(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (RuntimeException e) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+    }
+
+    private UserRole parseRole(String value) {
+        try {
+            return UserRole.valueOf(value);
+        } catch (RuntimeException e) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+    }
+
+    @Override
     public LoginResponseDTO login(AuthRequestDTO dto) {
         User user;
         if (dto.tokenGmail() != null && !dto.tokenGmail().isEmpty()) {
@@ -419,11 +655,30 @@ public class UserServiceImpl implements UserService {
             throw new CustomExceptions.EntityNotFoundException(User.class.getSimpleName(), dto.email());
         }
 
-        String token = tokenService.generateToken(user);
+        if (user.getStatus() != UserStatus.OK) {
+            throw new CustomExceptions.AccountNotActiveException();
+        }
+
+        List<String> roleNames = user.getRoles().stream()
+                .map(Enum::name)
+                .toList();
+
+        if (!dto.app().allows(roleNames)) {
+            throw new CustomExceptions.AppAccessDeniedException(dto.app().name());
+        }
+
+        String token = tokenService.generateToken(user, dto.app());
 
         user.setLastLogin(new Date());
         repository.save(user);
-        return new LoginResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getLastLogin(), token);
+        return new LoginResponseDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getLastLogin(),
+                token,
+                roleNames,
+                AppScope.appsFor(roleNames).stream().map(Enum::name).toList());
     }
 
     private boolean isAdmin() {

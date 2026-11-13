@@ -33,6 +33,7 @@ public class User implements UserDetails {
     private Date updatedDate;
     private Date lastLogin;
     private String username;
+    @Column(unique = true)
     private String email;
     private String password;
     @Enumerated(EnumType.STRING)

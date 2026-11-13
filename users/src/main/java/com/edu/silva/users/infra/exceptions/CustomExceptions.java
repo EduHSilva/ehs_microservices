@@ -1,9 +1,27 @@
 package com.edu.silva.users.infra.exceptions;
 
 public class CustomExceptions {
+    public static class AccountNotActiveException extends RuntimeException {
+        public AccountNotActiveException() {
+            super("Usuário não está apto a autenticar");
+        }
+    }
+
+    public static class AppAccessDeniedException extends RuntimeException {
+        public AppAccessDeniedException(String app) {
+            super("Usuário não possui acesso à aplicação " + app);
+        }
+    }
+
+    public static class InvalidTokenException extends RuntimeException {
+        public InvalidTokenException() {
+            super("Token inválido ou expirado");
+        }
+    }
+
     public static class EmailAlreadyExistsException extends RuntimeException {
         public EmailAlreadyExistsException(String email) {
-            super("Email: " + email);
+            super("E-mail indisponível");
         }
     }
 

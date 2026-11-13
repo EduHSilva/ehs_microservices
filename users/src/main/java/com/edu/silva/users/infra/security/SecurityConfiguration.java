@@ -51,7 +51,11 @@ public class SecurityConfiguration {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/auth/login",
-                                "/auth/register"
+                                "/auth/register",
+                                "/auth/apps/request",
+                                "/auth/apps/confirm",
+                                "/auth/password/forgot",
+                                "/auth/password/reset"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/confirm/*").permitAll()
                         .anyRequest().authenticated()

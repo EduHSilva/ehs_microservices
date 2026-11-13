@@ -21,6 +21,21 @@ public class GlobalExceptionsHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DefaultResponse<Void>(ex.getMessage()));
     }
 
+    @ExceptionHandler(CustomExceptions.InvalidTokenException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleInvalidToken(CustomExceptions.InvalidTokenException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CustomExceptions.AccountNotActiveException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleAccountNotActive(CustomExceptions.AccountNotActiveException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CustomExceptions.AppAccessDeniedException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleAppAccessDenied(CustomExceptions.AppAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
     @ExceptionHandler(CustomExceptions.InvalidRoleException.class)
     public ResponseEntity<@NonNull DefaultResponse<Void>> handleInvalidRole(CustomExceptions.InvalidRoleException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>(ex.getMessage()));
