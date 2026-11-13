@@ -21,9 +21,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query("select coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.income = true and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end")
     BigDecimal sumConfirmedIncome(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                   @Param("start") Date start, @Param("end") Date end);
-    @Query(value = "select exists(select 1 from transaction where user_id = :userId and account_id = :accountId and import_key = :key)", nativeQuery = true)
+    @Query(value = "select exists(select 1 from transaction where user_id = :userId and account_id = :accountId and import_key = :key and status <> 'DELETED')", nativeQuery = true)
     boolean importKeyExists(@Param("userId") UUID userId, @Param("accountId") String accountId,
                             @Param("key") String key);
+    // A linha excluída continua ocupando a chave única de importação; reaproveitá-la
+    // permite reimportar um extrato que foi apagado.
+    @Query(value = "select * from transaction where user_id = :userId and account_id = :accountId and import_key = :key and status = 'DELETED' limit 1", nativeQuery = true)
+    Optional<Transaction> findDeletedByImportKey(@Param("userId") UUID userId, @Param("accountId") String accountId,
+                                                 @Param("key") String key);
     @Query("select coalesce(sum(case when t.income = true then t.value else -t.value end), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate < :asOf")
     BigDecimal sumNetByAccountAndUser(@Param("accountId") String accountId, @Param("userId") UUID userId,
                                       @Param("asOf") Date asOf);

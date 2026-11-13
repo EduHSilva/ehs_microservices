@@ -127,7 +127,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         contribution.setAmount(request.amount());
         contribution.setDate(request.date());
         if (request.transactionId() != null) {
-            if (contributions.existsByTransactionId(request.transactionId()))
+            if (contributions.existsByTransactionIdAndUserId(request.transactionId(), userId))
                 throw new IllegalArgumentException("Transaction already linked to a goal contribution");
             var transaction = transactions.findByIdAndUserId(request.transactionId(), userId)
                     .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", request.transactionId()));

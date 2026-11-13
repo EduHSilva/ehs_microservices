@@ -641,6 +641,12 @@ public class UserServiceImpl implements UserService {
                 throw new CustomExceptions.InvalidGmailTokenException("Invalid gmail token");
             }
 
+            // Sem e-mail verificado pelo Google não é seguro usar o endereço para
+            // localizar a conta (evita tomar conta alheia com e-mail não confirmado).
+            if (payload.getEmailVerified() == null || !payload.getEmailVerified()) {
+                throw new CustomExceptions.InvalidGmailTokenException("Gmail account is not verified");
+            }
+
             String email = payload.getEmail();
             user = (User) repository.findByEmail(email);
         } else {

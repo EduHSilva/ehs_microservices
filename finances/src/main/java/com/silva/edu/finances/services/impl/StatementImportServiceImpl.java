@@ -67,8 +67,30 @@ public class StatementImportServiceImpl implements StatementImportService {
         int duplicates = 0;
         for (StatementImportLineRequest line : request.lines()) {
             String key = key(request.accountId(), line);
-            if (!seen.add(key) || transactions.importKeyExists(userId, request.accountId(), key)) {
+            if (!seen.add(key)) {
                 duplicates++;
+                continue;
+            }
+            if (transactions.importKeyExists(userId, request.accountId(), key)) {
+                duplicates++;
+                continue;
+            }
+            Optional<Transaction> deleted = transactions.findDeletedByImportKey(userId, request.accountId(), key);
+            if (deleted.isPresent()) {
+                Transaction transaction = deleted.get();
+                transaction.setImportSource(request.source());
+                transaction.setTitle(line.description().trim());
+                transaction.setValue(line.amount());
+                transaction.setIncome(line.income());
+                transaction.setExecutionDate(Date.from(line.date().atStartOfDay().toInstant(ZoneOffset.UTC)));
+                transaction.setCategory(line.categoryId() == null ? null : categories
+                        .findByIdAndUserId(line.categoryId(), userId)
+                        .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Category", line.categoryId())));
+                // Sai de DELETED e volta para a revisão, reaproveitando a chave única.
+                transaction.setStatus(TransactionStatus.REVIEW);
+                transactions.save(transaction);
+                record(transaction, "IMPORTED", userId);
+                imported++;
                 continue;
             }
             Transaction transaction = new Transaction();

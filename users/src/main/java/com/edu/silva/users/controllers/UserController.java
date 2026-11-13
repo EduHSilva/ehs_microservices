@@ -21,7 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -81,9 +80,11 @@ public class UserController {
         return ResponseEntity.ok(new DefaultResponse<>("User find successfully", service.findById(id), BASE_URL, id));
     }
     @GetMapping(value = "/confirm/{id}")
-    public RedirectView confirm(@PathVariable UUID id) {
+    public ResponseEntity<@NonNull DefaultResponse<Void>> confirm(@PathVariable UUID id) {
         service.confirm(id);
-        return new RedirectView("/confirm.html");
+        // A página /user/confirm/ (estática) chama este endpoint e mostra o resultado;
+        // não devolvemos dados do usuário em uma rota pública.
+        return ResponseEntity.ok(new DefaultResponse<>("Conta confirmada com sucesso"));
     }
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == principal.id")

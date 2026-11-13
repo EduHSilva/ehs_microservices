@@ -46,7 +46,11 @@ public class JwtAuthFilter implements GlobalFilter {
             service = route.getUri().getHost();
         }
 
-        if (path.startsWith("/ping") || path.startsWith("/auth") || "admin".equalsIgnoreCase(service) || path.contains("swagger") || path.contains("/api-docs")) {
+        // Rotas públicas: saúde, login/cadastro (o RewritePath do discovery roda antes
+        // deste filtro, então o caminho já está sem o prefixo do serviço), a confirmação
+        // de cadastro enviada por e-mail e o admin do Spring Boot.
+        if (path.startsWith("/ping") || path.startsWith("/auth") || path.startsWith("/confirm")
+                || "admin".equalsIgnoreCase(service) || path.contains("swagger") || path.contains("/api-docs")) {
             Logger.log(null, method, path, service, meta, ip);
             return chain.filter(exchange);
         }
@@ -76,6 +80,11 @@ public class JwtAuthFilter implements GlobalFilter {
         }
 
         Optional<AppScope> appScope = AppScope.fromService(service);
+        // `tasks` é um serviço interno do StudyFlow; sem app próprio, exige o mesmo
+        // escopo do STUDY para que um token de outra aplicação não o acesse.
+        if (appScope.isEmpty() && "tasks".equalsIgnoreCase(service)) {
+            appScope = Optional.of(AppScope.STUDY);
+        }
         if (appScope.isPresent()) {
             AppScope app = appScope.get();
             List<String> audience = jwt.getAudience();

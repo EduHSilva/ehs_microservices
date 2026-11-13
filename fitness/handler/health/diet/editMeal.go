@@ -52,7 +52,7 @@ func UpdateMealHandler(ctx *gin.Context) {
 	}
 
 	if len(request.Foods) != 0 {
-		if err := db.Where("meal_id = ?", meal.ID).Delete(&diet.Food{}).Error; err != nil {
+		if err := db.Where("meal_id = ?", meal.ID).Delete(&diet.MealFood{}).Error; err != nil {
 			logger.ErrF("error on find meal: %s", err.Error())
 			helper.SendError(ctx, http.StatusInternalServerError, "Failed to delete associated foods")
 			return
@@ -76,6 +76,14 @@ func UpdateMealHandler(ctx *gin.Context) {
 	if err := db.Save(&meal).Error; err != nil {
 		logger.ErrF("error updating: %s", err.Error())
 		helper.SendError(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// A refeição foi carregada com os alimentos antigos; recarrega para devolver
+	// exatamente o que ficou gravado.
+	meal.Foods = nil
+	if err := db.Preload("Foods").First(meal, meal.ID).Error; err != nil {
+		helper.SendErrorDefault(ctx, http.StatusInternalServerError, getI18n.(*i18n.Localizer))
 		return
 	}
 

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EHS Solutions — Aplicativos</title>
+  <meta name="description" content="Aplicativos da EHS Solutions: Admin, Orçamentos, Finanças, Fitness, Estudos, Portfólio e Compras.">
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="robots" content="index, follow">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-soft: #f1f5f9;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-soft: #eef2ff;
+      --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 24px -16px rgba(15, 23, 42, .35);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --surface: #111a2e;
+        --surface-soft: #16213a;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --border: #1e293b;
+        --primary: #818cf8;
+        --primary-soft: #1e1b4b;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .wrap { width: min(1080px, 100% - 32px); margin: 0 auto; }
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 0; text-decoration: none; color: inherit;
+    }
+    .brand-mark {
+      display: grid; place-items: center;
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--primary); color: #fff; font-weight: 800; letter-spacing: .5px;
+    }
+    .brand strong { font-size: 1.05rem; display: block; line-height: 1.25; }
+    .brand small { color: var(--muted); font-size: .8rem; }
+    main { flex: 1; padding: 48px 0 64px; }
+    .hero { max-width: 640px; margin-bottom: 40px; }
+    .eyebrow {
+      display: inline-block;
+      padding: 4px 10px; margin-bottom: 14px;
+      border: 1px solid var(--border); border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary);
+      font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    }
+    h1 { font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.2; margin: 0 0 12px; }
+    h1 span { color: var(--primary); }
+    .hero p { margin: 0; color: var(--muted); font-size: 1.05rem; }
+
+    h2 {
+      font-size: .8rem; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin: 0 0 16px;
+    }
+    .grid {
+      display: grid; gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+    .card {
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      text-decoration: none; color: inherit;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+    a.card:hover, a.card:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      outline: none;
+    }
+    .head { display: flex; align-items: center; gap: 12px; }
+    .icon {
+      display: grid; place-items: center;
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--primary-soft); color: var(--primary);
+      flex: none;
+    }
+    .icon svg { width: 20px; height: 20px; }
+    .title { font-weight: 650; font-size: 1.02rem; line-height: 1.3; }
+    .tag {
+      margin-left: auto; flex: none;
+      padding: 2px 8px; border-radius: 999px;
+      background: var(--surface-soft); border: 1px solid var(--border);
+      color: var(--muted); font-size: .68rem; font-weight: 600;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .card p { margin: 0; color: var(--muted); font-size: .9rem; }
+    .go {
+      margin-top: auto; padding-top: 4px;
+      color: var(--primary); font-size: .85rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .card.soon { opacity: .72; }
+    .card.soon .go { color: var(--muted); font-weight: 500; }
+    .note {
+      margin-top: 32px; padding: 14px 16px;
+      background: var(--primary-soft);
+      border: 1px solid var(--border); border-radius: 12px;
+      font-size: .875rem; color: var(--text);
+    }
+    .note a { color: var(--primary); }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 0 32px;
+      color: var(--muted); font-size: .85rem;
+    }
+    .foot {
+      display: flex; flex-wrap: wrap; align-items: center;
+      justify-content: space-between; gap: 10px;
+    }
+    footer a { color: inherit; }
+    footer a:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <a class="brand" href="/app/">
+        <span class="brand-mark">EHS</span>
+        <span>
+          <strong>EHS Solutions</strong>
+          <small>Aplicativos EHS</small>
+        </span>
+      </a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="hero">
+      <span class="eyebrow">Plataforma</span>
+      <h1>Um lugar para cada <span>parte do seu dia</span></h1>
+      <p>
+        Orçamentos, finanças, treinos, estudos e gestão em aplicativos separados,
+        com a mesma conta. Escolha por onde começar.
+      </p>
+    </div>
+
+    <h2>Aplicativos</h2>
+    <div class="grid">
+      <a class="card" href="/app/study/">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 18.5V5.5"/><path d="M8 7h8M8 11h6"/></svg>
+          </span>
+          <span class="title">Estudos</span>
+          <span class="tag">StudyFlow</span>
+        </div>
+        <p>Tarefas, matérias, notas e revisões organizadas por dia.</p>
+        <span class="go">Abrir →</span>
+      </a>
+
+      <a class="card" href="/app/budgets/">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+          </span>
+          <span class="title">Orçamentos</span>
+        </div>
+        <p>Clientes, propostas, kanban de acompanhamento e PDF para enviar.</p>
+        <span class="go">Abrir →</span>
+      </a>
+
+      <a class="card" href="/app/finances/">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 5-7 4 4"/><path d="M3 21h18"/></svg>
+          </span>
+          <span class="title">Finanças</span>
+        </div>
+        <p>Contas pessoais e do negócio, lançamentos, recorrências e metas.</p>
+        <span class="go">Abrir →</span>
+      </a>
+
+      <a class="card" href="/app/fitness/">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M3 9v6M17.5 6.5v11M21 9v6M6.5 12h11"/></svg>
+          </span>
+          <span class="title">Fitness</span>
+        </div>
+        <p>Treinos, dietas e acompanhamento de alunos e profissionais.</p>
+        <span class="go">Abrir →</span>
+      </a>
+
+      <a class="card" href="/app/admin/">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-2.9 7.9-7 9-4.1-1.1-7-4.8-7-9V6z"/><path d="M9.5 12l2 2 3.5-3.5"/></svg>
+          </span>
+          <span class="title">Admin</span>
+          <span class="tag">Equipe</span>
+        </div>
+        <p>Usuários, empresas, permissões e monitor da fila de e-mails.</p>
+        <span class="go">Abrir →</span>
+      </a>
+
+      <a class="card" href="/app/portfolio/">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>
+          </span>
+          <span class="title">Portfólio</span>
+        </div>
+        <p>Projetos, experiência e contato profissional.</p>
+        <span class="go">Abrir →</span>
+      </a>
+
+      <div class="card soon">
+        <div class="head">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 8h-12z"/><circle cx="9" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/><path d="M6 6L5 3H2"/></svg>
+          </span>
+          <span class="title">Compras</span>
+          <span class="tag">Android</span>
+        </div>
+        <p>Listas de compras offline, guardadas apenas no seu dispositivo.</p>
+        <span class="go">Disponível no app Android</span>
+      </div>
+    </div>
+
+    <div class="note">
+      Todos os aplicativos usam a mesma conta EHS. Se você ainda não tem acesso,
+      peça a um administrador ou crie sua conta em qualquer aplicativo.
+      Dúvidas sobre dados pessoais: <a href="/app/privacidade/">Política de Privacidade</a>.
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>EHS Solutions · © <span id="year">2026</span></span>
+      <span>
+        <a href="/app/privacidade/">Privacidade</a> ·
+        <a href="mailto:edu.slhenrique@gmail.com">edu.slhenrique@gmail.com</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
