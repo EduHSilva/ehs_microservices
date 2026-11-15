@@ -6,6 +6,7 @@ import com.edu.silva.common.enums.Status;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edu.silva.users.domain.dtos.requests.AppAccessRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ChangePasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ConfirmTokenRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
@@ -592,6 +593,45 @@ public class UserServiceImpl implements UserService {
         repository.save(user);
 
         AuditLogger.log(id.toString(), "USER_PASSWORD_RESET", User.class.getSimpleName(), id, Map.of());
+    }
+
+    /**
+     * Troca a senha do próprio usuário. O incremento de {@code tokenVersion}
+     * invalida as demais sessões; o token da sessão atual é reemitido no retorno.
+     */
+    @Override
+    @Transactional
+    public LoginResponseDTO changePassword(UUID id, AppScope app, ChangePasswordRequestDTO dto) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(User.class.getSimpleName(), id));
+
+        if (user.getStatus() != UserStatus.OK) {
+            throw new CustomExceptions.AccountNotActiveException();
+        }
+
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        if (!encoder.matches(dto.currentPassword(), user.getPassword())) {
+            throw new CustomExceptions.InvalidPasswordException("Senha atual incorreta");
+        }
+        if (encoder.matches(dto.newPassword(), user.getPassword())) {
+            throw new CustomExceptions.InvalidPasswordException("A nova senha deve ser diferente da atual");
+        }
+
+        user.setPassword(encoder.encode(dto.newPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        repository.save(user);
+
+        AuditLogger.log(currentActor(), "USER_PASSWORD_CHANGE", User.class.getSimpleName(), id, Map.of());
+
+        List<String> roleNames = user.getRoles().stream().map(Enum::name).toList();
+        return new LoginResponseDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getLastLogin(),
+                tokenService.generateToken(user, app),
+                roleNames,
+                AppScope.appsFor(roleNames).stream().map(Enum::name).toList());
     }
 
     private UserRole resolveRole(AppScope app, UserRole requested) {

@@ -51,6 +51,11 @@ public class GlobalExceptionsHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>(ex.getMessage()));
     }
 
+    @ExceptionHandler(CustomExceptions.InvalidPasswordException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleInvalidPassword(CustomExceptions.InvalidPasswordException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
     @ExceptionHandler(CustomExceptions.InvalidGmailTokenException.class)
     public ResponseEntity<@NonNull DefaultResponse<Void>> handleInvalidGmailToken(CustomExceptions.InvalidGmailTokenException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>(ex.getMessage()));

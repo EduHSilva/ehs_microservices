@@ -19,6 +19,11 @@
     "sem permissão", **sem** deslogar.
 - Senhas são BCrypt; reset por e-mail é token de uso único (30 min) e qualquer mudança
   de `tokenVersion` invalida os tokens pendentes.
+- Troca de senha autenticada (`PUT /auth/password`): exige a senha atual correta, nova
+  senha com ao menos 8 caracteres e diferente da atual. Senha atual errada retorna 400
+  (não 401) para os fronts não derrubarem a sessão. A troca persiste só o hash e
+  incrementa `tokenVersion`, encerrando as demais sessões; a sessão que fez a troca
+  recebe um token novo na resposta (mesmo `aud` do token usado na chamada).
 - Login com Google exige **cadastro prévio** (e-mail precisa existir e estar `OK`) e o
   claim `email_verified = true`; o Google serve como segundo fator de identidade, não
   como provisionamento de conta.
@@ -42,6 +47,10 @@
 - Roles de ADMIN são geridas apenas por ADMIN; o próprio usuário não altera as suas.
 - O gateway valida token + `aud` (app) + role da rota e injeta `X-User-ID`; o serviço
   de destino confia nesse header.
+- Exceção intencional: as rotas do serviço `users` **não** são restritas por role no
+  gateway, porque ele é compartilhado por todos os produtos (auto-perfil e vínculo de
+  acesso). A proteção administrativa fica no próprio serviço
+  (`@OnlyAdmin`/`@PreAuthorize`), que devolve 403 para role não-ADMIN.
 
 ## 3. Acesso a várias aplicações
 

@@ -120,6 +120,11 @@ public class BudgetServiceImpl implements BudgetService {
                             throw new CustomExceptions.InvalidStatusException(
                                     BudgetStatus.class.getSimpleName(), dto.status().name());
                         }
+                        if (!budget.getStatus().canTransitionTo(dto.status())) {
+                            throw new CustomExceptions.InvalidStatusException(
+                                    "Transição de status inválida: "
+                                            + budget.getStatus() + " -> " + dto.status());
+                        }
                         budget.setStatus(dto.status());
                     }
 

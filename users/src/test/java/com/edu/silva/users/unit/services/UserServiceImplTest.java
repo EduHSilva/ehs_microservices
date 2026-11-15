@@ -5,6 +5,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edu.silva.users.domain.dtos.requests.AppAccessRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ChangePasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ConfirmTokenRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
@@ -41,6 +42,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -932,6 +934,79 @@ class UserServiceImplTest {
 
         assertThrows(CustomExceptions.InvalidTokenException.class,
                 () -> service.resetPassword(new ResetPasswordRequestDTO("bad", "novaSenha123")));
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldChangePasswordAndReturnFreshToken() {
+        UUID id = UUID.randomUUID();
+        String currentPassword = "senhaAtual1";
+        User user = new User("Edu", "edu@test.com", new BCryptPasswordEncoder().encode(currentPassword),
+                List.of(UserRole.ADMIN));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(tokenService.generateToken(user, AppScope.ADMIN)).thenReturn("fresh-token");
+
+        LoginResponseDTO result = service.changePassword(id, AppScope.ADMIN,
+                new ChangePasswordRequestDTO(currentPassword, "novaSenha123"));
+
+        assertEquals("fresh-token", result.token());
+        assertEquals(1, user.getTokenVersion());
+        assertTrue(new BCryptPasswordEncoder().matches("novaSenha123", user.getPassword()));
+        verify(repository).save(user);
+    }
+
+    @Test
+    void shouldRejectPasswordChangeWithWrongCurrentPassword() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", new BCryptPasswordEncoder().encode("senhaAtual1"),
+                List.of(UserRole.BUDGETS));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidPasswordException.class, () -> service.changePassword(id, AppScope.BUDGETS,
+                new ChangePasswordRequestDTO("errada", "novaSenha123")));
+
+        assertEquals(0, user.getTokenVersion());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectPasswordChangeEqualToCurrent() {
+        UUID id = UUID.randomUUID();
+        String currentPassword = "senhaAtual1";
+        User user = new User("Edu", "edu@test.com", new BCryptPasswordEncoder().encode(currentPassword),
+                List.of(UserRole.BUDGETS));
+        user.setId(id);
+        user.setStatus(UserStatus.OK);
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.InvalidPasswordException.class, () -> service.changePassword(id, AppScope.BUDGETS,
+                new ChangePasswordRequestDTO(currentPassword, currentPassword)));
+
+        assertEquals(0, user.getTokenVersion());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectPasswordChangeForInactiveUser() {
+        UUID id = UUID.randomUUID();
+        User user = new User("Edu", "edu@test.com", new BCryptPasswordEncoder().encode("senhaAtual1"),
+                List.of(UserRole.BUDGETS));
+        user.setId(id);
+        user.setStatus(UserStatus.BLOCKED);
+
+        when(repository.findById(id)).thenReturn(Optional.of(user));
+
+        assertThrows(CustomExceptions.AccountNotActiveException.class, () -> service.changePassword(id, AppScope.BUDGETS,
+                new ChangePasswordRequestDTO("senhaAtual1", "novaSenha123")));
 
         verify(repository, never()).save(any());
     }

@@ -1,8 +1,10 @@
 package com.edu.silva.users.unit.controllers;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edu.silva.common.enums.AppScope;
 import com.edu.silva.users.controllers.AuthController;
 import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ChangePasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
@@ -10,6 +12,7 @@ import com.edu.silva.users.domain.entities.User;
 import com.edu.silva.users.domain.enums.UserRole;
 import com.edu.silva.users.infra.exceptions.CustomExceptions;
 import com.edu.silva.users.infra.exceptions.GlobalExceptionsHandler;
+import com.edu.silva.users.infra.security.TokenService;
 import com.edu.silva.users.services.UserService;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,9 +39,12 @@ class AuthControllerTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private TokenService tokenService;
+
     @BeforeEach
     void setUp() {
-        client = RestTestClient.bindToController(new AuthController(userService))
+        client = RestTestClient.bindToController(new AuthController(userService, tokenService))
                 .configureServer(builder -> builder.setControllerAdvice(new GlobalExceptionsHandler()))
                 .defaultHeader("ContentType", "application/json")
                 .build();
@@ -128,6 +135,50 @@ class AuthControllerTest {
 
         org.mockito.Mockito.verify(userService)
                 .forgotPassword(any(com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO.class));
+    }
+
+    @Test
+    void shouldChangePasswordReturningFreshToken() {
+        UUID id = UUID.randomUUID();
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(jwt.getAudience()).thenReturn(List.of("ADMIN"));
+        when(tokenService.verify("current-token")).thenReturn(jwt);
+        when(userService.changePassword(any(UUID.class), any(AppScope.class), any(ChangePasswordRequestDTO.class)))
+                .thenReturn(new LoginResponseDTO(id, "tester", "test@email.com", null, "fresh-token",
+                        List.of("ADMIN"), List.of("ADMIN")));
+
+        client.put()
+                .uri("/auth/password")
+                .header("Authorization", "Bearer current-token")
+                .body(new ChangePasswordRequestDTO("senhaAtual1", "novaSenha123"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.data.token").isEqualTo("fresh-token");
+
+        org.mockito.Mockito.verify(userService).changePassword(
+                id, AppScope.ADMIN, new ChangePasswordRequestDTO("senhaAtual1", "novaSenha123"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCurrentPasswordIsWrong() {
+        UUID id = UUID.randomUUID();
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        when(jwt.getSubject()).thenReturn(id.toString());
+        when(jwt.getAudience()).thenReturn(List.of("ADMIN"));
+        when(tokenService.verify("current-token")).thenReturn(jwt);
+        when(userService.changePassword(any(UUID.class), any(AppScope.class), any(ChangePasswordRequestDTO.class)))
+                .thenThrow(new CustomExceptions.InvalidPasswordException("Senha atual incorreta"));
+
+        client.put()
+                .uri("/auth/password")
+                .header("Authorization", "Bearer current-token")
+                .body(new ChangePasswordRequestDTO("errada", "novaSenha123"))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Senha atual incorreta");
     }
 
     @Test

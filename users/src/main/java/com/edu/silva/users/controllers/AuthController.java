@@ -1,27 +1,33 @@
 package com.edu.silva.users.controllers;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.common.enums.AppScope;
 import com.edu.silva.users.domain.dtos.requests.AppAccessRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ChangePasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ConfirmTokenRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ResetPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
 import com.edu.silva.users.domain.entities.User;
+import com.edu.silva.users.infra.exceptions.CustomExceptions;
+import com.edu.silva.users.infra.security.TokenService;
 import com.edu.silva.users.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.NonNull;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("auth")
@@ -34,10 +40,14 @@ public class AuthController {
     private static final String GENERIC_EMAIL_MESSAGE =
             "Se os dados informados estiverem corretos, enviaremos as instruções por e-mail";
 
-    private final UserService service;
+    private static final String BEARER_PREFIX = "Bearer ";
 
-    public AuthController(UserService service) {
+    private final UserService service;
+    private final TokenService tokenService;
+
+    public AuthController(UserService service, TokenService tokenService) {
         this.service = service;
+        this.tokenService = tokenService;
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -95,6 +105,37 @@ public class AuthController {
     ResponseEntity<@NonNull DefaultResponse<Void>> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO dto) {
         service.resetPassword(dto);
         return ResponseEntity.ok(new DefaultResponse<>("Senha alterada com sucesso"));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Change the password of the authenticated user")
+    @PutMapping("password")
+    public ResponseEntity<DefaultResponse<LoginResponseDTO>> changePassword(
+            @RequestBody @Valid ChangePasswordRequestDTO dto,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
+        DecodedJWT jwt = verifyToken(authorization);
+        LoginResponseDTO response = service.changePassword(
+                UUID.fromString(jwt.getSubject()), resolveApp(jwt), dto);
+        return ResponseEntity.ok(new DefaultResponse<>(
+                "Senha alterada com sucesso. As demais sessões foram encerradas", response));
+    }
+
+    private DecodedJWT verifyToken(String authorization) {
+        DecodedJWT jwt = authorization.startsWith(BEARER_PREFIX)
+                ? tokenService.verify(authorization.substring(BEARER_PREFIX.length()))
+                : null;
+        if (jwt == null || jwt.getSubject() == null) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+        return jwt;
+    }
+
+    private AppScope resolveApp(DecodedJWT jwt) {
+        if (jwt.getAudience() == null || jwt.getAudience().isEmpty()) {
+            throw new CustomExceptions.InvalidTokenException();
+        }
+        return AppScope.fromName(jwt.getAudience().getFirst())
+                .orElseThrow(CustomExceptions.InvalidTokenException::new);
     }
 
     @PostMapping("login")

@@ -1,7 +1,9 @@
 package com.edu.silva.users.services;
 
+import com.edu.silva.common.enums.AppScope;
 import com.edu.silva.users.domain.dtos.requests.AppAccessRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.AuthRequestDTO;
+import com.edu.silva.users.domain.dtos.requests.ChangePasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ConfirmTokenRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ForgotPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
@@ -53,6 +55,8 @@ public interface UserService {
     void forgotPassword(ForgotPasswordRequestDTO dto);
 
     void resetPassword(ResetPasswordRequestDTO dto);
+
+    LoginResponseDTO changePassword(UUID id, AppScope app, ChangePasswordRequestDTO dto);
 
     LoginResponseDTO login(AuthRequestDTO dto);
 }

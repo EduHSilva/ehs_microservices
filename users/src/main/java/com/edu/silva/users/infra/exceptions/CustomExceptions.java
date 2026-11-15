@@ -37,6 +37,12 @@ public class CustomExceptions {
         }
     }
 
+    public static class InvalidPasswordException extends RuntimeException {
+        public InvalidPasswordException(String message) {
+            super(message);
+        }
+    }
+
     public static class InvalidGmailTokenException extends RuntimeException {
         public InvalidGmailTokenException(String message) {
             super(message);
