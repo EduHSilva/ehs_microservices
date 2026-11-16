@@ -60,6 +60,15 @@ public class EmailConsumer {
                     btnLabel = i18n.getMessage("passwordReset.button", locale);
                     break;
 
+                case FITNESS_INVITE:
+                    String professional = dto.getVariables() == null
+                            ? ""
+                            : String.valueOf(dto.getVariables().getOrDefault("professional", ""));
+                    subject = i18n.getMessage("fitnessInvite.subject", locale);
+                    body = i18n.getMessage("fitnessInvite.body", locale, dto.getUsername(), professional);
+                    btnLabel = i18n.getMessage("fitnessInvite.button", locale);
+                    break;
+
                 default:
                     throw new IllegalArgumentException("Invalid email type");
             }

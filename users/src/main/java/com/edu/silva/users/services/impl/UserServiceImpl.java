@@ -13,6 +13,7 @@ import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ResetPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
+import com.edu.silva.users.domain.dtos.responses.InternalUserProfileDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserStatsResponseDTO;
 import com.edu.silva.users.domain.entities.Company;
@@ -334,6 +335,26 @@ public class UserServiceImpl implements UserService {
     public UserResponseDTO findById(UUID id) {
         return new UserResponseDTO(repository.findById(id)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(User.class.getSimpleName(), id)));
+    }
+
+    @Override
+    public List<InternalUserProfileDTO> findInternalProfiles(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(ids).stream()
+                .map(InternalUserProfileDTO::from)
+                .toList();
+    }
+
+    @Override
+    public Optional<InternalUserProfileDTO> findInternalProfileByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return repository.findByEmail(normalizeEmail(email)) instanceof User user
+                ? Optional.of(InternalUserProfileDTO.from(user))
+                : Optional.empty();
     }
 
     @Override

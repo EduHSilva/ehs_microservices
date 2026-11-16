@@ -46,6 +46,12 @@ public class JwtAuthFilter implements GlobalFilter {
             service = route.getUri().getHost();
         }
 
+        // Rotas internas entre serviços nunca são expostas pelo gateway.
+        if (path.startsWith("/internal") || path.contains("/internal/")) {
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
+            return exchange.getResponse().setComplete();
+        }
+
         // Rotas públicas: saúde, login/cadastro (o RewritePath do discovery roda antes
         // deste filtro, então o caminho já está sem o prefixo do serviço), a confirmação
         // de cadastro enviada por e-mail e o admin do Spring Boot.
@@ -100,10 +106,14 @@ public class JwtAuthFilter implements GlobalFilter {
         }
 
         String subject = jwt.getSubject();
+        String rolesHeader = roles == null ? "" : String.join(",", roles);
 
         exchange = exchange.mutate()
                 .request(builder ->
-                        builder.headers(headers -> headers.set("X-User-ID", subject)))
+                        builder.headers(headers -> {
+                            headers.set("X-User-ID", subject);
+                            headers.set("X-User-Roles", rolesHeader);
+                        }))
                 .build();
 
         Logger.log(subject, method, path, service, meta, ip);

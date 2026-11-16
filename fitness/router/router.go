@@ -2,12 +2,15 @@ package router
 
 import (
 	"health/config"
+	_ "health/docs"
 	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Init() {
@@ -56,4 +59,7 @@ func initRoutes(router *gin.Engine) {
 	initWorkoutRoutes(router)
 	initDietRoutes(router)
 	initConfigRoutes(router)
+	initStudentRoutes(router)
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

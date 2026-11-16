@@ -28,6 +28,14 @@ func SendErrorDefault(ctx *gin.Context, code int, getI18n *i18n.Localizer) {
 		message = getI18n.MustLocalize(&i18n.LocalizeConfig{
 			MessageID: "unauthorized",
 		})
+	case http.StatusForbidden:
+		message = getI18n.MustLocalize(&i18n.LocalizeConfig{
+			MessageID: "forbidden",
+		})
+	case http.StatusServiceUnavailable:
+		message = getI18n.MustLocalize(&i18n.LocalizeConfig{
+			MessageID: "unavailable",
+		})
 
 	}
 

@@ -5,5 +5,15 @@
   "alreadyExists": "Já existe!",
   "notFound": "Não encontrado",
   "unauthorized": "Sem autorização",
-  "hasTaskRule": "Há uma regra associada a categoria e não podemos exclui-la."
+  "forbidden": "Você não tem permissão para esta ação",
+  "unavailable": "Serviço temporariamente indisponível",
+  "hasTaskRule": "Há uma regra associada a categoria e não podemos exclui-la.",
+  "invalidDomain": "Área profissional inválida",
+  "invalidEmail": "E-mail inválido",
+  "invalidId": "Identificador inválido",
+  "ownInvite": "Você não pode convidar a própria conta",
+  "inviteExists": "Já existe um convite pendente para este e-mail",
+  "alreadyLinked": "Este aluno já possui um profissional nesta área",
+  "invalidInvite": "Este convite não está mais válido",
+  "inviteExpired": "Este convite expirou"
 }

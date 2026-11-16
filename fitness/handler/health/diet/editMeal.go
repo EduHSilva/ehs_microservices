@@ -1,18 +1,37 @@
 package diet
 
 import (
+	"errors"
+	"net/http"
+
 	"health/helper"
 	"health/schemas/diet"
-	"net/http"
+	"health/schemas/link"
+	"health/service/access"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"gorm.io/gorm"
 )
 
+// UpdateMealHandler atualiza uma refeição do aluno autorizado.
+// @Summary Atualiza uma refeição
+// @Tags Dieta
+// @Accept json
+// @Produce json
+// @Param id query int true "ID da refeição"
+// @Param request body UpdateMealRequest true "Refeição"
+// @Success 200 {object} ResponseDiet
+// @Failure 400 {object} helper.ErrorResponse
+// @Failure 401 {object} helper.ErrorResponse
+// @Failure 403 {object} helper.ErrorResponse
+// @Failure 404 {object} helper.ErrorResponse
+// @Router /diet/meal [put]
 func UpdateMealHandler(ctx *gin.Context) {
 	request := UpdateMealRequest{}
 
 	getI18n, _ := ctx.Get("i18n")
+	localizer := getI18n.(*i18n.Localizer)
 
 	if err := ctx.BindJSON(&request); err != nil {
 		logger.ErrF("validation error: %v", err.Error())
@@ -32,32 +51,40 @@ func UpdateMealHandler(ctx *gin.Context) {
 			helper.ErrParamIsRequired("id", "query param").Error())
 		return
 	}
-	userID, exists := helper.GatewayUserID(ctx)
+	caller, exists := helper.GatewayCaller(ctx)
 	if !exists {
-		helper.SendErrorDefault(ctx, http.StatusUnauthorized, getI18n.(*i18n.Localizer))
+		helper.SendErrorDefault(ctx, http.StatusUnauthorized, localizer)
+		return
+	}
+
+	studentID, denied := access.WriteTarget(caller, helper.RequestedStudent(ctx, request.StudentID), link.DomainNutritionist)
+	if denied != nil {
+		helper.SendErrorDefault(ctx, denied.Status, localizer)
 		return
 	}
 
 	meal := &diet.Meal{}
-	if err := db.Where("id = ? AND user_id = ?", id, userID).Preload("Foods").First(meal).Error; err != nil {
-		helper.SendErrorDefault(ctx, http.StatusNotFound, getI18n.(*i18n.Localizer))
-		return
-	}
-	if request.Name != "" {
-		meal.Name = request.Name
-	}
-
-	if request.Hour != "" {
-		meal.Hour = request.Hour
-	}
-
-	if len(request.Foods) != 0 {
-		if err := db.Where("meal_id = ?", meal.ID).Delete(&diet.MealFood{}).Error; err != nil {
-			logger.ErrF("error on find meal: %s", err.Error())
-			helper.SendError(ctx, http.StatusInternalServerError, "Failed to delete associated foods")
+	err := db.Where("id = ? AND student_id = ?", id, studentID).First(meal).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			helper.SendErrorDefault(ctx, http.StatusNotFound, localizer)
 			return
 		}
+		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizer)
+		return
+	}
 
+	err = db.Transaction(func(tx *gorm.DB) error {
+		meal.Name = request.Name
+		meal.Hour = request.Hour
+		meal.AuthorID = caller.ID
+		if err := tx.Save(meal).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("meal_id = ?", meal.ID).Delete(&diet.MealFood{}).Error; err != nil {
+			return err
+		}
 		for _, food := range request.Foods {
 			newFood := diet.MealFood{
 				MealFood:    food.FoodID,
@@ -65,25 +92,17 @@ func UpdateMealHandler(ctx *gin.Context) {
 				Observation: food.Observation,
 				MealID:      meal.ID,
 			}
-			if err := db.Create(&newFood).Error; err != nil {
-				logger.ErrF("error updating foods: %s", err.Error())
-				helper.SendError(ctx, http.StatusInternalServerError, err.Error())
-				return
+			if err := tx.Create(&newFood).Error; err != nil {
+				return err
 			}
 		}
-	}
 
-	if err := db.Save(&meal).Error; err != nil {
+		meal.Foods = nil
+		return tx.Preload("Foods.Food").First(meal, meal.ID).Error
+	})
+	if err != nil {
 		logger.ErrF("error updating: %s", err.Error())
 		helper.SendError(ctx, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// A refeição foi carregada com os alimentos antigos; recarrega para devolver
-	// exatamente o que ficou gravado.
-	meal.Foods = nil
-	if err := db.Preload("Foods").First(meal, meal.ID).Error; err != nil {
-		helper.SendErrorDefault(ctx, http.StatusInternalServerError, getI18n.(*i18n.Localizer))
 		return
 	}
 

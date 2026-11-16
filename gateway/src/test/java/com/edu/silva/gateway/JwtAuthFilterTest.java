@@ -136,4 +136,16 @@ class JwtAuthFilterTest {
         verify(response).setStatusCode(HttpStatus.FORBIDDEN);
         verify(chain, never()).filter(any());
     }
+
+    @Test
+    void shouldHideInternalRoutesEvenWithAValidToken() {
+        when(request.getURI()).thenReturn(URI.create("/users/internal/profiles"));
+        bearerToken("token");
+        when(jwtUtil.validateToken("token")).thenReturn(jwt);
+
+        filter.filter(exchange, chain).block();
+
+        verify(response).setStatusCode(HttpStatus.NOT_FOUND);
+        verify(chain, never()).filter(any());
+    }
 }

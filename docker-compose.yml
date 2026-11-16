@@ -138,7 +138,10 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SERVER_URL: ${SERVER_URL:-http://localhost}
+      APP_ACCESS_PATH: ${APP_ACCESS_PATH:-/user/app-access}
+      PASSWORD_RESET_PATH: ${PASSWORD_RESET_PATH:-/user/reset-password}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-local-internal-token}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     ports:
@@ -200,6 +203,7 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+      SERVER_URL: ${SERVER_URL:-http://localhost}
     expose:
       - "8383"
 
@@ -257,6 +261,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+      SERVER_URL: ${SERVER_URL:-http://localhost}
     ports:
       - "8989:8989"
 
@@ -288,6 +293,7 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
+      SERVER_URL: ${SERVER_URL:-http://localhost}
     ports:
       - "8686:8686"
 
@@ -321,6 +327,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: guest
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
       TASKS_SERVICE_URL: http://tasks:8686
+      SERVER_URL: ${SERVER_URL:-http://localhost}
     ports:
       - "9191:9191"
 
@@ -346,14 +353,14 @@ services:
       SERVICE_NAME: FITNESS
       SERVICE_HOST: fitness
       SERVICE_PORT: 9090
-      FOOD_API_HOST: ${FOOD_API_HOST:-}
-      FOOD_API_KEY: ${FOOD_API_KEY:-}
-      FOOD_APP_ID: ${FOOD_APP_ID:-}
-      GPT_API_URL: ${GPT_API_URL:-}
-      GPT_API_KEY: ${GPT_API_KEY:-}
-      JWT_SECRET: ${JWT_SECRET:-local-dev-secret}
       EXERCISES_API_HOST: ${EXERCISES_API_HOST:-}
       EXERCISES_API_KEY: ${EXERCISES_API_KEY:-}
+      USERS_SERVICE_URL: http://users:8181
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-local-internal-token}
+      SERVER_URL: ${SERVER_URL:-http://localhost}
+      FITNESS_INVITE_PATH: ${FITNESS_INVITE_PATH:-/app/fitness/?invite=}
+      FITNESS_INVITE_TTL_HOURS: ${FITNESS_INVITE_TTL_HOURS:-168}
+      SWAGGER_PUBLIC_URL: ${SWAGGER_PUBLIC_URL:-}
       PORT: 9090
     ports:
       - "9090:9090"

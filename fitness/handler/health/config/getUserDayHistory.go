@@ -12,6 +12,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetUserDayHistoryHandler devolve o acompanhamento diário privado de hoje.
+// @Summary Lê o acompanhamento do dia
+// @Tags Configuração
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} helper.ErrorResponse
+// @Failure 404 {object} helper.ErrorResponse
+// @Router /config/history [get]
 func GetUserDayHistoryHandler(ctx *gin.Context) {
 	getI18n, _ := ctx.Get("i18n")
 	userID, exists := helper.GatewayUserID(ctx)

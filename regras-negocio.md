@@ -45,8 +45,14 @@
 - `ADMIN` passa em todos os apps (acesso administrativo).
 - Role `ADMIN` só existe via seed; não pode ser concedida nem removida pela API.
 - Roles de ADMIN são geridas apenas por ADMIN; o próprio usuário não altera as suas.
-- O gateway valida token + `aud` (app) + role da rota e injeta `X-User-ID`; o serviço
-  de destino confia nesse header.
+- O gateway valida token + `aud` (app) + role da rota e injeta `X-User-ID` e
+  `X-User-Roles` (CSV); o serviço de destino confia nesses headers.
+- Rotas `/internal/**` são bloqueadas no gateway com 404, mesmo com token válido. A
+  consulta interna do `fitness` ao `users` (`/internal/profiles`) usa o segredo
+  compartilhado `X-Internal-Token` e nunca é exposta ao cliente.
+- No `fitness`, o gateway garante apenas `aud` + role `HEALTH_*`; o serviço valida o
+  vínculo aluno ↔ profissional, o domínio (treinos vs dieta) e o modo somente leitura do
+  aluno.
 - Exceção intencional: as rotas do serviço `users` **não** são restritas por role no
   gateway, porque ele é compartilhado por todos os produtos (auto-perfil e vínculo de
   acesso). A proteção administrativa fica no próprio serviço
@@ -73,12 +79,19 @@
 
 ## 5. Isolamento de dados (multi-tenant)
 
-- Cada linha de domínio pertence a um `user_id`; nenhum usuário vê dado de outro.
+- Cada linha de domínio pertence a um dono (`user_id`; no `fitness`, `student_id`);
+  nenhum usuário vê dado de outro.
 - No serviço `budgets` o isolamento é feito por filtro Hibernate (`userFilter`) + queries
   `findByIdAndUserId`; no `finances` as entidades têm `owner_id`/`user_id` nas queries;
-  em `fitness`/`study`/`tasks` as queries são sempre por usuário do token.
+  em `study`/`tasks` as queries são sempre por usuário do token.
+- No `fitness`, o plano (treino, agenda e refeição) pertence ao **aluno** (`student_id`).
+  O usuário do token é o próprio aluno ou um profissional com vínculo ativo; consultas
+  usam o aluno-alvo validado, nunca um id arbitrário do payload. Escrita exige role do
+  domínio + vínculo; aluno com profissional ativo no domínio é somente leitura. Config e
+  acompanhamento diário são privados do aluno.
 - `@Filter` **não** vale para `findById`: leituras por id sempre usam variante por usuário.
-- Bulk updates precisam repetir `AND user_id = :userId`.
+- Bulk updates precisam repetir o filtro do dono (`AND user_id = :userId`; no `fitness`,
+  `AND student_id = :studentId`).
 - Requisição sem `X-User-ID` em rota privada = 401 (falha fechada).
 - O `budgets` não tem Spring Security: ele confia no `X-User-ID`, então a porta do
   serviço não pode ser publicada no host (só via gateway).

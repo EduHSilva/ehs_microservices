@@ -11,6 +11,16 @@ import (
 	"gorm.io/datatypes"
 )
 
+// UpdateUserConfigHandler atualiza a configuração privada do usuário.
+// @Summary Atualiza a configuração do usuário
+// @Tags Configuração
+// @Accept json
+// @Produce json
+// @Param request body UpdateUserConfigRequest true "Configuração"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} helper.ErrorResponse
+// @Failure 401 {object} helper.ErrorResponse
+// @Router /config/user [put]
 func UpdateUserConfigHandler(ctx *gin.Context) {
 	request := UpdateUserConfigRequest{}
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -48,6 +58,16 @@ func UpdateUserConfigHandler(ctx *gin.Context) {
 	helper.SendSuccess(ctx, ConvertUserConfigToUserConfigResponse(&userConfig, nil))
 }
 
+// UpdateUserDayHistoryHandler grava o acompanhamento diário privado de hoje.
+// @Summary Atualiza o acompanhamento do dia
+// @Tags Configuração
+// @Accept json
+// @Produce json
+// @Param request body UpdateHistoryRequest true "Acompanhamento"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} helper.ErrorResponse
+// @Failure 401 {object} helper.ErrorResponse
+// @Router /config/history [put]
 func UpdateUserDayHistoryHandler(ctx *gin.Context) {
 	request := UpdateHistoryRequest{}
 	if err := ctx.ShouldBindJSON(&request); err != nil {

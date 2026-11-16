@@ -5,5 +5,15 @@
   "alreadyExists": "Already exists!",
   "notFound": "Not found",
   "unauthorized": "Unauthorized",
-  "hasTaskRule": "There is a rule associated with the category and we cannot delete it."
+  "forbidden": "You do not have permission to perform this action",
+  "unavailable": "Service temporarily unavailable",
+  "hasTaskRule": "There is a rule associated with the category and we cannot delete it.",
+  "invalidDomain": "Invalid professional area",
+  "invalidEmail": "Invalid e-mail",
+  "invalidId": "Invalid identifier",
+  "ownInvite": "You cannot invite your own account",
+  "inviteExists": "There is already a pending invitation for this e-mail",
+  "alreadyLinked": "This student already has a professional in this area",
+  "invalidInvite": "This invitation is no longer valid",
+  "inviteExpired": "This invitation has expired"
 }

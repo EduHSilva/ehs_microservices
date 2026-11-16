@@ -1,12 +1,6 @@
 package workout
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"os"
 	"time"
 
 	"health/schemas/workout"
@@ -38,6 +32,8 @@ type ResponseData struct {
 	DeletedAt time.Time              `json:"deletedAt,omitempty"`
 	Name      string                 `json:"name"`
 	DayOfWeek uint                   `json:"dayOfWeek"`
+	StudentID string                 `json:"student_id"`
+	AuthorID  string                 `json:"author_id"`
 	Exercises []ResponseDataExercise `json:"exercises"`
 }
 
@@ -57,63 +53,19 @@ func ConvertExerciseToResponse(exercise workout.ExerciseWorkout, locale any) Res
 		instructions = exercise.Exercise.Instructions
 	}
 
-	imageUrl := getImageUrl(exercise.Exercise.ExternalID)
-
 	return ResponseDataExercise{
 		ID:           exercise.ExerciseID,
 		Name:         name,
 		BodyPart:     exercise.Exercise.BodyPart,
+		Target:       exercise.Exercise.Target,
 		Instructions: instructions,
 		Load:         exercise.Load,
 		Series:       exercise.Series,
 		RestSeconds:  exercise.RestSeconds,
 		Repetitions:  exercise.Repetitions,
-		ImageUrl:     imageUrl,
+		ImageUrl:     resolveExerciseImage(&exercise.Exercise),
 		Notes:        exercise.Notes,
 	}
-}
-
-func getImageUrl(externalID string) string {
-	url := fmt.Sprintf("https://exercisedb.p.rapidapi.com/exercises/exercise/%s", externalID)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	host := os.Getenv("EXERCISES_API_HOST")
-	token := os.Getenv("EXERCISES_API_KEY")
-
-	req.Header.Add("x-rapidapi-host", host)
-	req.Header.Add("x-rapidapi-key", token)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func(Body io.ReadCloser) {
-		err = Body.Close()
-		if err != nil {
-
-		}
-	}(resp.Body)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var data map[string]interface{}
-	if err = json.Unmarshal(body, &data); err != nil {
-		log.Fatal(err)
-	}
-
-	if gifUrl, ok := data["gifUrl"].(string); ok {
-		return gifUrl
-	}
-
-	return ""
 }
 
 func ConvertWorkoutToWorkoutResponse(workout *workout.Workout, locale any) ResponseData {
@@ -130,6 +82,8 @@ func ConvertWorkoutToWorkoutResponse(workout *workout.Workout, locale any) Respo
 		DeletedAt: workout.DeletedAt.Time,
 		Name:      workout.Name,
 		DayOfWeek: workout.DayOfWeek,
+		StudentID: workout.StudentID,
+		AuthorID:  workout.AuthorID,
 		Exercises: exercisesResponse,
 	}
 }

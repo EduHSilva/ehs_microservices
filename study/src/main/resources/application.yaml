@@ -22,7 +22,7 @@ eureka:
     status-page-url-path: /actuator/info
 
     metadata-map:
-      swagger-url: http://localhost/study/swagger-ui/index.html
+      swagger-url: "${SERVER_URL:http://localhost}/study/swagger-ui/index.html"
 server:
   port: 9191
   forward-headers-strategy: framework

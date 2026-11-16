@@ -5,9 +5,10 @@ import (
 )
 
 type CreateMealRequest struct {
-	Name  string        `json:"name"`
-	Hour  string        `json:"hour"`
-	Foods []FoodRequest `json:"foods"`
+	Name      string        `json:"name"`
+	Hour      string        `json:"hour"`
+	StudentID string        `json:"student_id"`
+	Foods     []FoodRequest `json:"foods"`
 }
 
 type FoodRequest struct {
@@ -32,9 +33,10 @@ func (r CreateMealRequest) Validate() error {
 }
 
 type UpdateMealRequest struct {
-	Name  string        `json:"name"`
-	Hour  string        `json:"hour"`
-	Foods []FoodRequest `json:"foods"`
+	Name      string        `json:"name"`
+	Hour      string        `json:"hour"`
+	StudentID string        `json:"student_id"`
+	Foods     []FoodRequest `json:"foods"`
 }
 
 func (r UpdateMealRequest) Validate() error {
@@ -45,7 +47,7 @@ func (r UpdateMealRequest) Validate() error {
 		return helper.ErrParamIsRequired("hour", "string")
 	}
 	if len(r.Foods) == 0 {
-		return helper.ErrParamIsRequired("exercises", "exercise")
+		return helper.ErrParamIsRequired("foods", "food")
 	}
 	return nil
 }

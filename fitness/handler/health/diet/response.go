@@ -12,8 +12,9 @@ type ResponseFood struct {
 }
 
 type ResponseDataFood struct {
-	ID          uint       `json:"tag_id"`
-	Name        string     `json:"food_name"`
+	TagID       uint       `json:"tag_id"`
+	FoodID      uint       `json:"food_id"`
+	FoodName    string     `json:"food_name"`
 	Quantity    int        `json:"quantity"`
 	Observation string     `json:"observation"`
 	Photo       PhotoField `json:"photo"`
@@ -30,6 +31,8 @@ type ResponseData struct {
 	DeletedAt time.Time          `json:"deletedAt,omitempty"`
 	Name      string             `json:"name"`
 	Hour      string             `json:"hour"`
+	StudentID string             `json:"student_id"`
+	AuthorID  string             `json:"author_id"`
 	Foods     []ResponseDataFood `json:"foods"`
 }
 
@@ -39,9 +42,12 @@ type ResponseDiet struct {
 }
 
 func ConvertFoodToResponse(food *diet.MealFood) ResponseDataFood {
+	// tag_id is kept for older clients; it now carries the catalog food id,
+	// the same value as food_id.
 	return ResponseDataFood{
-		ID: food.ID,
-		//Name: food.MealFood,
+		TagID:       food.MealFood,
+		FoodID:      food.MealFood,
+		FoodName:    food.Food.Name,
 		Quantity:    food.Quantity,
 		Observation: food.Observation,
 	}
@@ -59,8 +65,13 @@ type FoodResponse struct {
 
 func ConvertFoodsToResponse(food *diet.Food) FoodResponse {
 	return FoodResponse{
-		ID:   food.ID,
-		Name: food.Name,
+		ID:       food.ID,
+		Name:     food.Name,
+		Calories: food.Calories,
+		Protein:  food.Protein,
+		Carbs:    food.Carbs,
+		Fat:      food.Fat,
+		Fiber:    food.Fiber,
 	}
 }
 
@@ -79,5 +90,7 @@ func ConvertMealToResponse(meal *diet.Meal) ResponseData {
 		Name:      meal.Name,
 		Foods:     foodResponse,
 		Hour:      meal.Hour,
+		StudentID: meal.StudentID,
+		AuthorID:  meal.AuthorID,
 	}
 }

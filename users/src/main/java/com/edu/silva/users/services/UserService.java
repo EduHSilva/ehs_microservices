@@ -10,6 +10,7 @@ import com.edu.silva.users.domain.dtos.requests.RegisterRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.ResetPasswordRequestDTO;
 import com.edu.silva.users.domain.dtos.requests.UpdateUserRequestDTO;
 import com.edu.silva.users.domain.dtos.responses.LoginResponseDTO;
+import com.edu.silva.users.domain.dtos.responses.InternalUserProfileDTO;
 import com.edu.silva.users.domain.dtos.responses.UserResponseDTO;
 import com.edu.silva.users.domain.dtos.responses.UserStatsResponseDTO;
 import com.edu.silva.users.domain.enums.UserRole;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface UserService {
@@ -35,6 +37,10 @@ public interface UserService {
     UserStatsResponseDTO stats(LocalDate from, LocalDate to, String interval);
 
     UserResponseDTO findById(UUID id);
+
+    List<InternalUserProfileDTO> findInternalProfiles(List<UUID> ids);
+
+    Optional<InternalUserProfileDTO> findInternalProfileByEmail(String email);
 
     UserResponseDTO update(UUID id, UpdateUserRequestDTO request);
 

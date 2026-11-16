@@ -58,6 +58,8 @@ public class SecurityConfiguration {
                                 "/auth/password/reset"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/confirm/*").permitAll()
+                        // Consultas entre serviços: o controller exige X-Internal-Token.
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(s ->

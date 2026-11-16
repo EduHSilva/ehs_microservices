@@ -1,0 +1,1183 @@
+basePath: /
+definitions:
+  config.UpdateHistoryRequest:
+    properties:
+      cardio:
+        type: number
+      creatine:
+        type: boolean
+    type: object
+  config.UpdateUserConfigRequest:
+    properties:
+      dailyCardio:
+        type: number
+      showCreatine:
+        type: boolean
+    type: object
+  diet.CreateMealRequest:
+    properties:
+      foods:
+        items:
+          $ref: '#/definitions/diet.FoodRequest'
+        type: array
+      hour:
+        type: string
+      name:
+        type: string
+      student_id:
+        type: string
+    type: object
+  diet.FoodRequest:
+    properties:
+      food_id:
+        type: integer
+      observation:
+        type: string
+      quantity:
+        type: integer
+    type: object
+  diet.PhotoField:
+    properties:
+      thumb:
+        type: string
+    type: object
+  diet.ResponseData:
+    properties:
+      author_id:
+        type: string
+      createAt:
+        type: string
+      deletedAt:
+        type: string
+      foods:
+        items:
+          $ref: '#/definitions/diet.ResponseDataFood'
+        type: array
+      hour:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      student_id:
+        type: string
+      updateAt:
+        type: string
+    type: object
+  diet.ResponseDataFood:
+    properties:
+      food_id:
+        type: integer
+      food_name:
+        type: string
+      observation:
+        type: string
+      photo:
+        $ref: '#/definitions/diet.PhotoField'
+      quantity:
+        type: integer
+      tag_id:
+        type: integer
+    type: object
+  diet.ResponseDiet:
+    properties:
+      data:
+        $ref: '#/definitions/diet.ResponseData'
+      message:
+        type: string
+    type: object
+  diet.UpdateMealRequest:
+    properties:
+      foods:
+        items:
+          $ref: '#/definitions/diet.FoodRequest'
+        type: array
+      hour:
+        type: string
+      name:
+        type: string
+      student_id:
+        type: string
+    type: object
+  helper.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  student.InviteCard:
+    properties:
+      created_at:
+        type: string
+      domain:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: string
+      goal:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+  student.InviteStudentRequest:
+    properties:
+      domain:
+        type: string
+      email:
+        type: string
+      goal:
+        type: string
+    type: object
+  student.InviteTokenRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  student.StudentCard:
+    properties:
+      domain:
+        type: string
+      email:
+        type: string
+      goal:
+        type: string
+      link_id:
+        type: integer
+      name:
+        type: string
+      since:
+        type: string
+      student_id:
+        type: string
+    type: object
+  student.StudentsResponse:
+    properties:
+      invites:
+        items:
+          $ref: '#/definitions/student.InviteCard'
+        type: array
+      students:
+        items:
+          $ref: '#/definitions/student.StudentCard'
+        type: array
+    type: object
+  student.UpdateLinkRequest:
+    properties:
+      goal:
+        type: string
+    type: object
+  workout.CreateWorkoutRequest:
+    properties:
+      exercises:
+        items:
+          $ref: '#/definitions/workout.ExerciseWorkoutRequest'
+        type: array
+      name:
+        type: string
+      student_id:
+        type: string
+    type: object
+  workout.ExerciseWorkoutRequest:
+    properties:
+      exercise_id:
+        type: integer
+      load:
+        type: number
+      notes:
+        type: string
+      repetitions:
+        type: integer
+      rest_seconds:
+        type: integer
+      series:
+        type: integer
+      workout_id:
+        type: integer
+    type: object
+  workout.ResponseData:
+    properties:
+      author_id:
+        type: string
+      createAt:
+        type: string
+      dayOfWeek:
+        type: integer
+      deletedAt:
+        type: string
+      exercises:
+        items:
+          $ref: '#/definitions/workout.ResponseDataExercise'
+        type: array
+      id:
+        type: integer
+      name:
+        type: string
+      student_id:
+        type: string
+      updateAt:
+        type: string
+    type: object
+  workout.ResponseDataExercise:
+    properties:
+      body_part:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      instructions:
+        type: string
+      load:
+        type: number
+      name:
+        type: string
+      notes:
+        type: string
+      repetitions:
+        type: integer
+      rest_seconds:
+        type: integer
+      series:
+        type: integer
+      target:
+        type: string
+    type: object
+  workout.ResponseWorkout:
+    properties:
+      data:
+        $ref: '#/definitions/workout.ResponseData'
+      message:
+        type: string
+    type: object
+  workout.UpdateWorkoutRequest:
+    properties:
+      dayOfWeek:
+        description: |-
+          DayOfWeek follows ISO-8601 (1 = Monday, 7 = Sunday). Absent keeps the
+          current day; 0 removes the workout from the schedule.
+        type: integer
+      exercises:
+        items:
+          $ref: '#/definitions/workout.ExerciseWorkoutRequest'
+        type: array
+      name:
+        type: string
+      student_id:
+        type: string
+    type: object
+  workout.UpdateWorkoutWeekRequest:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/workout.WorkoutWeekDayRequest'
+        type: array
+      student_id:
+        type: string
+    type: object
+  workout.WorkoutWeekDayRequest:
+    properties:
+      dayOfWeek:
+        type: integer
+      workoutId:
+        type: integer
+    type: object
+host: localhost
+info:
+  contact: {}
+  description: |-
+    Treinos, dieta, agenda e vínculo aluno/profissional do Fitness.
+
+    As rotas são expostas pelo gateway em /fitness/**. O gateway valida o JWT
+    e injeta X-User-ID e X-User-Roles; o serviço valida o vínculo e o domínio.
+    O aluno autorizado ou o profissional do domínio lê/escreve o plano de um
+    aluno passando student_id (ausente = o próprio usuário do token).
+  title: Fitness API
+  version: "1.0"
+paths:
+  /config/history:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lê o acompanhamento do dia
+      tags:
+      - Configuração
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Acompanhamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/config.UpdateHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Atualiza o acompanhamento do dia
+      tags:
+      - Configuração
+  /config/user:
+    get:
+      description: Cria a configuração padrão no primeiro acesso (showCreatine=true).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lê a configuração do usuário
+      tags:
+      - Configuração
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Configuração
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/config.UpdateUserConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Atualiza a configuração do usuário
+      tags:
+      - Configuração
+  /diet/meal:
+    delete:
+      parameters:
+      - description: ID da refeição
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/diet.ResponseDiet'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Exclui uma refeição
+      tags:
+      - Dieta
+    get:
+      parameters:
+      - description: ID da refeição
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/diet.ResponseDiet'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Detalha uma refeição
+      tags:
+      - Dieta
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Refeição
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/diet.CreateMealRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/diet.ResponseDiet'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Cria uma refeição
+      tags:
+      - Dieta
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID da refeição
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Refeição
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/diet.UpdateMealRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/diet.ResponseDiet'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Atualiza uma refeição
+      tags:
+      - Dieta
+  /diet/meal/food:
+    get:
+      parameters:
+      - description: Trecho do nome
+        in: query
+        name: query
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Busca alimentos
+      tags:
+      - Dieta
+  /diet/meals:
+    get:
+      description: Lista vazia é devolvida como [] e não como null.
+      parameters:
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lista as refeições
+      tags:
+      - Dieta
+  /students:
+    get:
+      parameters:
+      - description: PERSONAL ou NUTRITIONIST
+        in: query
+        name: domain
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lista alunos e convites
+      tags:
+      - Alunos
+    post:
+      consumes:
+      - application/json
+      description: O profissional precisa da role do domínio (PERSONAL/NUTRITIONIST).
+        O vínculo só passa a valer após o aceite.
+      parameters:
+      - description: Convite
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/student.InviteStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.InviteCard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Convida um aluno
+      tags:
+      - Alunos
+  /students/{id}:
+    get:
+      description: O id é o link_id devolvido em GET /students.
+      parameters:
+      - description: link_id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentCard'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Detalha um vínculo
+      tags:
+      - Alunos
+  /students/invites:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lista convites pendentes
+      tags:
+      - Alunos
+  /students/invites/{id}:
+    delete:
+      parameters:
+      - description: ID do convite
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.InviteCard'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Revoga um convite
+      tags:
+      - Alunos
+  /students/invites/{id}/resend:
+    post:
+      parameters:
+      - description: ID do convite
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.InviteCard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Reenvia um convite
+      tags:
+      - Alunos
+  /students/invites/accept:
+    post:
+      consumes:
+      - application/json
+      description: Só a conta HEALTH_USER com o e-mail convidado pode aceitar; quem
+        já tem profissional no domínio precisa encerrar o vínculo anterior.
+      parameters:
+      - description: Token do convite
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/student.InviteTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.InviteCard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Aceita um convite
+      tags:
+      - Alunos
+  /students/invites/decline:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Token do convite
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/student.InviteTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.InviteCard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Recusa um convite
+      tags:
+      - Alunos
+  /students/links/{id}:
+    delete:
+      description: O aluno mantém o plano; o profissional perde o acesso.
+      parameters:
+      - description: link_id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentCard'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Encerra um vínculo
+      tags:
+      - Alunos
+    patch:
+      consumes:
+      - application/json
+      description: Somente o profissional dono do vínculo ativo pode editar o objetivo.
+      parameters:
+      - description: link_id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Objetivo
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/student.UpdateLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/student.StudentCard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Atualiza o objetivo
+      tags:
+      - Alunos
+  /workout:
+    delete:
+      parameters:
+      - description: ID do treino
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseWorkout'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Exclui um treino
+      tags:
+      - Treinos
+    get:
+      parameters:
+      - description: ID do treino
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseWorkout'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Detalha um treino
+      tags:
+      - Treinos
+    post:
+      consumes:
+      - application/json
+      description: Quando student_id é enviado, o profissional precisa ter vínculo
+        ativo no domínio personal.
+      parameters:
+      - description: Treino
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workout.CreateWorkoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseWorkout'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Cria um treino
+      tags:
+      - Treinos
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID do treino
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Treino
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workout.UpdateWorkoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseWorkout'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Atualiza um treino
+      tags:
+      - Treinos
+  /workout/exercises:
+    get:
+      description: As imagens externas são cacheadas e baixadas em segundo plano.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lista o catálogo de exercícios
+      tags:
+      - Exercícios
+  /workouts:
+    get:
+      description: Lista vazia é devolvida como [] e não como null.
+      parameters:
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lista os treinos
+      tags:
+      - Treinos
+  /workouts/week:
+    get:
+      description: Sempre devolve os 7 dias; workoutId nulo significa descanso.
+      parameters:
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lê a agenda semanal
+      tags:
+      - Agenda
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Agenda
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workout.UpdateWorkoutWeekRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Grava a agenda semanal
+      tags:
+      - Agenda
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

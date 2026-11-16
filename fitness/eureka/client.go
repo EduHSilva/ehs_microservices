@@ -2,6 +2,7 @@ package eureka
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,7 @@ func Register() {
 	homePageURL := fmt.Sprintf("http://%s:%s/", host, port)
 	statusPageURL := homePageURL
 	healthCheckURL := fmt.Sprintf("http://%s:%s/actuator/health", host, port)
+	swaggerURL := swaggerPublicURL()
 
 	payload := fmt.Sprintf(`
 	<instance>
@@ -39,21 +41,29 @@ func Register() {
 
 		<port enabled="true">%s</port>
 
+		<metadata>
+			<swagger-url>%s</swagger-url>
+			<sidebar.links.0.label>Swagger</sidebar.links.0.label>
+			<sidebar.links.0.url>%s</sidebar.links.0.url>
+		</metadata>
+
 		<dataCenterInfo class="com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo">
 			<name>MyOwn</name>
 		</dataCenterInfo>
 	</instance>
 	`,
-		instanceID,
-		host,
-		serviceName,
-		host,
-		serviceID,
-		serviceID,
-		homePageURL,
-		statusPageURL,
-		healthCheckURL,
-		port,
+		xmlEscape(instanceID),
+		xmlEscape(host),
+		xmlEscape(serviceName),
+		xmlEscape(host),
+		xmlEscape(serviceID),
+		xmlEscape(serviceID),
+		xmlEscape(homePageURL),
+		xmlEscape(statusPageURL),
+		xmlEscape(healthCheckURL),
+		xmlEscape(port),
+		xmlEscape(swaggerURL),
+		xmlEscape(swaggerURL),
 	)
 
 	url := fmt.Sprintf(
@@ -169,4 +179,21 @@ func StartHeartbeat() {
 
 	}()
 
+}
+
+func swaggerPublicURL() string {
+	if url := strings.TrimSpace(os.Getenv("SWAGGER_PUBLIC_URL")); url != "" {
+		return url
+	}
+	base := strings.TrimRight(strings.TrimSpace(os.Getenv("SERVER_URL")), "/")
+	if base == "" {
+		base = "http://localhost"
+	}
+	return base + "/fitness/swagger/index.html"
+}
+
+func xmlEscape(value string) string {
+	var buffer bytes.Buffer
+	_ = xml.EscapeText(&buffer, []byte(value))
+	return buffer.String()
 }

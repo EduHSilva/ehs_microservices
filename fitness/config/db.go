@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"health/schemas/config"
 	"health/schemas/diet"
+	"health/schemas/link"
 	"health/schemas/workout"
 	"health/seeds"
+	"health/service/links"
 	"log"
 	"os"
 	"time"
@@ -53,6 +55,11 @@ func InitDatabase() (*gorm.DB, error) {
 		&diet.MealFood{},
 		&config.UserConfig{},
 		&config.History{},
+		&link.StudentProfessional{},
+	}
+
+	if err := prepareOwnershipMigration(db); err != nil {
+		return nil, err
 	}
 
 	for _, table := range tables {
@@ -60,6 +67,8 @@ func InitDatabase() (*gorm.DB, error) {
 			return nil, err
 		}
 	}
+
+	links.Init(db)
 
 	seeds.Load(db)
 

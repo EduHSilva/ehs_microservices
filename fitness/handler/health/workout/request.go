@@ -6,6 +6,7 @@ import (
 
 type CreateWorkoutRequest struct {
 	Name      string                   `json:"name"`
+	StudentID string                   `json:"student_id"`
 	Exercises []ExerciseWorkoutRequest `json:"exercises"`
 }
 
@@ -33,15 +34,19 @@ func (r CreateWorkoutRequest) Validate() error {
 
 type UpdateWorkoutRequest struct {
 	Name      string                   `json:"name"`
+	StudentID string                   `json:"student_id"`
 	Exercises []ExerciseWorkoutRequest `json:"exercises"`
-	DayOfWeek uint                     `json:"dayOfWeek"`
+	// DayOfWeek follows ISO-8601 (1 = Monday, 7 = Sunday). Absent keeps the
+	// current day; 0 removes the workout from the schedule.
+	DayOfWeek *uint `json:"dayOfWeek"`
 }
 
-// UpdateWorkoutWeekRequest replaces the user's weekly workout schedule.
+// UpdateWorkoutWeekRequest replaces the student's weekly workout schedule.
 // DayOfWeek follows ISO-8601: 1 is Monday and 7 is Sunday. A null workoutId
 // leaves that day without a workout.
 type UpdateWorkoutWeekRequest struct {
-	Days []WorkoutWeekDayRequest `json:"days"`
+	StudentID string                  `json:"student_id"`
+	Days      []WorkoutWeekDayRequest `json:"days"`
 }
 
 type WorkoutWeekDayRequest struct {
@@ -79,6 +84,9 @@ func (r UpdateWorkoutRequest) Validate() error {
 	}
 	if len(r.Exercises) == 0 {
 		return helper.ErrParamIsRequired("exercises", "exercise")
+	}
+	if r.DayOfWeek != nil && *r.DayOfWeek > 7 {
+		return helper.ErrParamIsRequired("dayOfWeek", "value between 0 and 7")
 	}
 	return nil
 }
