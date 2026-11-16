@@ -115,3 +115,13 @@
 - Auditoria de operações administrativas (create/update/delete/status/confirmação/
   reenvio/invalidação de sessão) é registrada em log, sem tabela própria.
 - Dados sensíveis (senha, tokens, valores financeiros) não entram em log nem em OpenAPI.
+
+## 9. Marca dos produtos
+
+- Cada produto tem nome próprio curto, igual na web e no app: Estudos, Finanças,
+  Fitness, Orçamentos, Compras e Admin. Identificadores internos (pacotes Android,
+  `applicationId`, nomes de serviço e de repositório) **não** acompanham o nome.
+- Todo cliente cita a marca-mãe: "Desenvolvido por EHS Solutions" no rodapé, sidebar
+  ou drawer, e a landing `/app/` apresenta os produtos como apps da EHS Solutions.
+- Cor de marca da plataforma: indigo `#4F46E5` (dark `#818CF8`); cada app usa o ícone
+  próprio e não reaproveita o de outro produto.
