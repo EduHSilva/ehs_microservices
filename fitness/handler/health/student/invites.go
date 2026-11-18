@@ -2,6 +2,7 @@ package student
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"health/helper"
@@ -12,11 +13,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	directionSent     = "sent"
+	directionReceived = "received"
+)
+
 // ListInvitesHandler lista convites: enviados (profissional) ou recebidos (aluno).
 // @Summary Lista convites pendentes
+// @Description Contas com papel de aluno e de profissional escolhem o lado com direction=sent|received; o padrão é recebido para aluno e enviado para profissional.
 // @Tags Alunos
 // @Produce json
+// @Param direction query string false "sent ou received"
 // @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} helper.ErrorResponse
 // @Failure 401 {object} helper.ErrorResponse
 // @Failure 403 {object} helper.ErrorResponse
 // @Router /students/invites [get]
@@ -27,22 +36,57 @@ func ListInvitesHandler(ctx *gin.Context) {
 		return
 	}
 
-	_ = links.ExpireDue(time.Now())
-
-	if caller.IsProfessional() {
-		pending, err := links.PendingForProfessional(caller.ID)
-		if err != nil {
-			helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizerOf(ctx))
-			return
-		}
-		cards := make([]InviteCard, 0, len(pending))
-		for _, relation := range pending {
-			cards = append(cards, ConvertLinkToInviteCard(relation))
-		}
-		helper.SendSuccess(ctx, cards)
+	direction := strings.ToLower(strings.TrimSpace(ctx.Query("direction")))
+	if direction != "" && direction != directionSent && direction != directionReceived {
+		sendLocalizedError(ctx, http.StatusBadRequest, "invalidDirection")
 		return
 	}
 
+	_ = links.ExpireDue(time.Now())
+
+	switch direction {
+	case directionReceived:
+		listReceivedInvites(ctx, caller)
+		return
+	case directionSent:
+		listSentInvites(ctx, caller)
+		return
+	}
+
+	// A conta pode acumular os dois papéis: o aluno tem prioridade para não
+	// esconder os convites recebidos. O cliente escolhe o lado com direction.
+	if caller.IsStudent() {
+		listReceivedInvites(ctx, caller)
+		return
+	}
+	if caller.IsProfessional() {
+		listSentInvites(ctx, caller)
+		return
+	}
+	helper.SendErrorDefault(ctx, http.StatusForbidden, localizerOf(ctx))
+}
+
+func listSentInvites(ctx *gin.Context, caller helper.Caller) {
+	if !caller.IsProfessional() {
+		helper.SendErrorDefault(ctx, http.StatusForbidden, localizerOf(ctx))
+		return
+	}
+
+	pending, err := links.PendingForProfessional(caller.ID)
+	if err != nil {
+		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizerOf(ctx))
+		return
+	}
+
+	cards := make([]InviteCard, 0, len(pending))
+	for _, relation := range pending {
+		cards = append(cards, ConvertLinkToInviteCard(relation))
+	}
+
+	helper.SendSuccess(ctx, cards)
+}
+
+func listReceivedInvites(ctx *gin.Context, caller helper.Caller) {
 	if !caller.IsStudent() {
 		helper.SendErrorDefault(ctx, http.StatusForbidden, localizerOf(ctx))
 		return

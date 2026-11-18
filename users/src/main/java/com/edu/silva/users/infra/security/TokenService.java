@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -26,6 +24,13 @@ public class TokenService {
 
     @Value("${api.security.token.secret}")
     private String secret;
+
+    /**
+     * Validade da sessão em horas. A sessão é renovada a cada `/auth/me`, então quem
+     * usa o produto com frequência não precisa entrar de novo.
+     */
+    @Value("${api.security.token.ttl-hours:168}")
+    private long sessionTtlHours;
 
     public String generateToken(User user, AppScope app) {
         try {
@@ -115,9 +120,6 @@ public class TokenService {
     }
 
     private Instant generateExpirationDate() {
-        return LocalDateTime
-                .now()
-                .plusHours(2)
-                .toInstant(ZoneOffset.of("-03:00"));
+        return Instant.now().plus(Duration.ofHours(sessionTtlHours));
     }
 }

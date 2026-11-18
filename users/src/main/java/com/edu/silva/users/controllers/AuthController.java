@@ -53,17 +53,21 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Current user",
-            description = "Returns the authenticated user. The token field is always null: "
-                    + "clients must keep their local token and only discard it after a 401.")
+            description = "Returns the authenticated user with a renewed session token "
+                    + "(sliding expiration). Clients should persist the returned token and "
+                    + "only discard it after a 401.")
     @GetMapping("me")
-    public ResponseEntity<DefaultResponse<LoginResponseDTO>> me(@AuthenticationPrincipal User user) {
+    public ResponseEntity<DefaultResponse<LoginResponseDTO>> me(
+            @AuthenticationPrincipal User user,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
+        DecodedJWT jwt = verifyToken(authorization);
         List<String> roles = user.getRoles().stream().map(Enum::name).toList();
         LoginResponseDTO loginResponseDTO = new LoginResponseDTO(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getLastLogin(),
-                null,
+                tokenService.generateToken(user, resolveApp(jwt)),
                 roles,
                 AppScope.appsFor(roles).stream().map(Enum::name).toList());
         return ResponseEntity.ok(new DefaultResponse<>("Auth successfully verified", loginResponseDTO));

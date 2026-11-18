@@ -13,6 +13,7 @@ func initStudentRoutes(api *gin.Engine) {
 	api.POST("students", student.InviteStudentHandler)
 	api.GET("students/:id", student.GetStudentHandler)
 
+	api.GET("students/links", student.ListMyLinksHandler)
 	api.GET("students/invites", student.ListInvitesHandler)
 	api.POST("students/invites/accept", student.AcceptInviteHandler)
 	api.POST("students/invites/decline", student.DeclineInviteHandler)

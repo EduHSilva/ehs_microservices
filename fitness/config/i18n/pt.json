@@ -14,6 +14,8 @@
   "ownInvite": "Você não pode convidar a própria conta",
   "inviteExists": "Já existe um convite pendente para este e-mail",
   "alreadyLinked": "Este aluno já possui um profissional nesta área",
+  "inviteProfessional": "Não é possível convidar uma conta profissional",
+  "invalidDirection": "Direção de convites inválida",
   "invalidInvite": "Este convite não está mais válido",
   "inviteExpired": "Este convite expirou",
   "invalidExerciseName": "Informe o nome do exercício",

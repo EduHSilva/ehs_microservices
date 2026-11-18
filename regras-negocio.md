@@ -21,6 +21,12 @@
     "sem permissão", **sem** deslogar.
 - Senhas são BCrypt; reset por e-mail é token de uso único (30 min) e qualquer mudança
   de `tokenVersion` invalida os tokens pendentes.
+- Validade da sessão: o JWT vale `API_SECURITY_TOKEN_TTL_HOURS` (padrão 168 h = 7 dias)
+  e **`GET /auth/me` devolve um token renovado** (expiração deslizante). Os clientes
+  devem persistir o token devolvido por `/auth/me`, de modo que quem usa o app com
+  frequência não precise entrar de novo; inatividade maior que a validade força novo
+  login (401). O cookie dos sites (Finanças e Orçamentos) é persistente (30 dias) —
+  a validade real continua sendo a do JWT.
 - Troca de senha autenticada (`PUT /auth/password`): exige a senha atual correta, nova
   senha com ao menos 8 caracteres e diferente da atual. Senha atual errada retorna 400
   (não 401) para os fronts não derrubarem a sessão. A troca persiste só o hash e

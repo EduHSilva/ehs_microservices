@@ -93,7 +93,7 @@ const docTemplate = `{
         },
         "/config/user": {
             "get": {
-                "description": "Cria a configuração padrão no primeiro acesso (showCreatine=true).",
+                "description": "Cria a configuração padrão no primeiro acesso (showCreatine=true).\nCom student_id, exige vínculo ativo com o profissional (qualquer domínio).",
                 "produces": [
                     "application/json"
                 ],
@@ -101,6 +101,14 @@ const docTemplate = `{
                     "Configuração"
                 ],
                 "summary": "Lê a configuração do usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Aluno (ausente = o próprio usuário)",
+                        "name": "student_id",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -114,10 +122,17 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
                     }
                 }
             },
             "put": {
+                "description": "Com student_id, qualquer profissional com vínculo ativo pode ajustar.",
                 "consumes": [
                     "application/json"
                 ],
@@ -155,6 +170,18 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
@@ -383,6 +410,7 @@ const docTemplate = `{
         },
         "/diet/meal/food": {
             "get": {
+                "description": "Busca por palavras do nome, ignorando acentos e caixa.",
                 "produces": [
                     "application/json"
                 ],
@@ -565,6 +593,7 @@ const docTemplate = `{
         },
         "/students/invites": {
             "get": {
+                "description": "Contas com papel de aluno e de profissional escolhem o lado com direction=sent|received; o padrão é recebido para aluno e enviado para profissional.",
                 "produces": [
                     "application/json"
                 ],
@@ -572,12 +601,26 @@ const docTemplate = `{
                     "Alunos"
                 ],
                 "summary": "Lista convites pendentes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sent ou received",
+                        "name": "direction",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
                         }
                     },
                     "401": {
@@ -795,6 +838,41 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/students/links": {
+            "get": {
+                "description": "Usado pelo aluno para saber quem gerencia cada domínio do plano.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Alunos"
+                ],
+                "summary": "Lista meus vínculos ativos",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/student.MyLinkCard"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/helper.ErrorResponse"
                         }
@@ -1192,6 +1270,107 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Apenas o autor edita o exercício; ele continua visível só para ele.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercícios"
+                ],
+                "summary": "Edita um exercício próprio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID do exercício",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Exercício",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workout.CreateExerciseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/workout.ResponseExercises"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "O exercício fica visível apenas para o usuário que o criou.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercícios"
+                ],
+                "summary": "Cria um exercício próprio",
+                "parameters": [
+                    {
+                        "description": "Exercício",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workout.CreateExerciseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/workout.ResponseExercises"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/workout/load": {
@@ -1222,8 +1401,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/workout.ResponseWorkout"
                         }
                     },
                     "400": {
@@ -1430,6 +1608,10 @@ const docTemplate = `{
                 },
                 "showWorkout": {
                     "type": "boolean"
+                },
+                "student_id": {
+                    "description": "StudentID targets a linked student; empty means the caller's own config.",
+                    "type": "string"
                 }
             }
         },
@@ -1513,6 +1695,19 @@ const docTemplate = `{
         "diet.ResponseDataFood": {
             "type": "object",
             "properties": {
+                "calories": {
+                    "description": "Macros por 100 g do catálogo; os clientes escalam pela quantidade.",
+                    "type": "number"
+                },
+                "carbs": {
+                    "type": "number"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "fiber": {
+                    "type": "number"
+                },
                 "food_id": {
                     "type": "integer"
                 },
@@ -1524,6 +1719,9 @@ const docTemplate = `{
                 },
                 "photo": {
                     "$ref": "#/definitions/diet.PhotoField"
+                },
+                "protein": {
+                    "type": "number"
                 },
                 "quantity": {
                     "type": "integer"
@@ -1623,6 +1821,29 @@ const docTemplate = `{
                 }
             }
         },
+        "student.MyLinkCard": {
+            "type": "object",
+            "properties": {
+                "domain": {
+                    "type": "string"
+                },
+                "goal": {
+                    "type": "string"
+                },
+                "link_id": {
+                    "type": "integer"
+                },
+                "professional_id": {
+                    "type": "string"
+                },
+                "professional_name": {
+                    "type": "string"
+                },
+                "since": {
+                    "type": "string"
+                }
+            }
+        },
         "student.StudentCard": {
             "type": "object",
             "properties": {
@@ -1674,6 +1895,17 @@ const docTemplate = `{
                 }
             }
         },
+        "workout.CreateExerciseRequest": {
+            "type": "object",
+            "properties": {
+                "body_part": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "workout.CreateWorkoutRequest": {
             "type": "object",
             "properties": {
@@ -1694,6 +1926,10 @@ const docTemplate = `{
         "workout.ExerciseWorkoutRequest": {
             "type": "object",
             "properties": {
+                "duration_seconds": {
+                    "description": "DurationSeconds is used by time-based (cardio) exercises instead of sets/reps.",
+                    "type": "integer"
+                },
                 "exercise_id": {
                     "type": "integer"
                 },
@@ -1758,6 +1994,12 @@ const docTemplate = `{
                 "body_part": {
                     "type": "string"
                 },
+                "custom": {
+                    "type": "boolean"
+                },
+                "duration_seconds": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1790,6 +2032,17 @@ const docTemplate = `{
                 }
             }
         },
+        "workout.ResponseExercises": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/workout.ResponseDataExercise"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "workout.ResponseWorkout": {
             "type": "object",
             "properties": {
@@ -1811,6 +2064,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "student_id": {
+                    "description": "StudentID targets a linked student; empty means the caller's own plan.",
                     "type": "string"
                 },
                 "workout_id": {

@@ -78,6 +78,10 @@ func InviteStudentHandler(ctx *gin.Context) {
 		sendLocalizedError(ctx, http.StatusBadRequest, "ownInvite")
 		return
 	}
+	if found && (profile.HasRole(helper.RolePersonal) || profile.HasRole(helper.RoleNutritionist)) {
+		sendLocalizedError(ctx, http.StatusConflict, "inviteProfessional")
+		return
+	}
 	if found && links.StudentHasActiveDomain(profile.ID, domain) {
 		sendLocalizedError(ctx, http.StatusConflict, "alreadyLinked")
 		return

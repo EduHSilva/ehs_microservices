@@ -41,6 +41,16 @@ type IncomingInviteCard struct {
 	ExpiresAt        time.Time `json:"expires_at"`
 }
 
+// MyLinkCard is an active link seen from the student's side.
+type MyLinkCard struct {
+	LinkID           uint       `json:"link_id"`
+	Domain           string     `json:"domain"`
+	ProfessionalID   string     `json:"professional_id"`
+	ProfessionalName string     `json:"professional_name"`
+	Goal             string     `json:"goal"`
+	Since            *time.Time `json:"since,omitempty"`
+}
+
 func ConvertLinkToStudentCard(relation link.StudentProfessional, profile users.Profile) StudentCard {
 	card := StudentCard{
 		LinkID: relation.ID,
@@ -84,5 +94,16 @@ func ConvertLinkToIncomingInvite(relation link.StudentProfessional, professional
 		Domain:           string(relation.Domain),
 		Goal:             relation.Goal,
 		ExpiresAt:        relation.ExpiresAt,
+	}
+}
+
+func ConvertLinkToMyLinkCard(relation link.StudentProfessional, professional users.Profile) MyLinkCard {
+	return MyLinkCard{
+		LinkID:           relation.ID,
+		Domain:           string(relation.Domain),
+		ProfessionalID:   relation.ProfessionalID,
+		ProfessionalName: professional.Username,
+		Goal:             relation.Goal,
+		Since:            relation.AcceptedAt,
 	}
 }

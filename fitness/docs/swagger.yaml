@@ -6,6 +6,8 @@ definitions:
         type: number
       creatine:
         type: boolean
+      trained:
+        type: boolean
     type: object
   config.UpdateUserConfigRequest:
     properties:
@@ -13,6 +15,12 @@ definitions:
         type: number
       showCreatine:
         type: boolean
+      showWorkout:
+        type: boolean
+      student_id:
+        description: StudentID targets a linked student; empty means the caller's
+          own config.
+        type: string
     type: object
   diet.CreateMealRequest:
     properties:
@@ -66,6 +74,15 @@ definitions:
     type: object
   diet.ResponseDataFood:
     properties:
+      calories:
+        description: Macros por 100 g do catálogo; os clientes escalam pela quantidade.
+        type: number
+      carbs:
+        type: number
+      fat:
+        type: number
+      fiber:
+        type: number
       food_id:
         type: integer
       food_name:
@@ -74,6 +91,8 @@ definitions:
         type: string
       photo:
         $ref: '#/definitions/diet.PhotoField'
+      protein:
+        type: number
       quantity:
         type: integer
       tag_id:
@@ -137,6 +156,21 @@ definitions:
       token:
         type: string
     type: object
+  student.MyLinkCard:
+    properties:
+      domain:
+        type: string
+      goal:
+        type: string
+      link_id:
+        type: integer
+      professional_id:
+        type: string
+      professional_name:
+        type: string
+      since:
+        type: string
+    type: object
   student.StudentCard:
     properties:
       domain:
@@ -170,6 +204,13 @@ definitions:
       goal:
         type: string
     type: object
+  workout.CreateExerciseRequest:
+    properties:
+      body_part:
+        type: string
+      name:
+        type: string
+    type: object
   workout.CreateWorkoutRequest:
     properties:
       exercises:
@@ -183,6 +224,10 @@ definitions:
     type: object
   workout.ExerciseWorkoutRequest:
     properties:
+      duration_seconds:
+        description: DurationSeconds is used by time-based (cardio) exercises instead
+          of sets/reps.
+        type: integer
       exercise_id:
         type: integer
       load:
@@ -225,6 +270,10 @@ definitions:
     properties:
       body_part:
         type: string
+      custom:
+        type: boolean
+      duration_seconds:
+        type: integer
       id:
         type: integer
       image_url:
@@ -246,12 +295,32 @@ definitions:
       target:
         type: string
     type: object
+  workout.ResponseExercises:
+    properties:
+      data:
+        $ref: '#/definitions/workout.ResponseDataExercise'
+      message:
+        type: string
+    type: object
   workout.ResponseWorkout:
     properties:
       data:
         $ref: '#/definitions/workout.ResponseData'
       message:
         type: string
+    type: object
+  workout.UpdateWorkoutLoadRequest:
+    properties:
+      exercise_id:
+        type: integer
+      load:
+        type: number
+      student_id:
+        description: StudentID targets a linked student; empty means the caller's
+          own plan.
+        type: string
+      workout_id:
+        type: integer
     type: object
   workout.UpdateWorkoutRequest:
     properties:
@@ -350,7 +419,14 @@ paths:
       - Configuração
   /config/user:
     get:
-      description: Cria a configuração padrão no primeiro acesso (showCreatine=true).
+      description: |-
+        Cria a configuração padrão no primeiro acesso (showCreatine=true).
+        Com student_id, exige vínculo ativo com o profissional (qualquer domínio).
+      parameters:
+      - description: Aluno (ausente = o próprio usuário)
+        in: query
+        name: student_id
+        type: string
       produces:
       - application/json
       responses:
@@ -363,12 +439,17 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
       summary: Lê a configuração do usuário
       tags:
       - Configuração
     put:
       consumes:
       - application/json
+      description: Com student_id, qualquer profissional com vínculo ativo pode ajustar.
       parameters:
       - description: Configuração
         in: body
@@ -390,6 +471,14 @@ paths:
             $ref: '#/definitions/helper.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
       summary: Atualiza a configuração do usuário
@@ -541,6 +630,7 @@ paths:
       - Dieta
   /diet/meal/food:
     get:
+      description: Busca por palavras do nome, ignorando acentos e caixa.
       parameters:
       - description: Trecho do nome
         in: query
@@ -688,6 +778,13 @@ paths:
       - Alunos
   /students/invites:
     get:
+      description: Contas com papel de aluno e de profissional escolhem o lado com
+        direction=sent|received; o padrão é recebido para aluno e enviado para profissional.
+      parameters:
+      - description: sent ou received
+        in: query
+        name: direction
+        type: string
       produces:
       - application/json
       responses:
@@ -696,6 +793,10 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -841,6 +942,29 @@ paths:
           schema:
             $ref: '#/definitions/helper.ErrorResponse'
       summary: Recusa um convite
+      tags:
+      - Alunos
+  /students/links:
+    get:
+      description: Usado pelo aluno para saber quem gerencia cada domínio do plano.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/student.MyLinkCard'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Lista meus vínculos ativos
       tags:
       - Alunos
   /students/links/{id}:
@@ -1076,6 +1200,113 @@ paths:
       summary: Lista o catálogo de exercícios
       tags:
       - Exercícios
+    post:
+      consumes:
+      - application/json
+      description: O exercício fica visível apenas para o usuário que o criou.
+      parameters:
+      - description: Exercício
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workout.CreateExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseExercises'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Cria um exercício próprio
+      tags:
+      - Exercícios
+    put:
+      consumes:
+      - application/json
+      description: Apenas o autor edita o exercício; ele continua visível só para
+        ele.
+      parameters:
+      - description: ID do exercício
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Exercício
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workout.CreateExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseExercises'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Edita um exercício próprio
+      tags:
+      - Exercícios
+  /workout/load:
+    put:
+      consumes:
+      - application/json
+      description: 'Alteração parcial: mantém nome, ordem e os demais exercícios do
+        treino.'
+      parameters:
+      - description: Carga
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/workout.UpdateWorkoutLoadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workout.ResponseWorkout'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/helper.ErrorResponse'
+      summary: Atualiza a carga de um exercício do treino
+      tags:
+      - Treinos
   /workouts:
     get:
       description: Lista vazia é devolvida como [] e não como null.
