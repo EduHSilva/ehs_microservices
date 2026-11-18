@@ -14,4 +14,6 @@ type ExerciseWorkout struct {
 	// DurationSeconds marks a time-based exercise (cardio); 0 means sets/reps.
 	DurationSeconds uint   `json:"duration_seconds"`
 	Notes           string `json:"notes"`
+	// Position keeps the order chosen by the user; 0 is legacy data sorted by id.
+	Position int `json:"position" gorm:"index"`
 }

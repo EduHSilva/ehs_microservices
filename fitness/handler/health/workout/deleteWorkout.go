@@ -51,9 +51,7 @@ func DeleteWorkoutHandler(ctx *gin.Context) {
 	}
 
 	work := &workout.Workout{}
-	err := db.Where("id = ? AND student_id = ?", id, studentID).
-		Preload("Exercises").
-		Preload("Exercises.Exercise").
+	err := preloadWorkoutExercises(db.Where("id = ? AND student_id = ?", id, studentID)).
 		First(work).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

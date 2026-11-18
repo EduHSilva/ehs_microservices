@@ -100,7 +100,7 @@ func UpdateWorkoutHandler(ctx *gin.Context) {
 		if err := tx.Where("workout_id = ?", work.ID).Delete(&workout.ExerciseWorkout{}).Error; err != nil {
 			return err
 		}
-		for _, ex := range request.Exercises {
+		for i, ex := range request.Exercises {
 			newExercise := workout.ExerciseWorkout{
 				WorkoutID:       work.ID,
 				ExerciseID:      ex.ExerciseID,
@@ -110,13 +110,14 @@ func UpdateWorkoutHandler(ctx *gin.Context) {
 				Repetitions:     ex.Repetitions,
 				DurationSeconds: ex.DurationSeconds,
 				Notes:           ex.Notes,
+				Position:        i + 1,
 			}
 			if err := tx.Create(&newExercise).Error; err != nil {
 				return err
 			}
 		}
 
-		return tx.Preload("Exercises").Preload("Exercises.Exercise").First(work, work.ID).Error
+		return preloadWorkoutExercises(tx).First(work, work.ID).Error
 	})
 	if err != nil {
 		logger.ErrF("error updating: %s", err.Error())

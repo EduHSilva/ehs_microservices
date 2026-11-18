@@ -7,4 +7,5 @@ type UserConfig struct {
 	UserID       string  `gorm:"type:uuid;not null"`
 	ShowCreatine bool    `gorm:"type:bool" json:"showCreatine"`
 	DailyCardio  float64 `json:"dailyCardio"`
+	ShowWorkout  bool    `gorm:"type:bool" json:"showWorkout"`
 }

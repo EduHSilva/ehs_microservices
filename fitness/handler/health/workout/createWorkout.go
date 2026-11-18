@@ -77,7 +77,7 @@ func CreateWorkoutHandler(ctx *gin.Context) {
 		AuthorID:  caller.ID,
 	}
 
-	for _, e := range request.Exercises {
+	for i, e := range request.Exercises {
 		work.Exercises = append(work.Exercises, workout.ExerciseWorkout{
 			ExerciseID:      e.ExerciseID,
 			WorkoutID:       e.WorkoutID,
@@ -87,6 +87,7 @@ func CreateWorkoutHandler(ctx *gin.Context) {
 			Repetitions:     e.Repetitions,
 			DurationSeconds: e.DurationSeconds,
 			Notes:           e.Notes,
+			Position:        i + 1,
 		})
 	}
 
@@ -94,7 +95,7 @@ func CreateWorkoutHandler(ctx *gin.Context) {
 		if err := tx.Create(&work).Error; err != nil {
 			return err
 		}
-		return tx.Preload("Exercises").Preload("Exercises.Exercise").First(&work, work.ID).Error
+		return preloadWorkoutExercises(tx).First(&work, work.ID).Error
 	})
 	if err != nil {
 		logger.ErrF("Error in CreateWorkoutHandler: %s", err.Error())

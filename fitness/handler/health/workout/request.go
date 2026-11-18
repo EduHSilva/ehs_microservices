@@ -39,6 +39,29 @@ func (r CreateWorkoutRequest) Validate() error {
 	return nil
 }
 
+// UpdateWorkoutLoadRequest changes only the prescribed load of one exercise in
+// a workout; it is used by the app while the student executes the workout.
+type UpdateWorkoutLoadRequest struct {
+	WorkoutID  uint    `json:"workout_id"`
+	ExerciseID uint    `json:"exercise_id"`
+	Load       float64 `json:"load"`
+	// StudentID targets a linked student; empty means the caller's own plan.
+	StudentID string `json:"student_id"`
+}
+
+func (r UpdateWorkoutLoadRequest) Validate() error {
+	if r.WorkoutID == 0 {
+		return helper.ErrParamIsRequired("workout_id", "integer")
+	}
+	if r.ExerciseID == 0 {
+		return helper.ErrParamIsRequired("exercise_id", "integer")
+	}
+	if r.Load < 0 || r.Load > 1000 {
+		return helper.ErrParamIsRequired("load", "value between 0 and 1000")
+	}
+	return nil
+}
+
 type UpdateWorkoutRequest struct {
 	Name      string                   `json:"name"`
 	StudentID string                   `json:"student_id"`

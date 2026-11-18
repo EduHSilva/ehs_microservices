@@ -1194,6 +1194,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/workout/load": {
+            "put": {
+                "description": "Alteração parcial: mantém nome, ordem e os demais exercícios do treino.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Treinos"
+                ],
+                "summary": "Atualiza a carga de um exercício do treino",
+                "parameters": [
+                    {
+                        "description": "Carga",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/workout.UpdateWorkoutLoadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/helper.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/workouts": {
             "get": {
                 "description": "Lista vazia é devolvida como [] e não como null.",
@@ -1354,6 +1413,9 @@ const docTemplate = `{
                 },
                 "creatine": {
                     "type": "boolean"
+                },
+                "trained": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1364,6 +1426,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "showCreatine": {
+                    "type": "boolean"
+                },
+                "showWorkout": {
                     "type": "boolean"
                 }
             }
@@ -1733,6 +1798,23 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "workout.UpdateWorkoutLoadRequest": {
+            "type": "object",
+            "properties": {
+                "exercise_id": {
+                    "type": "integer"
+                },
+                "load": {
+                    "type": "number"
+                },
+                "student_id": {
+                    "type": "string"
+                },
+                "workout_id": {
+                    "type": "integer"
                 }
             }
         },

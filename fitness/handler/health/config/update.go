@@ -61,6 +61,9 @@ func UpdateUserConfigHandler(ctx *gin.Context) {
 	if request.DailyCardio != nil {
 		userConfig.DailyCardio = *request.DailyCardio
 	}
+	if request.ShowWorkout != nil {
+		userConfig.ShowWorkout = *request.ShowWorkout
+	}
 	if err := db.Save(&userConfig).Error; err != nil {
 		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizer)
 		return
@@ -108,6 +111,9 @@ func UpdateUserDayHistoryHandler(ctx *gin.Context) {
 	}
 	if request.Cardio != nil {
 		history.Cardio = *request.Cardio
+	}
+	if request.Trained != nil {
+		history.Trained = *request.Trained
 	}
 	if err := db.Save(&history).Error; err != nil {
 		helper.SendErrorDefault(ctx, http.StatusInternalServerError, getI18n.(*i18n.Localizer))

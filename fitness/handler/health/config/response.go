@@ -9,6 +9,7 @@ type UserConfigResponse struct {
 	ID           uint    `json:"id"`
 	ShowCreatine bool    `json:"showCreatine"`
 	DailyCardio  float64 `json:"dailyCardio"`
+	ShowWorkout  bool    `json:"showWorkout"`
 }
 
 func ConvertUserConfigToUserConfigResponse(userConfig *config.UserConfig, locale any) UserConfigResponse {
@@ -16,6 +17,7 @@ func ConvertUserConfigToUserConfigResponse(userConfig *config.UserConfig, locale
 		ID:           userConfig.ID,
 		ShowCreatine: userConfig.ShowCreatine,
 		DailyCardio:  userConfig.DailyCardio,
+		ShowWorkout:  userConfig.ShowWorkout,
 	}
 }
 
@@ -24,6 +26,7 @@ type HistoryResponse struct {
 	EventDate string  `json:"eventDate"`
 	Creatine  bool    `json:"creatine"`
 	Cardio    float64 `json:"cardio"`
+	Trained   bool    `json:"trained"`
 }
 
 func ConvertHistoryToHistoryResponse(history *config.History) HistoryResponse {
@@ -32,5 +35,6 @@ func ConvertHistoryToHistoryResponse(history *config.History) HistoryResponse {
 		EventDate: time.Time(history.EventDate).Format("2006-01-02"),
 		Creatine:  history.Creatine,
 		Cardio:    history.Cardio,
+		Trained:   history.Trained,
 	}
 }

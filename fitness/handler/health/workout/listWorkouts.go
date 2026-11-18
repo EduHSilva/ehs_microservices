@@ -42,9 +42,7 @@ func GetWorkoutsHandler(ctx *gin.Context) {
 		return
 	}
 
-	if err := db.Where("student_id = ?", studentID).Order("name").
-		Preload("Exercises").
-		Preload("Exercises.Exercise").
+	if err := preloadWorkoutExercises(db.Where("student_id = ?", studentID).Order("name")).
 		Find(&workouts).Error; err != nil {
 		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizer)
 		return
