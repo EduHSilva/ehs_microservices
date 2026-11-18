@@ -69,6 +69,18 @@ public class EmailConsumer {
                     btnLabel = i18n.getMessage("fitnessInvite.button", locale);
                     break;
 
+                case FINANCES_ACCOUNT_INVITE:
+                    String owner = dto.getVariables() == null
+                            ? ""
+                            : String.valueOf(dto.getVariables().getOrDefault("owner", ""));
+                    String account = dto.getVariables() == null
+                            ? ""
+                            : String.valueOf(dto.getVariables().getOrDefault("account", ""));
+                    subject = i18n.getMessage("financesInvite.subject", locale);
+                    body = i18n.getMessage("financesInvite.body", locale, dto.getUsername(), owner, account);
+                    btnLabel = i18n.getMessage("financesInvite.button", locale);
+                    break;
+
                 default:
                     throw new IllegalArgumentException("Invalid email type");
             }

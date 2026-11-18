@@ -11,5 +11,7 @@ type ExerciseWorkout struct {
 	Load        float64  `json:"load"`
 	RestSeconds int      `json:"rest_seconds"`
 	Repetitions int      `json:"repetitions"`
-	Notes       string   `json:"notes"`
+	// DurationSeconds marks a time-based exercise (cardio); 0 means sets/reps.
+	DurationSeconds uint   `json:"duration_seconds"`
+	Notes           string `json:"notes"`
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,7 @@ import org.springframework.data.repository.query.Param;
 public interface RecurrenceRepository extends JpaRepository<Recurrence, UUID> {
     Optional<Recurrence> findByIdAndUserId(UUID id, UUID userId);
     Page<Recurrence> findAllByAccountId(String accountId, Pageable pageable);
+    Page<Recurrence> findAllByAccountIdIn(Collection<String> accountIds, Pageable pageable);
     List<Recurrence> findAllByAccountIdAndStatus(String accountId, RecurrenceStatus status);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from Recurrence r where r.accountId = :accountId and r.status = :status")

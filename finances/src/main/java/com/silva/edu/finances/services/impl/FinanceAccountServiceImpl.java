@@ -3,10 +3,13 @@ package com.silva.edu.finances.services.impl;
 import com.silva.edu.finances.domain.dtos.request.CreateFinanceAccountRequest;
 import com.silva.edu.finances.domain.dtos.response.FinanceAccountResponse;
 import com.silva.edu.finances.domain.entities.FinanceAccount;
+import com.silva.edu.finances.domain.entities.FinanceAccountMember;
 import com.silva.edu.finances.domain.entities.Transaction;
+import com.silva.edu.finances.domain.enums.AccountMemberStatus;
 import com.silva.edu.finances.domain.enums.FinancialAccountType;
 import com.silva.edu.finances.infra.config.UserContext;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
+import com.silva.edu.finances.repositories.FinanceAccountMemberRepository;
 import com.silva.edu.finances.repositories.FinanceAccountRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
@@ -16,18 +19,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.Date;
 
 @Service @Transactional
 public class FinanceAccountServiceImpl implements FinanceAccountService {
     private final FinanceAccountRepository accounts;
+    private final FinanceAccountMemberRepository members;
     private final TransactionRepository transactions;
     private final RecurrenceRepository recurrences;
 
-    public FinanceAccountServiceImpl(FinanceAccountRepository accounts, TransactionRepository transactions, RecurrenceRepository recurrences) {
+    public FinanceAccountServiceImpl(FinanceAccountRepository accounts, FinanceAccountMemberRepository members,
+                                     TransactionRepository transactions, RecurrenceRepository recurrences) {
         this.accounts = accounts;
+        this.members = members;
         this.transactions = transactions;
         this.recurrences = recurrences;
     }
@@ -35,7 +45,16 @@ public class FinanceAccountServiceImpl implements FinanceAccountService {
     public List<FinanceAccountResponse> listMine() {
         UUID user = UserContext.getUser();
         getOrCreatePersonalDefault();
-        return accounts.findAllByOwnerId(user).stream().map(account -> response(account, user)).toList();
+        List<FinanceAccountResponse> result = new ArrayList<>();
+        for (FinanceAccount account : accounts.findAllByOwnerId(user)) {
+            result.add(response(account, account.getOwnerId(), "OWNER"));
+        }
+        for (FinanceAccountMember member : members.findAllByUserIdAndStatus(user, AccountMemberStatus.ACTIVE)) {
+            accounts.findById(member.getAccountId())
+                    .filter(account -> !account.getOwnerId().equals(user))
+                    .ifPresent(account -> result.add(response(account, account.getOwnerId(), "MEMBER")));
+        }
+        return result;
     }
     @Override public FinanceAccountResponse create(CreateFinanceAccountRequest request) {
         UUID user = UserContext.getUser();
@@ -44,19 +63,58 @@ public class FinanceAccountServiceImpl implements FinanceAccountService {
         account.setName(request.name().trim()); account.setType(request.type());
         account.setOpeningBalance(request.openingBalance()); account.setCurrency("BRL");
         accounts.save(account);
-        return response(account, user);
+        return response(account, user, "OWNER");
     }
     @Override @Transactional(readOnly = true)
     public FinanceAccountResponse get(String accountId) {
-        UUID user = UserContext.getUser();
-        FinanceAccount account = accounts.findByIdAndOwnerId(accountId, user)
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("FinanceAccount", accountId));
-        return response(account, user);
+        FinanceAccount account = requireAccount(accountId);
+        String role = account.getOwnerId().equals(UserContext.getUser()) ? "OWNER" : "MEMBER";
+        return response(account, account.getOwnerId(), role);
     }
     @Override @Transactional(readOnly = true)
     public void requireAccess(String accountId) {
-        if (accountId == null || accountId.isBlank() || accounts.findByIdAndOwnerId(accountId, UserContext.getUser()).isEmpty())
+        requireAccount(accountId);
+    }
+    @Override @Transactional(readOnly = true)
+    public FinanceAccount requireAccount(String accountId) {
+        if (accountId == null || accountId.isBlank())
             throw new CustomExceptions.EntityNotFoundException("FinanceAccount", accountId);
+        UUID user = UserContext.getUser();
+        FinanceAccount account = accounts.findById(accountId)
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("FinanceAccount", accountId));
+        if (account.getOwnerId().equals(user)) return account;
+        if (members.existsByAccountIdAndUserIdAndStatus(accountId, user, AccountMemberStatus.ACTIVE)) return account;
+        throw new CustomExceptions.EntityNotFoundException("FinanceAccount", accountId);
+    }
+    @Override @Transactional(readOnly = true)
+    public UUID ownerOf(String accountId) {
+        return requireAccount(accountId).getOwnerId();
+    }
+    @Override @Transactional(readOnly = true)
+    public List<String> accessibleAccountIds() {
+        UUID user = UserContext.getUser();
+        Set<String> ids = new LinkedHashSet<>();
+        for (FinanceAccount account : accounts.findAllByOwnerId(user)) ids.add(account.getId());
+        for (FinanceAccountMember member : members.findAllByUserIdAndStatus(user, AccountMemberStatus.ACTIVE))
+            ids.add(member.getAccountId());
+        return new ArrayList<>(ids);
+    }
+    @Override @Transactional(readOnly = true)
+    public Set<UUID> visibleUserIds() {
+        UUID user = UserContext.getUser();
+        Set<UUID> ids = new HashSet<>();
+        ids.add(user);
+        for (FinanceAccountMember member : members.findAllByUserIdAndStatus(user, AccountMemberStatus.ACTIVE)) {
+            accounts.findById(member.getAccountId()).ifPresent(account -> ids.add(account.getOwnerId()));
+        }
+        List<FinanceAccount> owned = accounts.findAllByOwnerId(user);
+        List<String> ownedIds = owned.stream().map(FinanceAccount::getId).toList();
+        if (!ownedIds.isEmpty()) {
+            for (FinanceAccountMember member : members.findAllByAccountIdInAndStatus(ownedIds, AccountMemberStatus.ACTIVE)) {
+                if (member.getUserId() != null) ids.add(member.getUserId());
+            }
+        }
+        return ids;
     }
     @Override public String getOrCreatePersonalDefault() {
         UUID user = UserContext.getUser(); String id = "PF-" + user;
@@ -85,10 +143,10 @@ public class FinanceAccountServiceImpl implements FinanceAccountService {
         }
         return id;
     }
-    private FinanceAccountResponse response(FinanceAccount account, UUID user) {
-        BigDecimal net = transactions.sumNetByAccountAndUser(account.getId(), user, new Date());
+    private FinanceAccountResponse response(FinanceAccount account, UUID dataOwner, String role) {
+        BigDecimal net = transactions.sumNetByAccountAndUser(account.getId(), dataOwner, new Date());
         if (net == null) net = BigDecimal.ZERO;
         return new FinanceAccountResponse(account.getId(), account.getName(), account.getType(),
-                account.getOpeningBalance(), account.getOpeningBalance().add(net), account.getCurrency());
+                account.getOpeningBalance(), account.getOpeningBalance().add(net), account.getCurrency(), role);
     }
 }

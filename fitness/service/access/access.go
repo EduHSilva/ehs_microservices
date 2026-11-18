@@ -50,6 +50,30 @@ func ReadTarget(caller helper.Caller, requested string) (string, *Denied) {
 	return studentID, nil
 }
 
+// AnyDomainTarget resolves a student linked to the caller regardless of the
+// professional domain (personal or nutritionist). Used by settings both
+// professionals can maintain for a linked student.
+func AnyDomainTarget(caller helper.Caller, requested string) (string, *Denied) {
+	studentID := targetOf(caller, requested)
+	if studentID == caller.ID {
+		return studentID, nil
+	}
+
+	if !caller.IsProfessional() {
+		return "", &Denied{Status: http.StatusNotFound}
+	}
+
+	if _, denied := eligibleStudent(studentID); denied != nil {
+		return "", denied
+	}
+
+	if _, ok := links.ActiveAny(studentID, caller.ID); !ok {
+		return "", &Denied{Status: http.StatusNotFound}
+	}
+
+	return studentID, nil
+}
+
 // WriteTarget resolves the student whose plan the caller may change.
 func WriteTarget(caller helper.Caller, requested string, domain link.Domain) (string, *Denied) {
 	studentID := targetOf(caller, requested)

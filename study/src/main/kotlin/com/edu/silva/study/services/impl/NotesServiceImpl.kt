@@ -56,6 +56,10 @@ class NotesServiceImpl(
         val note = findEntity(id)
         note.title = request.title
         note.content = request.content
+        request.folderId?.let { targetId ->
+            note.folder = folderRepository.findByIdAndUserId(targetId, UserContext.getUser())
+                .orElseThrow { EntityNotFoundException("Folder", targetId) }
+        }
         return repository.save(note).toResponse()
     }
 

@@ -10,11 +10,10 @@ import com.silva.edu.finances.domain.dtos.response.TransactionImportAuditRespons
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.entities.TransactionImportAudit;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
-import com.silva.edu.finances.infra.config.UserContext;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
-import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.repositories.TransactionImportAuditRepository;
+import com.silva.edu.finances.services.CategoryService;
 import com.silva.edu.finances.services.StatementImportService;
 import com.silva.edu.finances.services.FinanceAccountService;
 import org.springframework.stereotype.Service;
@@ -29,11 +28,11 @@ import java.util.*;
 @Transactional
 public class StatementImportServiceImpl implements StatementImportService {
     private final TransactionRepository transactions;
-    private final CategoryRepository categories;
+    private final CategoryService categories;
     private final FinanceAccountService accountService;
     private final TransactionImportAuditRepository auditRepository;
 
-    public StatementImportServiceImpl(TransactionRepository transactions, CategoryRepository categories, FinanceAccountService accountService, TransactionImportAuditRepository auditRepository) {
+    public StatementImportServiceImpl(TransactionRepository transactions, CategoryService categories, FinanceAccountService accountService, TransactionImportAuditRepository auditRepository) {
         this.transactions = transactions;
         this.categories = categories;
         this.accountService = accountService;
@@ -42,8 +41,7 @@ public class StatementImportServiceImpl implements StatementImportService {
 
     @Override @Transactional(readOnly = true)
     public StatementImportPreviewResponse preview(StatementImportRequest request) {
-        accountService.requireAccess(request.accountId());
-        UUID userId = UserContext.getUser();
+        UUID userId = accountService.ownerOf(request.accountId());
         Set<String> batch = new HashSet<>();
         List<StatementImportPreviewResponse.Line> lines = new ArrayList<>();
         int duplicates = 0;
@@ -60,8 +58,7 @@ public class StatementImportServiceImpl implements StatementImportService {
 
     @Override
     public StatementImportResultResponse confirm(StatementImportRequest request) {
-        accountService.requireAccess(request.accountId());
-        UUID userId = UserContext.getUser();
+        UUID userId = accountService.ownerOf(request.accountId());
         Set<String> seen = new HashSet<>();
         int imported = 0;
         int duplicates = 0;
@@ -84,8 +81,7 @@ public class StatementImportServiceImpl implements StatementImportService {
                 transaction.setIncome(line.income());
                 transaction.setExecutionDate(Date.from(line.date().atStartOfDay().toInstant(ZoneOffset.UTC)));
                 transaction.setCategory(line.categoryId() == null ? null : categories
-                        .findByIdAndUserId(line.categoryId(), userId)
-                        .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Category", line.categoryId())));
+                        .requireAccessible(line.categoryId()));
                 // Sai de DELETED e volta para a revisão, reaproveitando a chave única.
                 transaction.setStatus(TransactionStatus.REVIEW);
                 transactions.save(transaction);
@@ -104,8 +100,7 @@ public class StatementImportServiceImpl implements StatementImportService {
             transaction.setExecutionDate(Date.from(line.date().atStartOfDay().toInstant(ZoneOffset.UTC)));
             transaction.setStatus(TransactionStatus.REVIEW);
             if (line.categoryId() != null) {
-                transaction.setCategory(categories.findByIdAndUserId(line.categoryId(), userId)
-                        .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Category", line.categoryId())));
+                transaction.setCategory(categories.requireAccessible(line.categoryId()));
             }
             transactions.save(transaction);
             record(transaction, "IMPORTED", userId);
@@ -116,9 +111,10 @@ public class StatementImportServiceImpl implements StatementImportService {
 
     @Override
     public TransactionResponseDTO review(UUID transactionId, ReviewImportedTransactionRequest request) {
-        UUID userId = UserContext.getUser();
-        Transaction transaction = transactions.findByIdAndUserId(transactionId, userId)
+        Transaction transaction = transactions.findById(transactionId)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", transactionId));
+        if (transaction.getAccountId() != null) accountService.requireAccess(transaction.getAccountId());
+        UUID userId = transaction.getUserId();
         if (transaction.getImportKey() == null || transaction.getStatus() != TransactionStatus.REVIEW)
             throw new IllegalArgumentException("Transaction is not awaiting import review");
         if (!request.approved()) {
@@ -127,8 +123,7 @@ public class StatementImportServiceImpl implements StatementImportService {
             return null;
         }
         if (request.categoryId() != null) {
-            transaction.setCategory(categories.findByIdAndUserId(request.categoryId(), userId)
-                    .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Category", request.categoryId())));
+            transaction.setCategory(categories.requireAccessible(request.categoryId()));
         }
         transaction.setStatus(TransactionStatus.OK);
         record(transaction, "APPROVED", userId);
@@ -137,10 +132,10 @@ public class StatementImportServiceImpl implements StatementImportService {
 
     @Override @Transactional(readOnly = true)
     public List<TransactionImportAuditResponse> audit(UUID transactionId) {
-        UUID userId = UserContext.getUser();
-        transactions.findByIdAndUserId(transactionId, userId)
+        Transaction transaction = transactions.findById(transactionId)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", transactionId));
-        return auditRepository.findAllByTransactionIdAndUserIdOrderByCreatedAtAsc(transactionId, userId)
+        if (transaction.getAccountId() != null) accountService.requireAccess(transaction.getAccountId());
+        return auditRepository.findAllByTransactionIdAndUserIdOrderByCreatedAtAsc(transactionId, transaction.getUserId())
                 .stream().map(a -> new TransactionImportAuditResponse(a.getId(), a.getTransactionId(), a.getEvent(), a.getCreatedAt())).toList();
     }
 

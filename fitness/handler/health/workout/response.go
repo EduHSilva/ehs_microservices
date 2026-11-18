@@ -12,17 +12,19 @@ type ResponseExercises struct {
 }
 
 type ResponseDataExercise struct {
-	ID           uint    `json:"id"`
-	Name         string  `json:"name"`
-	BodyPart     string  `json:"body_part"`
-	Target       string  `json:"target"`
-	Instructions string  `json:"instructions"`
-	Load         float64 `json:"load,omitempty"`
-	Series       int     `json:"series,omitempty"`
-	RestSeconds  int     `json:"rest_seconds,omitempty"`
-	Repetitions  int     `json:"repetitions,omitempty"`
-	ImageUrl     string  `json:"image_url,omitempty"`
-	Notes        string  `json:"notes,omitempty"`
+	ID              uint    `json:"id"`
+	Name            string  `json:"name"`
+	BodyPart        string  `json:"body_part"`
+	Target          string  `json:"target"`
+	Instructions    string  `json:"instructions"`
+	Load            float64 `json:"load,omitempty"`
+	Series          int     `json:"series,omitempty"`
+	RestSeconds     int     `json:"rest_seconds,omitempty"`
+	Repetitions     int     `json:"repetitions,omitempty"`
+	DurationSeconds uint    `json:"duration_seconds,omitempty"`
+	ImageUrl        string  `json:"image_url,omitempty"`
+	Notes           string  `json:"notes,omitempty"`
+	Custom          bool    `json:"custom,omitempty"`
 }
 
 type ResponseData struct {
@@ -54,17 +56,19 @@ func ConvertExerciseToResponse(exercise workout.ExerciseWorkout, locale any) Res
 	}
 
 	return ResponseDataExercise{
-		ID:           exercise.ExerciseID,
-		Name:         name,
-		BodyPart:     exercise.Exercise.BodyPart,
-		Target:       exercise.Exercise.Target,
-		Instructions: instructions,
-		Load:         exercise.Load,
-		Series:       exercise.Series,
-		RestSeconds:  exercise.RestSeconds,
-		Repetitions:  exercise.Repetitions,
-		ImageUrl:     resolveExerciseImage(&exercise.Exercise),
-		Notes:        exercise.Notes,
+		ID:              exercise.ExerciseID,
+		Name:            name,
+		BodyPart:        exercise.Exercise.BodyPart,
+		Target:          exercise.Exercise.Target,
+		Instructions:    instructions,
+		Load:            exercise.Load,
+		Series:          exercise.Series,
+		RestSeconds:     exercise.RestSeconds,
+		Repetitions:     exercise.Repetitions,
+		DurationSeconds: exercise.DurationSeconds,
+		ImageUrl:        resolveExerciseImage(&exercise.Exercise),
+		Notes:           exercise.Notes,
+		Custom:          exercise.Exercise.AuthorID != "",
 	}
 }
 

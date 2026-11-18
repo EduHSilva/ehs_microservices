@@ -10,7 +10,6 @@ import com.silva.edu.finances.domain.entities.MonthlyGoal;
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.GoalMode;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
-import com.silva.edu.finances.infra.config.UserContext;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.GoalContributionRepository;
 import com.silva.edu.finances.repositories.MonthlyGoalRepository;
@@ -51,9 +50,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
 
     @Override @Transactional(readOnly = true)
     public Page<MonthlyGoalResponse> list(String accountId, String periodMonth, int page, int size) {
-        accountService.requireAccess(accountId);
+        UUID owner = accountService.ownerOf(accountId);
         YearMonth month = YearMonth.parse(periodMonth);
-        return goals.findApplicable(UserContext.getUser(), accountId, periodMonth,
+        return goals.findApplicable(owner, accountId, periodMonth,
                 month.atDay(1), month.atEndOfMonth(), PageRequest.of(page, size)).map(this::response);
     }
 
@@ -61,7 +60,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         validate(request);
         accountService.requireAccess(request.accountId());
         MonthlyGoal goal = new MonthlyGoal();
-        goal.setUserId(UserContext.getUser());
+        goal.setUserId(accountService.ownerOf(request.accountId()));
         copy(request, goal);
         return response(goals.save(goal));
     }
@@ -76,7 +75,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
 
     @Override public void delete(UUID id) {
         MonthlyGoal goal = findGoal(id);
-        UUID userId = UserContext.getUser();
+        UUID userId = goal.getUserId();
         contributions.findAllByGoalIdAndUserId(id, userId).forEach(this::deleteGeneratedTransaction);
         contributions.deleteAllByGoalIdAndUserId(id, userId);
         goals.delete(goal);
@@ -85,7 +84,6 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
     @Override @Transactional(readOnly = true)
     public MonthlyGoalSummaryResponse summary(UUID id, String periodMonth) {
         MonthlyGoal goal = findGoal(id);
-        accountService.requireAccess(goal.getAccountId());
         YearMonth month = YearMonth.parse(periodMonth);
         LocalDate start = month.atDay(1);
         LocalDate end = month.plusMonths(1).atDay(1);
@@ -119,8 +117,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
 
     @Override public void contribute(UUID id, GoalContributionRequest request) {
         MonthlyGoal goal = findGoal(id);
-        accountService.requireAccess(goal.getAccountId());
-        UUID userId = UserContext.getUser();
+        UUID userId = goal.getUserId();
         GoalContribution contribution = new GoalContribution();
         contribution.setUserId(userId);
         contribution.setGoal(goal);
@@ -129,9 +126,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         if (request.transactionId() != null) {
             if (Boolean.TRUE.equals(request.adjustment()))
                 throw new IllegalArgumentException("Adjustment contributions cannot link a transaction");
-            if (contributions.existsByTransactionIdAndUserId(request.transactionId(), userId))
+            if (contributions.existsByTransactionId(request.transactionId()))
                 throw new IllegalArgumentException("Transaction already linked to a goal contribution");
-            var transaction = transactions.findByIdAndUserId(request.transactionId(), userId)
+            var transaction = transactions.findById(request.transactionId())
                     .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", request.transactionId()));
             if (!goal.getAccountId().equals(transaction.getAccountId()))
                 throw new IllegalArgumentException("Transaction and goal accounts do not match");
@@ -150,8 +147,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
     }
 
     @Override public void removeContribution(UUID contributionId) {
-        GoalContribution contribution = contributions.findByIdAndUserId(contributionId, UserContext.getUser())
+        GoalContribution contribution = contributions.findById(contributionId)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("GoalContribution", contributionId));
+        accountService.requireAccess(contribution.getGoal().getAccountId());
         deleteGeneratedTransaction(contribution);
         contributions.delete(contribution);
     }
@@ -172,13 +170,14 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
 
     private void deleteGeneratedTransaction(GoalContribution contribution) {
         if (!contribution.isAutoCreated() || contribution.getTransactionId() == null) return;
-        transactions.findByIdAndUserId(contribution.getTransactionId(), contribution.getUserId())
-                .ifPresent(transactions::delete);
+        transactions.findById(contribution.getTransactionId()).ifPresent(transactions::delete);
     }
 
     private MonthlyGoal findGoal(UUID id) {
-        return goals.findByIdAndUserId(id, UserContext.getUser())
+        MonthlyGoal goal = goals.findById(id)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("MonthlyGoal", id));
+        accountService.requireAccess(goal.getAccountId());
+        return goal;
     }
     private void validate(MonthlyGoalRequest request) {
         if (request.mode() == GoalMode.PERCENT_INCOME && request.amount().compareTo(BigDecimal.valueOf(100)) > 0)

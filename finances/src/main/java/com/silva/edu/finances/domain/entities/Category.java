@@ -27,7 +27,11 @@ import java.util.UUID;
 @SQLDelete(sql = "UPDATE category SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
 @FilterDef(name = "userFilter", parameters = @ParamDef(name = "userId", type = UUID.class))
-@Filter(name = "userFilter", condition = "user_id = :userId")
+@Filter(name = "userFilter", condition = "user_id = :userId"
+        + " or user_id in (select a.owner_id from finance_account a join finance_account_member m on m.account_id = a.id"
+        + " where m.user_id = :userId and m.status = 'ACTIVE')"
+        + " or user_id in (select m.user_id from finance_account_member m join finance_account a on a.id = m.account_id"
+        + " where a.owner_id = :userId and m.status = 'ACTIVE' and m.user_id is not null)")
 public class Category implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -12,4 +12,16 @@ public class CustomExceptions {
             super("Para o tipo INSTALMENTS deve informar as parcelas");
         }
     }
+
+    public static class ForbiddenException extends RuntimeException {
+        public ForbiddenException(String message) {
+            super(message);
+        }
+    }
+
+    public static class ConflictException extends RuntimeException {
+        public ConflictException(String message) {
+            super(message);
+        }
+    }
 }

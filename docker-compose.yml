@@ -262,6 +262,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://service-discover:8761/eureka/
       SERVER_URL: ${SERVER_URL:-http://localhost}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      USERS_SERVICE_URL: http://users:8181
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-local-internal-token}
     ports:
       - "8989:8989"
 

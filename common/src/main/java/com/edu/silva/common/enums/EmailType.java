@@ -5,4 +5,5 @@ public enum EmailType {
     APP_ACCESS,
     PASSWORD_RESET,
     FITNESS_INVITE,
+    FINANCES_ACCOUNT_INVITE,
 }

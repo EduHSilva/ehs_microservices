@@ -4,6 +4,11 @@ import (
 	"health/helper"
 )
 
+type CreateExerciseRequest struct {
+	Name     string `json:"name"`
+	BodyPart string `json:"body_part"`
+}
+
 type CreateWorkoutRequest struct {
 	Name      string                   `json:"name"`
 	StudentID string                   `json:"student_id"`
@@ -17,7 +22,9 @@ type ExerciseWorkoutRequest struct {
 	Load        float64 `json:"load"`
 	RestSeconds int     `json:"rest_seconds"`
 	Repetitions int     `json:"repetitions"`
-	Notes       string  `json:"notes"`
+	// DurationSeconds is used by time-based (cardio) exercises instead of sets/reps.
+	DurationSeconds uint   `json:"duration_seconds"`
+	Notes           string `json:"notes"`
 }
 
 func (r CreateWorkoutRequest) Validate() error {

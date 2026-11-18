@@ -22,4 +22,6 @@ public interface CategoryService {
     CategoryResponseDTO update(UUID id, UpdateCategoryRequestDTO request);
 
     Category ensureInvestmentCategory(UUID userId);
+
+    Category requireAccessible(UUID id);
 }

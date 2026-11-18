@@ -5,6 +5,8 @@ import "health/helper"
 type UpdateUserConfigRequest struct {
 	ShowCreatine *bool    `json:"showCreatine"`
 	DailyCardio  *float64 `json:"dailyCardio"`
+	// StudentID targets a linked student; empty means the caller's own config.
+	StudentID string `json:"student_id"`
 }
 
 func (r UpdateUserConfigRequest) Validate() error {

@@ -23,7 +23,7 @@ import java.util.UUID;
 @Table(name = "recurrences", indexes = @Index(name = "idx_recurrence_user_account", columnList = "user_id, account_id"))
 @SQLDelete(sql = "UPDATE recurrences SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
-@Filter(name = "userFilter", condition = "user_id = :userId")
+@Filter(name = "userFilter", condition = "user_id = :userId or account_id in (select m.account_id from finance_account_member m where m.user_id = :userId and m.status = 'ACTIVE')")
 public class Recurrence implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

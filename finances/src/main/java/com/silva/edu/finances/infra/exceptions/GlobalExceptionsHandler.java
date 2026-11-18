@@ -23,6 +23,16 @@ public class GlobalExceptionsHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new DefaultResponse<Void>("Invalid request"));
     }
 
+    @ExceptionHandler(CustomExceptions.ForbiddenException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleForbidden(CustomExceptions.ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CustomExceptions.ConflictException.class)
+    public ResponseEntity<@NonNull DefaultResponse<Void>> handleConflict(CustomExceptions.ConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new DefaultResponse<Void>(ex.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<@NonNull DefaultResponse<Void>> handleGeneric(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DefaultResponse<Void>("Internal server error"));

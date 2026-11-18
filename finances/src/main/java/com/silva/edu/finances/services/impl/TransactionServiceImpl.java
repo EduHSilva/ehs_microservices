@@ -10,12 +10,11 @@ import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
-import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
+import com.silva.edu.finances.services.CategoryService;
 import com.silva.edu.finances.services.TransactionService;
 import com.silva.edu.finances.services.FinanceAccountService;
-import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -31,13 +30,13 @@ import java.util.UUID;
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository repository;
-    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
     private final RecurrenceRepository recurrenceRepository;
     private final FinanceAccountService accountService;
 
-    public TransactionServiceImpl(TransactionRepository repository, CategoryRepository categoryRepository, RecurrenceRepository recurrenceRepository, FinanceAccountService accountService) {
+    public TransactionServiceImpl(TransactionRepository repository, CategoryService categoryService, RecurrenceRepository recurrenceRepository, FinanceAccountService accountService) {
         this.repository = repository;
-        this.categoryRepository = categoryRepository;
+        this.categoryService = categoryService;
         this.recurrenceRepository = recurrenceRepository;
         this.accountService = accountService;
     }
@@ -53,6 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
                 ? accountService.getOrCreatePersonalDefault() : request.accountId().trim();
         accountService.requireAccess(accountId);
         transaction.setAccountId(accountId);
+        UUID dataOwner = accountService.ownerOf(accountId);
 
         if (request.categoryID() != null) {
             Category category = findCategory(request.categoryID());
@@ -61,12 +61,14 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         if (request.recurrencyID() != null) {
-            Recurrence rec = recurrenceRepository.findByIdAndUserId(request.recurrencyID(), UserContext.getUser())
+            Recurrence rec = recurrenceRepository.findById(request.recurrencyID())
                     .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Recurrence.class.getSimpleName(), request.recurrencyID()));
+            if (!accountId.equals(rec.getAccountId()))
+                throw new IllegalArgumentException("Recurrence does not belong to the informed account");
             transaction.setRecurrence(rec);
 
         }
-        transaction.setUserId(UserContext.getUser());
+        transaction.setUserId(dataOwner);
 
         repository.save(transaction);
         return new TransactionResponseDTO(transaction);
@@ -82,7 +84,7 @@ public class TransactionServiceImpl implements TransactionService {
         if (accountId != null && !accountId.isBlank()) accountService.requireAccess(accountId);
         Pageable pageable = PageRequest.of(page, size);
         var result = accountId == null || accountId.isBlank()
-                ? repository.findAll(pageable)
+                ? repository.findAllByAccountIdIn(accountService.accessibleAccountIds(), pageable)
                 : repository.findAllByAccountId(accountId, pageable);
         return result.map(TransactionResponseDTO::new);
     }
@@ -145,13 +147,19 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Transaction findEntity(UUID id) {
-        return repository.findByIdAndUserId(id, UserContext.getUser())
+        Transaction transaction = repository.findById(id)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Transaction.class.getSimpleName(), id));
+        if (transaction.getAccountId() == null) {
+            if (!accountService.visibleUserIds().contains(transaction.getUserId()))
+                throw new CustomExceptions.EntityNotFoundException(Transaction.class.getSimpleName(), id);
+        } else {
+            accountService.requireAccess(transaction.getAccountId());
+        }
+        return transaction;
     }
 
     private Category findCategory(UUID categoryId) {
-        return categoryRepository.findByIdAndUserId(categoryId, UserContext.getUser())
-                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), categoryId));
+        return categoryService.requireAccessible(categoryId);
     }
 
     private void requireCategoryDirection(Category category, boolean income) {

@@ -11,6 +11,7 @@ import com.silva.edu.finances.domain.enums.CategoryStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CategoryRepository;
 import com.silva.edu.finances.services.CategoryService;
+import com.silva.edu.finances.services.FinanceAccountService;
 import com.silva.edu.finances.infra.config.UserContext;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
@@ -26,10 +27,13 @@ import java.util.UUID;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository repository;
     private final CategoryDefaultSeeder defaultSeeder;
+    private final FinanceAccountService accountService;
 
-    public CategoryServiceImpl(CategoryRepository repository, CategoryDefaultSeeder defaultSeeder) {
+    public CategoryServiceImpl(CategoryRepository repository, CategoryDefaultSeeder defaultSeeder,
+                               FinanceAccountService accountService) {
         this.repository = repository;
         this.defaultSeeder = defaultSeeder;
+        this.accountService = accountService;
     }
 
     @Override
@@ -56,7 +60,8 @@ public class CategoryServiceImpl implements CategoryService {
     public Page<@NonNull CategoryResponseDTO> findAll(int page, int size) {
         seedDefaults(UserContext.getUser());
         Pageable pageable = PageRequest.of(page, size);
-        return repository.findAllByUserId(UserContext.getUser(), pageable).map(CategoryResponseDTO::new);
+        return repository.findAllByUserIdIn(accountService.visibleUserIds(), pageable)
+                .map(CategoryResponseDTO::new);
     }
 
     @Override
@@ -92,6 +97,11 @@ public class CategoryServiceImpl implements CategoryService {
         return new CategoryResponseDTO(repository.save(category));
     }
 
+    @Override
+    public Category requireAccessible(UUID id) {
+        return findEntity(id);
+    }
+
     private void seedDefaults(UUID userId) {
         if (!defaultSeeder.needsSeed(userId)) return;
         defaultSeeder.seed(userId);
@@ -104,7 +114,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private Category findEntity(UUID id) {
-        return repository.findByIdAndUserId(id, UserContext.getUser())
+        Category category = repository.findById(id)
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), id));
+        if (!accountService.visibleUserIds().contains(category.getUserId()))
+            throw new CustomExceptions.EntityNotFoundException(Category.class.getSimpleName(), id);
+        return category;
     }
 }

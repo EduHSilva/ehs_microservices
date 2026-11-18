@@ -5,7 +5,9 @@
 
 ## 1. Contas e autenticação
 
-- Toda conta pertence a **um** usuário (`users`). Não há conta compartilhada.
+- Toda conta de login pertence a **um** usuário (`users`). Compartilhamento de dados
+  entre usuários existe apenas no `finances` (conta financeira compartilhada por
+  convite); as regras ficam no `regras-negocio.md` do produto.
 - Uma conta tem status (`UserStatus`): `OK`, `WAITING_CONFIRMATION`, `DELETED`, `BLOCKED`.
   - O cadastro sempre cria `WAITING_CONFIRMATION`; a conta só entra depois da confirmação.
   - `WAITING_CONFIRMATION → OK` pela confirmação; `OK ⇄ BLOCKED` só por ADMIN;
@@ -93,8 +95,10 @@
 - Bulk updates precisam repetir o filtro do dono (`AND user_id = :userId`; no `fitness`,
   `AND student_id = :studentId`).
 - Requisição sem `X-User-ID` em rota privada = 401 (falha fechada).
-- O `budgets` não tem Spring Security: ele confia no `X-User-ID`, então a porta do
-  serviço não pode ser publicada no host (só via gateway).
+- O `budgets` usa Spring Security stateless: as rotas privadas exigem o `X-User-ID`
+  injetado pelo gateway (saúde, Swagger e docs são públicas). Os demais serviços de
+  produto aplicam o mesmo requisito por filtro próprio. Em todos, a porta do serviço
+  não pode ser publicada no host (só via gateway).
 
 ## 6. Exclusão de dados
 

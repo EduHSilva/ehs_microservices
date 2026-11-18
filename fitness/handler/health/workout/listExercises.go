@@ -10,7 +10,7 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
-// GetExercisesHandler lista o catálogo global de exercícios.
+// GetExercisesHandler lista o catálogo curado e os exercícios do próprio usuário.
 // @Summary Lista o catálogo de exercícios
 // @Description As imagens externas são cacheadas e baixadas em segundo plano.
 // @Tags Exercícios
@@ -26,7 +26,19 @@ func GetExercisesHandler(ctx *gin.Context) {
 	locale, _ := ctx.Get("locale")
 	localizer := getI18n.(*i18n.Localizer)
 
-	if err := db.Order("name").Find(&exercises).Error; err != nil {
+	orderColumn := "name"
+	if locale == "pt_BR" {
+		orderColumn = "name_pt"
+	}
+
+	query := db.Order(orderColumn)
+	if caller, authenticated := helper.GatewayCaller(ctx); authenticated {
+		query = query.Where("author_id IS NULL OR author_id = '' OR author_id = ?", caller.ID)
+	} else {
+		query = query.Where("author_id IS NULL OR author_id = ''")
+	}
+
+	if err := query.Find(&exercises).Error; err != nil {
 		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizer)
 		return
 	}
@@ -51,6 +63,7 @@ func GetExercisesHandler(ctx *gin.Context) {
 			Target:       exercise.Target,
 			Instructions: translatedInstructions,
 			ImageUrl:     cachedExerciseImage(exercise),
+			Custom:       exercise.AuthorID != "",
 		})
 	}
 

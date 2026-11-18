@@ -53,7 +53,7 @@ class MonthlyGoalServiceImplTest {
     void adjustmentContributionDoesNotCreateTransaction() {
         UserContext.setUser(userId);
         MonthlyGoal goal = goal();
-        when(goals.findByIdAndUserId(goalId, userId)).thenReturn(Optional.of(goal));
+        when(goals.findById(goalId)).thenReturn(Optional.of(goal));
 
         service.contribute(goalId, new GoalContributionRequest(
                 BigDecimal.valueOf(75), LocalDate.of(2026, 11, 10), null, true));
@@ -73,7 +73,7 @@ class MonthlyGoalServiceImplTest {
         MonthlyGoal goal = goal();
         goal.setInitialBalance(BigDecimal.valueOf(100));
         goal.setObjective(BigDecimal.valueOf(10000));
-        when(goals.findByIdAndUserId(goalId, userId)).thenReturn(Optional.of(goal));
+        when(goals.findById(goalId)).thenReturn(Optional.of(goal));
         when(transactions.sumConfirmedIncome(eq(userId), eq(accountId), any(), any()))
                 .thenReturn(BigDecimal.valueOf(1000));
         when(contributions.sumRealizedForGoalAndPeriod(eq(goalId), eq(userId), any(), any()))

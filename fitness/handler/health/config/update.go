@@ -3,6 +3,7 @@ package config
 import (
 	"health/helper"
 	configSchema "health/schemas/config"
+	"health/service/access"
 	"net/http"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 // UpdateUserConfigHandler atualiza a configuração privada do usuário.
 // @Summary Atualiza a configuração do usuário
+// @Description Com student_id, qualquer profissional com vínculo ativo pode ajustar.
 // @Tags Configuração
 // @Accept json
 // @Produce json
@@ -20,6 +22,8 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} helper.ErrorResponse
 // @Failure 401 {object} helper.ErrorResponse
+// @Failure 403 {object} helper.ErrorResponse
+// @Failure 404 {object} helper.ErrorResponse
 // @Router /config/user [put]
 func UpdateUserConfigHandler(ctx *gin.Context) {
 	request := UpdateUserConfigRequest{}
@@ -33,15 +37,22 @@ func UpdateUserConfigHandler(ctx *gin.Context) {
 	}
 
 	getI18n, _ := ctx.Get("i18n")
-	userID, exists := helper.GatewayUserID(ctx)
+	localizer := getI18n.(*i18n.Localizer)
+	caller, exists := helper.GatewayCaller(ctx)
 	if !exists {
-		helper.SendErrorDefault(ctx, http.StatusUnauthorized, getI18n.(*i18n.Localizer))
+		helper.SendErrorDefault(ctx, http.StatusUnauthorized, localizer)
+		return
+	}
+
+	userID, denied := access.AnyDomainTarget(caller, helper.RequestedStudent(ctx, request.StudentID))
+	if denied != nil {
+		helper.SendErrorDefault(ctx, denied.Status, localizer)
 		return
 	}
 
 	userConfig := configSchema.UserConfig{UserID: userID}
 	if err := db.Where("user_id = ?", userID).FirstOrCreate(&userConfig).Error; err != nil {
-		helper.SendErrorDefault(ctx, http.StatusInternalServerError, getI18n.(*i18n.Localizer))
+		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizer)
 		return
 	}
 	if request.ShowCreatine != nil {
@@ -51,7 +62,7 @@ func UpdateUserConfigHandler(ctx *gin.Context) {
 		userConfig.DailyCardio = *request.DailyCardio
 	}
 	if err := db.Save(&userConfig).Error; err != nil {
-		helper.SendErrorDefault(ctx, http.StatusInternalServerError, getI18n.(*i18n.Localizer))
+		helper.SendErrorDefault(ctx, http.StatusInternalServerError, localizer)
 		return
 	}
 

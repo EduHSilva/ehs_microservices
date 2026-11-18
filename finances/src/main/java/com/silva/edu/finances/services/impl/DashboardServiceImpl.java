@@ -6,7 +6,6 @@ import com.silva.edu.finances.domain.entities.Recurrence;
 import com.silva.edu.finances.domain.enums.CategoryClassification;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
-import com.silva.edu.finances.infra.config.UserContext;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.CategoryService;
@@ -23,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
@@ -74,10 +74,11 @@ public class DashboardServiceImpl implements DashboardService {
     public InvestmentSummaryResponse investments(String accountId) {
         accounts.requireAccess(accountId);
         var account = accounts.get(accountId);
-        categories.ensureInvestmentCategory(UserContext.getUser());
+        UUID owner = accounts.ownerOf(accountId);
+        categories.ensureInvestmentCategory(owner);
         BigDecimal contributions = BigDecimal.ZERO;
         BigDecimal withdrawals = BigDecimal.ZERO;
-        for (Object[] row : transactions.sumByClassification(UserContext.getUser(), accountId,
+        for (Object[] row : transactions.sumByClassification(owner, accountId,
                 CategoryClassification.INVESTMENT, new Date())) {
             BigDecimal total = (BigDecimal) row[1];
             if (Boolean.TRUE.equals(row[0])) withdrawals = total;

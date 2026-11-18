@@ -9,17 +9,18 @@ import (
 
 	"health/schemas/workout"
 
-	gt "github.com/bas24/googletranslatefree"
 	"gorm.io/gorm"
 )
 
 type ExerciseInput struct {
-	Name         string   `json:"name"`
-	BodyPart     string   `json:"bodyPart"`
-	Instructions []string `json:"instructions"`
-	GifUrl       string   `json:"gifUrl"`
-	ID           string   `json:"id"`
-	Target       string   `json:"target"`
+	Name           string   `json:"name"`
+	NamePt         string   `json:"name_pt"`
+	BodyPart       string   `json:"body_part"`
+	Instructions   []string `json:"instructions"`
+	InstructionsPt []string `json:"instructions_pt"`
+	GifURL         string   `json:"gif_url"`
+	ID             string   `json:"id"`
+	Target         string   `json:"target"`
 }
 
 func instructionsToHTML(instructions []string) string {
@@ -43,48 +44,22 @@ func loadExercisesFromFile(db *gorm.DB) error {
 	}
 
 	for _, input := range inputs {
-		htmlInstructions := instructionsToHTML(input.Instructions)
-
 		exercise := workout.Exercise{
 			Name:           input.Name,
-			NamePt:         translateFromFile(input.Name, loadTranslations()),
+			NamePt:         input.NamePt,
 			BodyPart:       input.BodyPart,
-			Instructions:   htmlInstructions,
-			InstructionsPt: translate(htmlInstructions),
+			Instructions:   instructionsToHTML(input.Instructions),
+			InstructionsPt: instructionsToHTML(input.InstructionsPt),
 			ExternalID:     input.ID,
 			Target:         input.Target,
+			ImageURL:       input.GifURL,
 		}
-		db.Create(&exercise)
+		if err := db.Create(&exercise).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-func translate(text string) string {
-	result, _ := gt.Translate(text, "en", "pt")
-	return result
-}
-
-func loadTranslations() map[string]string {
-	file, err := Files.ReadFile("data/exercises_translations.json")
-	if err != nil {
-		log.Fatalf("Erro ao carregar o arquivo de traduções: %v", err)
-	}
-
-	var translations map[string]string
-	err = json.Unmarshal(file, &translations)
-	if err != nil {
-		log.Fatalf("Erro ao fazer o parse do arquivo de traduções: %v", err)
-	}
-
-	return translations
-}
-
-func translateFromFile(text string, translations map[string]string) string {
-	if translation, exists := translations[text]; exists {
-		return translation
-	}
-	return text
 }
 
 func loadExerciseFromFile(db *gorm.DB) {

@@ -12,4 +12,5 @@ type Exercise struct {
 	ExternalID     string `json:"external_id" gorm:"unique"`
 	Target         string `json:"target"`
 	ImageURL       string `json:"image_url" gorm:"size:1000"`
+	AuthorID       string `json:"author_id" gorm:"index"`
 }

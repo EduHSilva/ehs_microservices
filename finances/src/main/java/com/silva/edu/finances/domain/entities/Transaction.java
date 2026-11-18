@@ -24,7 +24,7 @@ import java.util.UUID;
         indexes = @Index(name = "idx_transaction_user_account_date", columnList = "user_id, account_id, execution_date"))
 @SQLDelete(sql = "UPDATE transaction SET status = 'DELETED' WHERE id=?")
 @SQLRestriction("status <> 'DELETED'")
-@Filter(name = "userFilter", condition = "user_id = :userId")
+@Filter(name = "userFilter", condition = "user_id = :userId or account_id in (select m.account_id from finance_account_member m where m.user_id = :userId and m.status = 'ACTIVE')")
 public class Transaction implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

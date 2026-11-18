@@ -9,7 +9,8 @@ Gerencia **clientes, orçamentos, itens e o pipeline (kanban)** do produto EHS O
 - CRUD de orçamentos com itens, validade, termos e observações
 - Transições de status (rascunho, aprovação, execução, conclusão)
 - Dados do dashboard e colunas do kanban
-- Isolamento por usuário via `X-User-ID` (enviado pelo gateway)
+- Isolamento por usuário via `X-User-ID` (enviado pelo gateway), com Spring Security
+  exigindo autenticação nas rotas privadas
 
 ## Endpoints
 - `GET/POST /clients`, `GET/PUT/DELETE /clients/{id}`

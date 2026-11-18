@@ -6,7 +6,6 @@ import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
-import com.silva.edu.finances.infra.config.UserContext;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.CashflowProjectionService;
@@ -38,7 +37,7 @@ public class CashflowProjectionServiceImpl implements CashflowProjectionService 
         if (!List.of(30, 90, 180).contains(horizonDays))
             throw new IllegalArgumentException("Horizon must be 30, 90 or 180 days");
         var account = accounts.get(accountId);
-        UUID userId = UserContext.getUser();
+        UUID userId = accounts.ownerOf(accountId);
         LocalDate today = LocalDate.now(ZONE);
         LocalDate endExclusive = today.plusDays(horizonDays + 1L);
         Date from = Date.from(today.plusDays(1).atStartOfDay(ZONE).toInstant());

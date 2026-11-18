@@ -61,7 +61,7 @@ func resolveExerciseImage(exercise *workout.Exercise) string {
 	if exercise.ImageURL != "" {
 		return exercise.ImageURL
 	}
-	if exercise.ExternalID == "" {
+	if exercise.ExternalID == "" || exercise.AuthorID != "" {
 		return ""
 	}
 
@@ -96,7 +96,7 @@ func cachedExerciseImage(exercise workout.Exercise) string {
 func scheduleExerciseImages(exercises []workout.Exercise) {
 	for i := range exercises {
 		exercise := exercises[i]
-		if exercise.ExternalID == "" || cachedExerciseImage(exercise) != "" {
+		if exercise.ExternalID == "" || exercise.AuthorID != "" || cachedExerciseImage(exercise) != "" {
 			continue
 		}
 		if _, loaded := imageInflight.LoadOrStore(exercise.ExternalID, struct{}{}); loaded {

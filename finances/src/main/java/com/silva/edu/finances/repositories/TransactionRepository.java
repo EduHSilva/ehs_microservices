@@ -12,12 +12,14 @@ import java.util.Date;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
 
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
     Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
     Page<Transaction> findAllByAccountId(String accountId, Pageable pageable);
+    Page<Transaction> findAllByAccountIdIn(Collection<String> accountIds, Pageable pageable);
     @Query("select coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.income = true and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end")
     BigDecimal sumConfirmedIncome(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                   @Param("start") Date start, @Param("end") Date end);

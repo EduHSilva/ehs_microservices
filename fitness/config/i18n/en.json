@@ -15,5 +15,7 @@
   "inviteExists": "There is already a pending invitation for this e-mail",
   "alreadyLinked": "This student already has a professional in this area",
   "invalidInvite": "This invitation is no longer valid",
-  "inviteExpired": "This invitation has expired"
+  "inviteExpired": "This invitation has expired",
+  "invalidExerciseName": "Enter the exercise name",
+  "invalidExerciseBodyPart": "Invalid body part"
 }

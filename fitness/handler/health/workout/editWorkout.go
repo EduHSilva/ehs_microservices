@@ -102,13 +102,14 @@ func UpdateWorkoutHandler(ctx *gin.Context) {
 		}
 		for _, ex := range request.Exercises {
 			newExercise := workout.ExerciseWorkout{
-				WorkoutID:   work.ID,
-				ExerciseID:  ex.ExerciseID,
-				Series:      ex.Series,
-				Load:        ex.Load,
-				RestSeconds: ex.RestSeconds,
-				Repetitions: ex.Repetitions,
-				Notes:       ex.Notes,
+				WorkoutID:       work.ID,
+				ExerciseID:      ex.ExerciseID,
+				Series:          ex.Series,
+				Load:            ex.Load,
+				RestSeconds:     ex.RestSeconds,
+				Repetitions:     ex.Repetitions,
+				DurationSeconds: ex.DurationSeconds,
+				Notes:           ex.Notes,
 			}
 			if err := tx.Create(&newExercise).Error; err != nil {
 				return err

@@ -79,13 +79,14 @@ func CreateWorkoutHandler(ctx *gin.Context) {
 
 	for _, e := range request.Exercises {
 		work.Exercises = append(work.Exercises, workout.ExerciseWorkout{
-			ExerciseID:  e.ExerciseID,
-			WorkoutID:   e.WorkoutID,
-			Series:      e.Series,
-			Load:        e.Load,
-			RestSeconds: e.RestSeconds,
-			Repetitions: e.Repetitions,
-			Notes:       e.Notes,
+			ExerciseID:      e.ExerciseID,
+			WorkoutID:       e.WorkoutID,
+			Series:          e.Series,
+			Load:            e.Load,
+			RestSeconds:     e.RestSeconds,
+			Repetitions:     e.Repetitions,
+			DurationSeconds: e.DurationSeconds,
+			Notes:           e.Notes,
 		})
 	}
 

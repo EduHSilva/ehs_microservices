@@ -6,9 +6,9 @@ import (
 )
 
 type UserConfigResponse struct {
-	ID           uint
-	ShowCreatine bool
-	DailyCardio  float64
+	ID           uint    `json:"id"`
+	ShowCreatine bool    `json:"showCreatine"`
+	DailyCardio  float64 `json:"dailyCardio"`
 }
 
 func ConvertUserConfigToUserConfigResponse(userConfig *config.UserConfig, locale any) UserConfigResponse {
