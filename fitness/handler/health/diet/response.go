@@ -18,6 +18,12 @@ type ResponseDataFood struct {
 	Quantity    int        `json:"quantity"`
 	Observation string     `json:"observation"`
 	Photo       PhotoField `json:"photo"`
+	// Macros por 100 g do catálogo; os clientes escalam pela quantidade.
+	Calories float64 `json:"calories"`
+	Protein  float64 `json:"protein"`
+	Carbs    float64 `json:"carbs"`
+	Fat      float64 `json:"fat"`
+	Fiber    float64 `json:"fiber"`
 }
 
 type PhotoField struct {
@@ -50,6 +56,11 @@ func ConvertFoodToResponse(food *diet.MealFood) ResponseDataFood {
 		FoodName:    food.Food.Name,
 		Quantity:    food.Quantity,
 		Observation: food.Observation,
+		Calories:    food.Food.Calories,
+		Protein:     food.Food.Protein,
+		Carbs:       food.Food.Carbs,
+		Fat:         food.Food.Fat,
+		Fiber:       food.Food.Fiber,
 	}
 }
 
