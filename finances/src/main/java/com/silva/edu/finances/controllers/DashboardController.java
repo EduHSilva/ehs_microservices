@@ -2,6 +2,7 @@ package com.silva.edu.finances.controllers;
 
 import com.edu.silva.common.DefaultResponse;
 import com.silva.edu.finances.domain.dtos.response.DashboardPendingResponse;
+import com.silva.edu.finances.domain.dtos.response.DashboardSummaryResponse;
 import com.silva.edu.finances.domain.dtos.response.InvestmentSummaryResponse;
 import com.silva.edu.finances.services.DashboardService;
 import jakarta.validation.constraints.Max;
@@ -33,5 +34,12 @@ public class DashboardController {
     public ResponseEntity<DefaultResponse<InvestmentSummaryResponse>> investments(
             @RequestParam @NotBlank String accountId) {
         return ResponseEntity.ok(new DefaultResponse<>("Investment summary found successfully", service.investments(accountId)));
+    }
+
+    @GetMapping("/dashboard/summary")
+    public ResponseEntity<DefaultResponse<DashboardSummaryResponse>> summary(
+            @RequestParam @NotBlank String accountId,
+            @RequestParam(defaultValue = "90") @Min(30) @Max(180) int days) {
+        return ResponseEntity.ok(new DefaultResponse<>("Dashboard summary calculated", service.summary(accountId, days)));
     }
 }

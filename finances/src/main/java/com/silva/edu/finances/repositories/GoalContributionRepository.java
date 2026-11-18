@@ -24,4 +24,8 @@ public interface GoalContributionRepository extends JpaRepository<GoalContributi
             @org.springframework.data.repository.query.Param("userId") UUID userId,
             @org.springframework.data.repository.query.Param("start") LocalDate start,
             @org.springframework.data.repository.query.Param("end") LocalDate end);
+    @org.springframework.data.jpa.repository.Query("select coalesce(sum(c.amount), 0) from GoalContribution c where c.userId = :userId and c.goal.accountId = :accountId and c.adjustment = true and c.date < :until")
+    java.math.BigDecimal sumAdjustments(@org.springframework.data.repository.query.Param("userId") UUID userId,
+            @org.springframework.data.repository.query.Param("accountId") String accountId,
+            @org.springframework.data.repository.query.Param("until") LocalDate until);
 }

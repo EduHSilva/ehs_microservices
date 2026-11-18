@@ -55,6 +55,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query("select t.income, coalesce(sum(t.value), 0), count(t.id) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.recurrence is null and t.executionDate >= :start and t.executionDate < :end group by t.income")
     List<Object[]> sumVariableHistory(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                       @Param("start") Date start, @Param("end") Date end);
+    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end group by t.income")
+    List<Object[]> sumByIncomeBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
+                                      @Param("start") Date start, @Param("end") Date end);
+    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate >= :start and t.executionDate < :end group by t.income")
+    List<Object[]> sumByClassificationBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
+                                              @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
+                                              @Param("start") Date start, @Param("end") Date end);
+    @Query("select c.id, c.title, c.color, coalesce(sum(t.value), 0) from Transaction t left join t.category c where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.income = false and t.executionDate >= :start and t.executionDate < :end group by c.id, c.title, c.color order by coalesce(sum(t.value), 0) desc")
+    List<Object[]> topExpenseCategories(@Param("userId") UUID userId, @Param("accountId") String accountId,
+                                        @Param("start") Date start, @Param("end") Date end, Pageable pageable);
     @Modifying
     @Query("update Transaction t set t.accountId = :accountId where t.userId = :userId and t.accountId is null")
     int assignLegacyTransactions(@Param("userId") UUID userId, @Param("accountId") String accountId);
