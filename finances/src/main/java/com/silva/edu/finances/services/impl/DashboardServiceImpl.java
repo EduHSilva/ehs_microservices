@@ -174,6 +174,19 @@ public class DashboardServiceImpl implements DashboardService {
         BigDecimal livingCost = essentialExpenses.divide(
                 BigDecimal.valueOf(LIVING_COST_MONTHS), 2, RoundingMode.HALF_UP);
 
+        DashboardSummaryResponse.Reserve reserve = null;
+        var reserveGoal = goals.findFirstByUserIdAndAccountIdAndReserveTrue(owner, accountId);
+        if (reserveGoal.isPresent()) {
+            var goal = reserveGoal.get();
+            LocalDate savingStart = goal.getDtInicio() != null ? goal.getDtInicio()
+                    : YearMonth.parse(goal.getPeriodMonth()).atDay(1);
+            BigDecimal saved = nz(goal.getInitialBalance())
+                    .add(nz(contributions.sumForGoalAndPeriod(goal.getId(), owner, savingStart, today.plusDays(1))));
+            BigDecimal reserveMonths = livingCost.signum() == 0 ? null
+                    : saved.divide(livingCost, 1, RoundingMode.HALF_UP);
+            reserve = new DashboardSummaryResponse.Reserve(goal.getId().toString(), goal.getTitle(), saved, reserveMonths);
+        }
+
         List<DashboardSummaryResponse.CategoryShare> topCategories = new ArrayList<>();
         for (Object[] row : transactions.topExpenseCategories(owner, accountId, monthStart, monthToDateEnd,
                 PageRequest.of(0, TOP_CATEGORIES))) {
@@ -192,7 +205,7 @@ public class DashboardServiceImpl implements DashboardService {
                 new DashboardSummaryResponse.NetWorth(
                         projection.currentBalance().add(investmentTotal),
                         projection.closingBalance().add(investmentProjection)),
-                new DashboardSummaryResponse.LivingCost(livingCost, LIVING_COST_MONTHS, essentialExpenses),
+                new DashboardSummaryResponse.LivingCost(livingCost, LIVING_COST_MONTHS, essentialExpenses, reserve),
                 topCategories);
     }
 

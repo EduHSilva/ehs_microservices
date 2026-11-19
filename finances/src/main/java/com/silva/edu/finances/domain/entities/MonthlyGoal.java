@@ -39,6 +39,8 @@ public class MonthlyGoal {
     private LocalDate dtFim;
     @Column(nullable = false)
     private boolean active = true;
+    @Column(columnDefinition = "boolean default false")
+    private boolean reserve = false;
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 }

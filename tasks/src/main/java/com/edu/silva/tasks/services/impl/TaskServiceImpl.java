@@ -46,6 +46,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponseDTO save(AddTaskDTO dto) {
         Task task = new Task();
         task.setTitle(dto.title());
+        task.setDetails(trimToNull(dto.details()));
         task.setType(dto.type() == null ? TaskType.UNIQUE : dto.type());
         task.setStartDate(dto.startDate() == null ? new java.util.Date() : dto.startDate());
         task.setEndDate(dto.endDate());
@@ -110,6 +111,10 @@ public class TaskServiceImpl implements TaskService {
         if (request.title() != null) {
             task.setTitle(request.title());
         }
+        // Null means "not sent"; an empty string is how the client clears the details.
+        if (request.details() != null) {
+            task.setDetails(trimToNull(request.details()));
+        }
         if (request.type() != null) {
             task.setType(request.type());
             if (request.type().isRecurring()) {
@@ -149,6 +154,14 @@ public class TaskServiceImpl implements TaskService {
         refreshDelayedStatus(task);
 
         return toResponse(repository.save(task), true, null, null);
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private Task findEntity(UUID id) {

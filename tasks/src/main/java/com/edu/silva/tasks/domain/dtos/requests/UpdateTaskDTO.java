@@ -4,6 +4,7 @@ import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.Date;
@@ -13,6 +14,8 @@ import java.util.UUID;
 /** All fields are optional so a daily completion can be updated independently. */
 public record UpdateTaskDTO(
         String title,
+        /** Free text with notes and links; an empty string clears it. */
+        @Size(max = 2000) String details,
         TaskType type,
         Date startDate,
         Date endDate,

@@ -22,7 +22,9 @@ public record DashboardSummaryResponse(
 
     public record NetWorth(BigDecimal current, BigDecimal projected) {}
 
-    public record LivingCost(BigDecimal monthlyAverage, int months, BigDecimal total) {}
+    public record LivingCost(BigDecimal monthlyAverage, int months, BigDecimal total, Reserve reserve) {}
+
+    public record Reserve(String goalId, String title, BigDecimal total, BigDecimal months) {}
 
     public record CategoryShare(String categoryId, String title, String color, BigDecimal amount, BigDecimal share) {}
 }

@@ -208,6 +208,13 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         goal.setDtInicio(start);
         goal.setDtFim(end);
         goal.setActive(request.active());
+        if (request.reserve()) {
+            goals.findAllByUserIdAndAccountIdAndReserveTrue(goal.getUserId(), goal.getAccountId())
+                    .stream()
+                    .filter(other -> !other.getId().equals(goal.getId()))
+                    .forEach(other -> other.setReserve(false));
+        }
+        goal.setReserve(request.reserve());
     }
     private boolean appliesTo(MonthlyGoal goal, LocalDate start, LocalDate end) {
         if (goal.getDtInicio() == null) return goal.getPeriodMonth().equals(YearMonth.from(start).toString());
@@ -221,6 +228,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         boolean recurring = end == null || YearMonth.from(end).isAfter(YearMonth.from(start));
         BigDecimal initialBalance = g.getInitialBalance() == null ? BigDecimal.ZERO : g.getInitialBalance();
         return new MonthlyGoalResponse(g.getId(), g.getAccountId(), g.getTitle(), g.getMode(),
-                g.getAmount(), initialBalance, g.getObjective(), g.getPeriodMonth(), start, end, recurring, g.isActive());
+                g.getAmount(), initialBalance, g.getObjective(), g.getPeriodMonth(), start, end, recurring, g.isActive(),
+                g.isReserve());
     }
 }

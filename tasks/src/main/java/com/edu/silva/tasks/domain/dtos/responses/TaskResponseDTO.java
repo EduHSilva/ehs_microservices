@@ -21,6 +21,8 @@ public class TaskResponseDTO {
     private UUID id;
     private Date createdDate;
     private String title;
+    @Schema(description = "Free text with notes and links (e.g. class recordings) shown with the task.")
+    private String details;
     private Date startDate;
     private Date endDate;
     private TaskType type;

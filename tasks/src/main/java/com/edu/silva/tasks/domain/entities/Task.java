@@ -29,6 +29,9 @@ public class Task {
     @UpdateTimestamp
     private Date updatedDate;
     private String title;
+    /** Free text with notes and links (e.g. class recordings) shown with the task. */
+    @Column(name = "details", columnDefinition = "TEXT")
+    private String details;
     /** First day on which this task is available. */
     @Column(name = "start_date")
     private Date startDate;

@@ -5,6 +5,7 @@ import com.edu.silva.tasks.domain.enums.TaskType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.util.Date;
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.UUID;
 
 public record AddTaskDTO(
         @NotBlank String title,
+        /** Free text with notes and links, e.g. class recordings. */
+        @Size(max = 2000) String details,
         TaskType type,
         Date startDate,
         Date endDate,

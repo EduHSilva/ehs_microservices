@@ -23,4 +23,6 @@ public interface MonthlyGoalRepository extends JpaRepository<MonthlyGoal, UUID> 
             @Param("periodEnd") LocalDate periodEnd, Pageable pageable);
     @Query("select coalesce(sum(g.initialBalance), 0) from MonthlyGoal g where g.userId = :userId and g.accountId = :accountId")
     java.math.BigDecimal sumInitialBalances(@Param("userId") UUID userId, @Param("accountId") String accountId);
+    Optional<MonthlyGoal> findFirstByUserIdAndAccountIdAndReserveTrue(UUID userId, String accountId);
+    List<MonthlyGoal> findAllByUserIdAndAccountIdAndReserveTrue(UUID userId, String accountId);
 }

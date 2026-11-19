@@ -16,6 +16,7 @@ public record MonthlyGoalRequest(
         @Pattern(regexp = "\\d{4}-(0[1-9]|1[0-2])") String periodMonth,
         LocalDate dtInicio,
         LocalDate dtFim,
-        boolean active
+        boolean active,
+        boolean reserve
 ) {
 }
