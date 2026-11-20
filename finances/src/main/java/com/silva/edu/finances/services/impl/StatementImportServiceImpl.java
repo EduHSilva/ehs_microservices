@@ -9,6 +9,7 @@ import com.silva.edu.finances.domain.dtos.response.TransactionResponseDTO;
 import com.silva.edu.finances.domain.dtos.response.TransactionImportAuditResponse;
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.entities.TransactionImportAudit;
+import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.TransactionRepository;
@@ -83,6 +84,7 @@ public class StatementImportServiceImpl implements StatementImportService {
                 transaction.setCategory(line.categoryId() == null ? null : categories
                         .requireAccessible(line.categoryId()));
                 // Sai de DELETED e volta para a revisão, reaproveitando a chave única.
+                transaction.setEntryType(TransactionEntryType.NORMAL);
                 transaction.setStatus(TransactionStatus.REVIEW);
                 transactions.save(transaction);
                 record(transaction, "IMPORTED", userId);
@@ -99,6 +101,8 @@ public class StatementImportServiceImpl implements StatementImportService {
             transaction.setIncome(line.income());
             transaction.setExecutionDate(Date.from(line.date().atStartOfDay().toInstant(ZoneOffset.UTC)));
             transaction.setStatus(TransactionStatus.REVIEW);
+            // Extrato nunca cria CARD/TRANSFER/INVOICE_PAYMENT (sem casamento de fatura no v1).
+            transaction.setEntryType(TransactionEntryType.NORMAL);
             if (line.categoryId() != null) {
                 transaction.setCategory(categories.requireAccessible(line.categoryId()));
             }

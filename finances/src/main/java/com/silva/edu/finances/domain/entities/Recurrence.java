@@ -49,4 +49,6 @@ public class Recurrence implements Serializable {
     private UUID userId;
     @Column(name = "account_id", length = 80)
     private String accountId;
+    @ManyToOne
+    private CreditCard creditCard;
 }

@@ -2,9 +2,12 @@ package com.silva.edu.finances.services.impl;
 
 import com.silva.edu.finances.domain.dtos.request.UpdateTransactionRequestDTO;
 import com.silva.edu.finances.domain.entities.Category;
+import com.silva.edu.finances.domain.entities.CreditCard;
 import com.silva.edu.finances.domain.entities.Recurrence;
 import com.silva.edu.finances.domain.entities.Transaction;
+import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
+import com.silva.edu.finances.repositories.CreditCardRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.CategoryService;
@@ -18,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +40,8 @@ class TransactionServiceImplTest {
     @Mock private CategoryService categoryService;
     @Mock private RecurrenceRepository recurrenceRepository;
     @Mock private FinanceAccountService accountService;
+    @Mock private CreditCardRepository creditCardRepository;
+    @Mock private CreditCardInvoiceService invoiceService;
     @InjectMocks private TransactionServiceImpl service;
 
     private final UUID transactionId = UUID.randomUUID();
@@ -99,6 +107,47 @@ class TransactionServiceImplTest {
                 .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
     }
 
+    @Test
+    void updateRejectsTransferAndInvoicePayment() {
+        for (TransactionEntryType type : new TransactionEntryType[]{TransactionEntryType.TRANSFER,
+                TransactionEntryType.INVOICE_PAYMENT}) {
+            Transaction transaction = transaction();
+            transaction.setEntryType(type);
+            when(repository.findById(transactionId)).thenReturn(Optional.of(transaction));
+
+            assertThatThrownBy(() -> service.update(transactionId, request(null, false)))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            reset(repository);
+        }
+    }
+
+    @Test
+    void updateRejectsEditingCardPurchaseOfFullyPaidInvoice() {
+        Transaction transaction = transaction();
+        CreditCard card = new CreditCard();
+        card.setId(UUID.randomUUID());
+        card.setAccountId("ACC");
+        card.setClosingDay(10);
+        card.setDueDay(20);
+        transaction.setCreditCard(card);
+        transaction.setEntryType(TransactionEntryType.CARD);
+        transaction.setExecutionDate(new Date());
+        transaction.setStatus(TransactionStatus.OK);
+        when(repository.findById(transactionId)).thenReturn(Optional.of(transaction));
+        when(accountService.ownerOf("ACC")).thenReturn(UUID.randomUUID());
+        CreditCardInvoiceService.Ledger ledger = new CreditCardInvoiceService.Ledger();
+        when(invoiceService.ledger(any(CreditCard.class), any(), any())).thenReturn(ledger);
+        when(invoiceService.invoice(any(CreditCard.class), any(CreditCardInvoiceService.Ledger.class), any()))
+                .thenReturn(new CreditCardInvoiceService.Invoice(card, java.time.YearMonth.of(2026, 11),
+                        java.time.LocalDate.of(2026, 11, 10), java.time.LocalDate.of(2026, 11, 20),
+                        BigDecimal.TEN, BigDecimal.TEN));
+
+        assertThatThrownBy(() -> service.update(transactionId, request(null, false)))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(repository, never()).save(any(Transaction.class));
+    }
+
     private Transaction transaction() {
         Transaction transaction = new Transaction();
         transaction.setId(transactionId);
@@ -110,7 +159,7 @@ class TransactionServiceImplTest {
     }
 
     private UpdateTransactionRequestDTO request(UUID categoryId, boolean income) {
-        return new UpdateTransactionRequestDTO(BigDecimal.TEN, "Aluguel", null, categoryId, income, null);
+        return new UpdateTransactionRequestDTO(BigDecimal.TEN, "Aluguel", null, categoryId, income, null, null, false);
     }
 
     private Category category(boolean income, String title) {

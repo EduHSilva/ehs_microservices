@@ -27,10 +27,19 @@ public class TransactionResponseDTO {
     private String title;
     private TransactionStatus status;
     private String accountId;
+    private String entryType;
+    private UUID creditCardId;
+    private String creditCardName;
+    private UUID transferId;
+    private String counterpartAccountId;
+    private Date invoiceDueDate;
 
     public TransactionResponseDTO(Transaction transaction) {
         BeanUtils.copyProperties(transaction, this);
         this.accountId = transaction.getAccountId();
+        this.entryType = transaction.getEntryType() == null ? null : transaction.getEntryType().name();
+        this.transferId = transaction.getTransferId();
+        this.invoiceDueDate = transaction.getInvoiceDueDate();
         if (transaction.getCategory() != null) {
             this.category = transaction.getCategory().getTitle();
             this.categoryID = transaction.getCategory().getId();
@@ -41,6 +50,10 @@ public class TransactionResponseDTO {
         }
         if (transaction.getRecurrence() != null) {
             this.recurrence = transaction.getRecurrence().getTitle();
+        }
+        if (transaction.getCreditCard() != null) {
+            this.creditCardId = transaction.getCreditCard().getId();
+            this.creditCardName = transaction.getCreditCard().getName();
         }
     }
 }

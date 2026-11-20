@@ -1,11 +1,13 @@
 package com.silva.edu.finances.infra.config;
 
+import com.silva.edu.finances.domain.enums.CardStatus;
 import com.silva.edu.finances.domain.enums.CategoryClassification;
 import com.silva.edu.finances.domain.enums.CategoryStatus;
 import com.silva.edu.finances.domain.enums.FinancialAccountType;
 import com.silva.edu.finances.domain.enums.GoalMode;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
+import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -26,10 +28,12 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             new EnumCheck("category", "classification", CategoryClassification.class),
             new EnumCheck("category", "status", CategoryStatus.class),
             new EnumCheck("transaction", "status", TransactionStatus.class),
+            new EnumCheck("transaction", "entry_type", TransactionEntryType.class),
             new EnumCheck("recurrences", "status", RecurrenceStatus.class),
             new EnumCheck("recurrences", "type", RecurrenceType.class),
             new EnumCheck("finance_account", "type", FinancialAccountType.class),
-            new EnumCheck("monthly_goal", "mode", GoalMode.class)
+            new EnumCheck("monthly_goal", "mode", GoalMode.class),
+            new EnumCheck("credit_card", "status", CardStatus.class)
     );
 
     private final JdbcTemplate jdbcTemplate;

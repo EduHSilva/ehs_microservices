@@ -17,6 +17,7 @@ public record AddRecurrenceRequestDTO(
         @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
         @NotBlank String title,
         @Size(max = 80) String accountId,
-        RecurrenceStatus status
+        RecurrenceStatus status,
+        UUID creditCardId
 ) {
 }

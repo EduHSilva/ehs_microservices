@@ -4,6 +4,7 @@ import com.silva.edu.finances.domain.entities.Recurrence;
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
+import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
@@ -98,6 +99,10 @@ public class RecurrenceMaterializer {
         transaction.setRecurrence(recurrence);
         transaction.setExecutionDate(toDate(due));
         transaction.setStatus(TransactionStatus.PENDING);
+        // Ocorrências de recorrência com cartão nascem CARD e herdam o cartão.
+        transaction.setCreditCard(recurrence.getCreditCard());
+        transaction.setEntryType(recurrence.getCreditCard() == null
+                ? TransactionEntryType.NORMAL : TransactionEntryType.CARD);
         return transaction;
     }
 

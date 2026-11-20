@@ -10,13 +10,16 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.UUID;
 
+/** {@code creditCardId} nulo e {@code clearCreditCard=true} removem o cartão (volta a NORMAL). */
 public record UpdateTransactionRequestDTO(
         @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
         @NotBlank String title,
         Date executionDate,
         UUID categoryID,
         Boolean income,
-        TransactionStatus status
+        TransactionStatus status,
+        UUID creditCardId,
+        Boolean clearCreditCard
 ) {
 
 }

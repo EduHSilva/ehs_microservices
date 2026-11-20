@@ -4,12 +4,15 @@ import com.silva.edu.finances.domain.dtos.request.AddRecurrenceRequestDTO;
 import com.silva.edu.finances.domain.dtos.request.UpdateRecurrenceRequestDTO;
 import com.silva.edu.finances.domain.dtos.response.RecurrenceResponseDTO;
 import com.silva.edu.finances.domain.entities.Category;
+import com.silva.edu.finances.domain.entities.CreditCard;
 import com.silva.edu.finances.domain.entities.Recurrence;
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.RecurrenceType;
+import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
+import com.silva.edu.finances.repositories.CreditCardRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.CategoryService;
@@ -29,6 +32,7 @@ import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -40,15 +44,17 @@ public class RecurrenceServiceImpl implements RecurrenceService {
     private final TransactionRepository transactionRepository;
     private final FinanceAccountService accountService;
     private final RecurrenceMaterializer materializer;
+    private final CreditCardRepository creditCardRepository;
 
     public RecurrenceServiceImpl(RecurrenceRepository repository, CategoryService categoryService,
                                  TransactionRepository transactionRepository, FinanceAccountService accountService,
-                                 RecurrenceMaterializer materializer) {
+                                 RecurrenceMaterializer materializer, CreditCardRepository creditCardRepository) {
         this.repository = repository;
         this.categoryService = categoryService;
         this.transactionRepository = transactionRepository;
         this.accountService = accountService;
         this.materializer = materializer;
+        this.creditCardRepository = creditCardRepository;
     }
 
     @Override
@@ -67,6 +73,7 @@ public class RecurrenceServiceImpl implements RecurrenceService {
         Category category = findCategory(request.categoryID());
         requireCategoryDirection(category, request.income());
         r.setCategory(category);
+        r.setCreditCard(resolveCard(request.creditCardId(), accountId, request.income()));
         r.setUserId(accountService.ownerOf(accountId));
         repository.save(r);
         return new RecurrenceResponseDTO(r);
@@ -116,6 +123,20 @@ public class RecurrenceServiceImpl implements RecurrenceService {
         } else if (request.income() != null && recurrence.getCategory() == null) {
             recurrence.setIncome(request.income());
         }
+        boolean cardChanged = false;
+        if (request.creditCardId() != null) {
+            // Vínculo novo com cartão só em despesa; a direção pode ser ajustada no mesmo request.
+            if (recurrence.getCreditCard() == null && request.income() == null && recurrence.isIncome())
+                throw new IllegalArgumentException("Card recurrences must be expenses");
+            CreditCard card = resolveCard(request.creditCardId(), recurrence.getAccountId(), false);
+            cardChanged = !Objects.equals(cardId(recurrence.getCreditCard()), card.getId());
+            recurrence.setCreditCard(card);
+        } else if (Boolean.TRUE.equals(request.clearCreditCard()) && recurrence.getCreditCard() != null) {
+            recurrence.setCreditCard(null);
+            cardChanged = true;
+        }
+        if (recurrence.getCreditCard() != null && recurrence.isIncome())
+            throw new IllegalArgumentException("Card recurrences must be expenses");
         if (request.status() != null) {
             if (request.status() == RecurrenceStatus.DELETED)
                 throw new IllegalArgumentException("Use the delete endpoint to remove a recurrence");
@@ -126,6 +147,11 @@ public class RecurrenceServiceImpl implements RecurrenceService {
         if (request.categoryID() != null) {
             transactionRepository.updatePendingCategoryByRecurrence(
                     id, saved.getUserId(), saved.getCategory(), saved.isIncome());
+        }
+        if (request.creditCardId() != null || Boolean.TRUE.equals(request.clearCreditCard()) || cardChanged) {
+            transactionRepository.updatePendingCardByRecurrence(id, saved.getUserId(),
+                    saved.getCreditCard() == null ? TransactionEntryType.NORMAL : TransactionEntryType.CARD,
+                    saved.getCreditCard());
         }
         return new RecurrenceResponseDTO(saved);
     }
@@ -173,6 +199,9 @@ public class RecurrenceServiceImpl implements RecurrenceService {
             occurrence.setCategory(recurrence.getCategory());
             occurrence.setRecurrence(recurrence);
             occurrence.setExecutionDate(toDate(due));
+            occurrence.setCreditCard(recurrence.getCreditCard());
+            occurrence.setEntryType(recurrence.getCreditCard() == null
+                    ? TransactionEntryType.NORMAL : TransactionEntryType.CARD);
         }
         occurrence.setValue(amount);
         occurrence.setStatus(TransactionStatus.OK);
@@ -210,6 +239,21 @@ public class RecurrenceServiceImpl implements RecurrenceService {
 
     private Category findCategory(UUID categoryId) {
         return categoryService.requireAccessible(categoryId);
+    }
+
+    /** Cartão precisa ser da mesma conta e, no v1, só faz sentido em despesa. */
+    private CreditCard resolveCard(UUID creditCardId, String accountId, boolean income) {
+        if (income) throw new IllegalArgumentException("Card recurrences must be expenses");
+        CreditCard card = creditCardRepository.findById(creditCardId)
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(CreditCard.class.getSimpleName(), creditCardId));
+        if (accountId == null || !accountId.equals(card.getAccountId()))
+            throw new IllegalArgumentException("Credit card does not belong to the informed account");
+        accountService.requireAccess(card.getAccountId());
+        return card;
+    }
+
+    private static UUID cardId(CreditCard card) {
+        return card == null ? null : card.getId();
     }
 
     private void requireCategoryDirection(Category category, boolean income) {

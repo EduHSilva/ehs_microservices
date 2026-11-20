@@ -16,11 +16,22 @@ import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
 
+/**
+ * Separação caixa × competência por `entryType`:
+ * caixa = NORMAL + TRANSFER + INVOICE_PAYMENT (CARD só sai quando a fatura é paga);
+ * relatórios/receita-despesa = NORMAL + CARD (transferências e pagamentos não são receita nem despesa).
+ */
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
+    String REPORT_TYPES = "(com.silva.edu.finances.domain.enums.TransactionEntryType.NORMAL, "
+            + "com.silva.edu.finances.domain.enums.TransactionEntryType.CARD)";
+    String CASH_TYPES = "(com.silva.edu.finances.domain.enums.TransactionEntryType.NORMAL, "
+            + "com.silva.edu.finances.domain.enums.TransactionEntryType.TRANSFER, "
+            + "com.silva.edu.finances.domain.enums.TransactionEntryType.INVOICE_PAYMENT)";
+
     Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
     Page<Transaction> findAllByAccountId(String accountId, Pageable pageable);
     Page<Transaction> findAllByAccountIdIn(Collection<String> accountIds, Pageable pageable);
-    @Query("select coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.income = true and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end")
+    @Query("select coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.income = true and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end")
     BigDecimal sumConfirmedIncome(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                   @Param("start") Date start, @Param("end") Date end);
     @Query(value = "select exists(select 1 from transaction where user_id = :userId and account_id = :accountId and import_key = :key and status <> 'DELETED')", nativeQuery = true)
@@ -31,7 +42,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query(value = "select * from transaction where user_id = :userId and account_id = :accountId and import_key = :key and status = 'DELETED' limit 1", nativeQuery = true)
     Optional<Transaction> findDeletedByImportKey(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                                  @Param("key") String key);
-    @Query("select coalesce(sum(case when t.income = true then t.value else -t.value end), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate < :asOf")
+    @Query("select coalesce(sum(case when t.income = true then t.value else -t.value end), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.entryType in " + CASH_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate < :asOf")
     BigDecimal sumNetByAccountAndUser(@Param("accountId") String accountId, @Param("userId") UUID userId,
                                       @Param("asOf") Date asOf);
     org.springframework.data.domain.Page<Transaction> findAllByAccountIdAndExecutionDateBetween(
@@ -59,25 +70,37 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
                                                 @Param("category") com.silva.edu.finances.domain.entities.Category category,
                                                 @Param("income") boolean income,
                                                 @Param("excludedId") UUID excludedId);
-    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate < :asOf group by t.income")
+    // Ocorrências pendentes espelham o cartão da recorrência; confirmadas mantêm o histórico.
+    @Modifying
+    @Query("update Transaction t set t.entryType = :entryType, t.creditCard = :card where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING")
+    int updatePendingCardByRecurrence(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId,
+                                      @Param("entryType") com.silva.edu.finances.domain.enums.TransactionEntryType entryType,
+                                      @Param("card") com.silva.edu.finances.domain.entities.CreditCard card);
+    @Modifying
+    @Query("update Transaction t set t.entryType = :entryType, t.creditCard = :card where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING and t.id <> :excludedId")
+    int updatePendingCardByRecurrenceExcept(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId,
+                                            @Param("entryType") com.silva.edu.finances.domain.enums.TransactionEntryType entryType,
+                                            @Param("card") com.silva.edu.finances.domain.entities.CreditCard card,
+                                            @Param("excludedId") UUID excludedId);
+    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate < :asOf group by t.income")
     List<Object[]> sumByClassification(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                        @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
                                        @Param("asOf") Date asOf);
-    @Query("select t.income, coalesce(sum(t.value), 0), count(t.id) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.recurrence is null and t.executionDate >= :start and t.executionDate < :end group by t.income")
+    @Query("select t.income, coalesce(sum(t.value), 0), count(t.id) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.recurrence is null and t.executionDate >= :start and t.executionDate < :end group by t.income")
     List<Object[]> sumVariableHistory(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                       @Param("start") Date start, @Param("end") Date end);
-    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end group by t.income")
+    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate < :end group by t.income")
     List<Object[]> sumByIncomeBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                       @Param("start") Date start, @Param("end") Date end);
-    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate >= :start and t.executionDate < :end group by t.income")
+    @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate >= :start and t.executionDate < :end group by t.income")
     List<Object[]> sumByClassificationBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                               @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
                                               @Param("start") Date start, @Param("end") Date end);
-    @Query("select distinct year(t.executionDate), month(t.executionDate) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate >= :start and t.executionDate < :end")
+    @Query("select distinct year(t.executionDate), month(t.executionDate) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate >= :start and t.executionDate < :end")
     List<Object[]> monthsWithClassificationBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                                    @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
                                                    @Param("start") Date start, @Param("end") Date end);
-    @Query("select c.id, c.title, c.color, coalesce(sum(t.value), 0) from Transaction t left join t.category c where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.income = false and t.executionDate >= :start and t.executionDate < :end group by c.id, c.title, c.color order by coalesce(sum(t.value), 0) desc")
+    @Query("select c.id, c.title, c.color, coalesce(sum(t.value), 0) from Transaction t left join t.category c where t.userId = :userId and t.accountId = :accountId and t.entryType in " + REPORT_TYPES + " and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.income = false and t.executionDate >= :start and t.executionDate < :end group by c.id, c.title, c.color order by coalesce(sum(t.value), 0) desc")
     List<Object[]> topExpenseCategories(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                         @Param("start") Date start, @Param("end") Date end, Pageable pageable);
     @Modifying
@@ -85,4 +108,33 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     int assignLegacyTransactions(@Param("userId") UUID userId, @Param("accountId") String accountId);
     org.springframework.data.domain.Page<Transaction> findAllByUserIdAndRecurrenceIsNotNull(
             UUID userId, Pageable pageable);
+
+    // ---------------------------------------------------------------- cartões
+
+    @Query("select t from Transaction t where t.accountId = :accountId and t.creditCard is not null and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.CARD and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate < :to")
+    List<Transaction> findCardPurchasesBefore(@Param("accountId") String accountId, @Param("to") Date to);
+    @Query("select t from Transaction t where t.accountId = :accountId and t.creditCard is not null and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.CARD and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK")
+    List<Transaction> findAllCardPurchases(@Param("accountId") String accountId);
+    @Query("select t from Transaction t where t.creditCard.id = :cardId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING")
+    List<Transaction> findPendingByCard(@Param("cardId") UUID cardId);
+    @Query("select t from Transaction t where t.creditCard.id = :cardId and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.CARD and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING and t.executionDate >= :start and t.executionDate < :end")
+    List<Transaction> findPendingCardPurchasesBetween(@Param("cardId") UUID cardId,
+                                                     @Param("start") Date start, @Param("end") Date end);
+    @Query("select t from Transaction t where t.creditCard.id = :cardId and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.INVOICE_PAYMENT and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK")
+    List<Transaction> findInvoicePaymentsByCard(@Param("cardId") UUID cardId);
+    @Query("select t from Transaction t where t.creditCard.id = :cardId and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.INVOICE_PAYMENT and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.invoiceDueDate >= :start and t.invoiceDueDate < :end")
+    List<Transaction> findInvoicePaymentsByCardAndCycle(@Param("cardId") UUID cardId,
+                                                        @Param("start") Date start, @Param("end") Date end);
+    @Query("select count(t) from Transaction t where t.creditCard.id = :cardId and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.INVOICE_PAYMENT and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK")
+    long countActiveInvoicePayments(@Param("cardId") UUID cardId);
+    @Query("select t.creditCard.id, coalesce(sum(t.value), 0) from Transaction t where t.accountId = :accountId and t.creditCard is not null and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.CARD and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate < :to group by t.creditCard.id")
+    List<Object[]> sumCardPurchasesByCard(@Param("accountId") String accountId, @Param("to") Date to);
+
+    // ---------------------------------------------------------------- transferências
+
+    @Query("select t from Transaction t where t.transferId = :transferId")
+    List<Transaction> findByTransferId(@Param("transferId") UUID transferId);
+    @Query("select t from Transaction t where t.accountId = :accountId and t.transferId is not null and t.entryType = com.silva.edu.finances.domain.enums.TransactionEntryType.TRANSFER and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.executionDate >= :start and t.executionDate <= :end")
+    List<Transaction> findTransfersBetween(@Param("accountId") String accountId,
+                                           @Param("start") Date start, @Param("end") Date end);
 }

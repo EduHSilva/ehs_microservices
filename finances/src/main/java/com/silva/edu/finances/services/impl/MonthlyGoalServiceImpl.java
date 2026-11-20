@@ -9,6 +9,7 @@ import com.silva.edu.finances.domain.entities.GoalContribution;
 import com.silva.edu.finances.domain.entities.MonthlyGoal;
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.GoalMode;
+import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.GoalContributionRepository;
@@ -132,6 +133,9 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
                     .orElseThrow(() -> new CustomExceptions.EntityNotFoundException("Transaction", request.transactionId()));
             if (!goal.getAccountId().equals(transaction.getAccountId()))
                 throw new IllegalArgumentException("Transaction and goal accounts do not match");
+            // Compra no cartão, transferência e pagamento de fatura não são aporte de categoria.
+            if (transaction.getEntryType() != null && transaction.getEntryType() != TransactionEntryType.NORMAL)
+                throw new IllegalArgumentException("Only normal transactions can be linked to a goal contribution");
             if (transaction.isIncome() || transaction.getStatus() != TransactionStatus.OK
                     || transaction.getValue().compareTo(request.amount()) != 0
                     || transaction.getExecutionDate().toInstant().atZone(ZoneOffset.UTC).toLocalDate().compareTo(request.date()) != 0)
@@ -165,6 +169,7 @@ public class MonthlyGoalServiceImpl implements MonthlyGoalService {
         transaction.setCategory(investmentCategory);
         transaction.setExecutionDate(java.util.Date.from(request.date().atStartOfDay(ZoneOffset.UTC).toInstant()));
         transaction.setStatus(TransactionStatus.OK);
+        transaction.setEntryType(TransactionEntryType.NORMAL);
         return transactions.save(transaction);
     }
 

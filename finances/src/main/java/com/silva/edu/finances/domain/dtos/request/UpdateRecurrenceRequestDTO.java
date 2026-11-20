@@ -6,6 +6,7 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/** {@code creditCardId} nulo e {@code clearCreditCard=true} removem o cartão (ocorrências pendentes voltam a NORMAL). */
 public record UpdateRecurrenceRequestDTO(
         @Min(1) @Max(31) int day,
         @NotBlank String title,
@@ -14,6 +15,8 @@ public record UpdateRecurrenceRequestDTO(
         @NotNull @DecimalMin(value = "0.01") @Digits(integer = 15, fraction = 4) BigDecimal value,
         UUID categoryID,
         Boolean income,
-        RecurrenceStatus status
+        RecurrenceStatus status,
+        UUID creditCardId,
+        Boolean clearCreditCard
 ) {
 }

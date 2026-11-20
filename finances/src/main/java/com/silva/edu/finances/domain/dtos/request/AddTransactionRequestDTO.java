@@ -18,6 +18,7 @@ public record AddTransactionRequestDTO(
         UUID recurrencyID,
         @NotNull Date executionDate,
         @jakarta.validation.constraints.Size(max = 80) String accountId,
-        TransactionStatus status
+        TransactionStatus status,
+        UUID creditCardId
 ) {
 }

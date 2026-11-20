@@ -29,10 +29,18 @@ public class RecurrenceResponseDTO {
     private Integer payed;
     private RecurrenceStatus status;
     private String accountId;
+    private String entryType;
+    private UUID creditCardId;
+    private String creditCardName;
 
 
     public RecurrenceResponseDTO(Recurrence recurrence) {
         BeanUtils.copyProperties(recurrence, this);
+        this.creditCardId = recurrence.getCreditCard() == null ? null : recurrence.getCreditCard().getId();
+        this.creditCardName = recurrence.getCreditCard() == null ? null : recurrence.getCreditCard().getName();
+        this.entryType = this.creditCardId == null
+                ? com.silva.edu.finances.domain.enums.TransactionEntryType.NORMAL.name()
+                : com.silva.edu.finances.domain.enums.TransactionEntryType.CARD.name();
         if (recurrence.getCategory() != null) {
             this.category = recurrence.getCategory().getTitle();
             this.categoryID = recurrence.getCategory().getId();

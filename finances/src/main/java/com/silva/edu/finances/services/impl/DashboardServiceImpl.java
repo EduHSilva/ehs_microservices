@@ -3,10 +3,13 @@ package com.silva.edu.finances.services.impl;
 import com.silva.edu.finances.domain.dtos.response.DashboardPendingResponse;
 import com.silva.edu.finances.domain.dtos.response.DashboardSummaryResponse;
 import com.silva.edu.finances.domain.dtos.response.InvestmentSummaryResponse;
+import com.silva.edu.finances.domain.entities.CreditCard;
 import com.silva.edu.finances.domain.entities.Recurrence;
+import com.silva.edu.finances.domain.enums.CardStatus;
 import com.silva.edu.finances.domain.enums.CategoryClassification;
 import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
+import com.silva.edu.finances.repositories.CreditCardRepository;
 import com.silva.edu.finances.repositories.GoalContributionRepository;
 import com.silva.edu.finances.repositories.MonthlyGoalRepository;
 import com.silva.edu.finances.repositories.RecurrenceRepository;
@@ -39,6 +42,7 @@ public class DashboardServiceImpl implements DashboardService {
     private static final int LIVING_COST_MIN_MONTHS = 3;
     private static final int INVESTMENT_AVERAGE_MONTHS = 3;
     private static final int TOP_CATEGORIES = 5;
+    private static final java.time.format.DateTimeFormatter MM_YYYY = java.time.format.DateTimeFormatter.ofPattern("MM/yyyy");
 
     private final FinanceAccountService accounts;
     private final TransactionRepository transactions;
@@ -48,11 +52,14 @@ public class DashboardServiceImpl implements DashboardService {
     private final CashflowProjectionService projections;
     private final MonthlyGoalRepository goals;
     private final GoalContributionRepository contributions;
+    private final CreditCardRepository cards;
+    private final CreditCardInvoiceService invoices;
 
     public DashboardServiceImpl(FinanceAccountService accounts, TransactionRepository transactions,
                                 RecurrenceRepository recurrences, CategoryService categories,
                                 RecurrenceMaterializer materializer, CashflowProjectionService projections,
-                                MonthlyGoalRepository goals, GoalContributionRepository contributions) {
+                                MonthlyGoalRepository goals, GoalContributionRepository contributions,
+                                CreditCardRepository cards, CreditCardInvoiceService invoices) {
         this.accounts = accounts;
         this.transactions = transactions;
         this.recurrences = recurrences;
@@ -61,6 +68,8 @@ public class DashboardServiceImpl implements DashboardService {
         this.projections = projections;
         this.goals = goals;
         this.contributions = contributions;
+        this.cards = cards;
+        this.invoices = invoices;
     }
 
     @Override
@@ -84,6 +93,25 @@ public class DashboardServiceImpl implements DashboardService {
             if (date.isAfter(end)) continue;
             items.add(new DashboardPendingResponse.Item(recurrence.getId(), "RECURRENCE", recurrence.getTitle(),
                     recurrence.getValue(), recurrence.isIncome(), date, recurrence.getStatus().name()));
+        }
+        UUID owner = accounts.ownerOf(accountId);
+        // Faturas abertas/atrasadas: data = max(vencimento, hoje) para não esconder atrasadas.
+        for (CreditCard card : cards.findAllByAccountIdAndStatus(accountId, CardStatus.ACTIVE)) {
+            for (CreditCardInvoiceService.Invoice invoice : invoices.openInvoices(card, owner, today)) {
+                LocalDate date = invoice.dueDate().isBefore(today) ? today : invoice.dueDate();
+                if (date.isAfter(end)) continue;
+                items.add(new DashboardPendingResponse.Item(card.getId(), "INVOICE",
+                        "Fatura " + card.getName() + " " + MM_YYYY.format(invoice.dueDate()), invoice.remaining(),
+                        false, date, invoice.status().name()));
+            }
+        }
+        // Transferências futuras agendadas (pernas TRANSFER OK dentro da janela).
+        for (var leg : transactions.findTransfersBetween(accountId,
+                Date.from(today.plusDays(1).atStartOfDay(UTC).toInstant()), to)) {
+            if (leg.getStatus() != TransactionStatus.OK || leg.getTransferId() == null) continue;
+            LocalDate date = leg.getExecutionDate().toInstant().atZone(UTC).toLocalDate();
+            items.add(new DashboardPendingResponse.Item(leg.getTransferId(), "TRANSFER", leg.getTitle(),
+                    leg.getValue(), leg.isIncome(), date, leg.getStatus().name()));
         }
         items.sort(Comparator.comparing(DashboardPendingResponse.Item::date)
                 .thenComparing(DashboardPendingResponse.Item::title, String.CASE_INSENSITIVE_ORDER));
@@ -200,16 +228,32 @@ public class DashboardServiceImpl implements DashboardService {
                     row[0] == null ? null : row[0].toString(), (String) row[1], (String) row[2], amount, share));
         }
 
+        // Faturas em aberto: compras OK até hoje menos pagamentos, por cartão.
+        List<DashboardSummaryResponse.CardInvoiceShare> cardShares = new ArrayList<>();
+        BigDecimal openInvoicesTotal = ZERO;
+        for (CreditCard card : cards.findAllByAccountIdAndStatus(accountId, CardStatus.ACTIVE)) {
+            BigDecimal open = ZERO;
+            for (CreditCardInvoiceService.Invoice invoice : invoices.openInvoices(card, owner, today))
+                open = open.add(invoice.remaining());
+            if (open.signum() <= 0) continue;
+            openInvoicesTotal = openInvoicesTotal.add(open);
+            cardShares.add(new DashboardSummaryResponse.CardInvoiceShare(card.getId(), card.getName(), open));
+        }
+        cardShares.sort(Comparator.comparing(DashboardSummaryResponse.CardInvoiceShare::total).reversed());
+
         return new DashboardSummaryResponse(accountId, horizonDays, Instant.now(),
                 new DashboardSummaryResponse.Cash(projection.currentBalance(), monthIncome, monthExpenses,
                         monthNet, projection.closingBalance()),
                 new DashboardSummaryResponse.Investments(investmentTotal, monthContributions, monthWithdrawals,
                         monthContributions.subtract(monthWithdrawals), investmentProjection),
                 new DashboardSummaryResponse.NetWorth(
-                        projection.currentBalance().add(investmentTotal),
+                        // A fatura é dívida: entra na foto de hoje. O projetado já inclui os
+                        // pagamentos previstos no saldo, então não subtrai de novo.
+                        projection.currentBalance().add(investmentTotal).subtract(openInvoicesTotal),
                         projection.closingBalance().add(investmentProjection)),
                 new DashboardSummaryResponse.LivingCost(livingCost, livingCostMonths, essentialExpenses, reserve),
-                topCategories);
+                topCategories,
+                new DashboardSummaryResponse.Cards(openInvoicesTotal, cardShares));
     }
 
     private static Date atStartOfDay(LocalDate date) {
