@@ -36,6 +36,7 @@ public class DashboardServiceImpl implements DashboardService {
     private static final ZoneOffset UTC = ZoneOffset.UTC;
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final int LIVING_COST_MONTHS = 6;
+    private static final int LIVING_COST_MIN_MONTHS = 3;
     private static final int INVESTMENT_AVERAGE_MONTHS = 3;
     private static final int TOP_CATEGORIES = 5;
 
@@ -156,8 +157,9 @@ public class DashboardServiceImpl implements DashboardService {
             averageNet = Boolean.TRUE.equals(row[0])
                     ? averageNet.subtract(total) : averageNet.add(total);
         }
-        BigDecimal monthlyInvestmentNet = averageNet.divide(
-                BigDecimal.valueOf(INVESTMENT_AVERAGE_MONTHS), 4, RoundingMode.HALF_UP);
+        int investmentAverageMonths = transactions.monthsWithClassificationBetween(owner, accountId,
+                CategoryClassification.INVESTMENT, averageStart, monthStart).size();
+        BigDecimal monthlyInvestmentNet = perMonthAverage(averageNet, investmentAverageMonths, 4);
         BigDecimal monthsRemaining = BigDecimal.valueOf(horizonDays)
                 .divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
         BigDecimal investmentProjection = investmentTotal
@@ -171,8 +173,9 @@ public class DashboardServiceImpl implements DashboardService {
                 CategoryClassification.ESSENTIAL, livingCostStart, monthStart)) {
             if (!Boolean.TRUE.equals(row[0])) essentialExpenses = (BigDecimal) row[1];
         }
-        BigDecimal livingCost = essentialExpenses.divide(
-                BigDecimal.valueOf(LIVING_COST_MONTHS), 2, RoundingMode.HALF_UP);
+        int livingCostMonths = transactions.monthsWithClassificationBetween(owner, accountId,
+                CategoryClassification.ESSENTIAL, livingCostStart, monthStart).size();
+        BigDecimal livingCost = livingCostAverage(essentialExpenses, livingCostMonths);
 
         DashboardSummaryResponse.Reserve reserve = null;
         var reserveGoal = goals.findFirstByUserIdAndAccountIdAndReserveTrue(owner, accountId);
@@ -182,7 +185,7 @@ public class DashboardServiceImpl implements DashboardService {
                     : YearMonth.parse(goal.getPeriodMonth()).atDay(1);
             BigDecimal saved = nz(goal.getInitialBalance())
                     .add(nz(contributions.sumForGoalAndPeriod(goal.getId(), owner, savingStart, today.plusDays(1))));
-            BigDecimal reserveMonths = livingCost.signum() == 0 ? null
+            BigDecimal reserveMonths = livingCost == null || livingCost.signum() == 0 ? null
                     : saved.divide(livingCost, 1, RoundingMode.HALF_UP);
             reserve = new DashboardSummaryResponse.Reserve(goal.getId().toString(), goal.getTitle(), saved, reserveMonths);
         }
@@ -205,7 +208,7 @@ public class DashboardServiceImpl implements DashboardService {
                 new DashboardSummaryResponse.NetWorth(
                         projection.currentBalance().add(investmentTotal),
                         projection.closingBalance().add(investmentProjection)),
-                new DashboardSummaryResponse.LivingCost(livingCost, LIVING_COST_MONTHS, essentialExpenses, reserve),
+                new DashboardSummaryResponse.LivingCost(livingCost, livingCostMonths, essentialExpenses, reserve),
                 topCategories);
     }
 
@@ -215,6 +218,19 @@ public class DashboardServiceImpl implements DashboardService {
 
     private static BigDecimal nz(BigDecimal value) {
         return value == null ? ZERO : value;
+    }
+
+    // Divisor = meses com dados na janela; sem dados a média é zero.
+    static BigDecimal perMonthAverage(BigDecimal total, int monthsWithData, int scale) {
+        if (monthsWithData == 0) return ZERO;
+        return total.divide(BigDecimal.valueOf(monthsWithData), scale, RoundingMode.HALF_UP);
+    }
+
+    // Com menos de 3 meses completos de despesas essenciais a média seria distorcida;
+    // nesse caso fica nula para a UI orientar o usuário a continuar usando o sistema.
+    static BigDecimal livingCostAverage(BigDecimal essentialTotal, int monthsWithData) {
+        if (monthsWithData < LIVING_COST_MIN_MONTHS) return null;
+        return perMonthAverage(essentialTotal, monthsWithData, 2);
     }
 
     private LocalDate nextDate(LocalDate today, int day) {

@@ -48,6 +48,17 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @org.springframework.data.jpa.repository.Modifying
     @Query("update Transaction t set t.status = com.silva.edu.finances.domain.enums.TransactionStatus.DELETED where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING")
     int deletePendingByRecurrence(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId);
+    @Modifying
+    @Query("update Transaction t set t.category = :category, t.income = :income where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING")
+    int updatePendingCategoryByRecurrence(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId,
+                                          @Param("category") com.silva.edu.finances.domain.entities.Category category,
+                                          @Param("income") boolean income);
+    @Modifying
+    @Query("update Transaction t set t.category = :category, t.income = :income where t.recurrence.id = :recurrenceId and t.userId = :userId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.PENDING and t.id <> :excludedId")
+    int updatePendingCategoryByRecurrenceExcept(@Param("recurrenceId") UUID recurrenceId, @Param("userId") UUID userId,
+                                                @Param("category") com.silva.edu.finances.domain.entities.Category category,
+                                                @Param("income") boolean income,
+                                                @Param("excludedId") UUID excludedId);
     @Query("select t.income, coalesce(sum(t.value), 0) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate < :asOf group by t.income")
     List<Object[]> sumByClassification(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                        @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
@@ -62,6 +73,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     List<Object[]> sumByClassificationBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                               @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
                                               @Param("start") Date start, @Param("end") Date end);
+    @Query("select distinct year(t.executionDate), month(t.executionDate) from Transaction t where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.category.classification = :classification and t.executionDate >= :start and t.executionDate < :end")
+    List<Object[]> monthsWithClassificationBetween(@Param("userId") UUID userId, @Param("accountId") String accountId,
+                                                   @Param("classification") com.silva.edu.finances.domain.enums.CategoryClassification classification,
+                                                   @Param("start") Date start, @Param("end") Date end);
     @Query("select c.id, c.title, c.color, coalesce(sum(t.value), 0) from Transaction t left join t.category c where t.userId = :userId and t.accountId = :accountId and t.status = com.silva.edu.finances.domain.enums.TransactionStatus.OK and t.income = false and t.executionDate >= :start and t.executionDate < :end group by c.id, c.title, c.color order by coalesce(sum(t.value), 0) desc")
     List<Object[]> topExpenseCategories(@Param("userId") UUID userId, @Param("accountId") String accountId,
                                         @Param("start") Date start, @Param("end") Date end, Pageable pageable);

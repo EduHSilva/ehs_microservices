@@ -22,6 +22,7 @@ public record DashboardSummaryResponse(
 
     public record NetWorth(BigDecimal current, BigDecimal projected) {}
 
+    // months = meses com dados usados na média; monthlyAverage é nulo quando months < 3.
     public record LivingCost(BigDecimal monthlyAverage, int months, BigDecimal total, Reserve reserve) {}
 
     public record Reserve(String goalId, String title, BigDecimal total, BigDecimal months) {}

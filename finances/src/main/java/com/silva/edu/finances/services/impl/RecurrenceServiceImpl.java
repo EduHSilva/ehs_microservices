@@ -108,25 +108,26 @@ public class RecurrenceServiceImpl implements RecurrenceService {
         recurrence.setPayed(request.payed());
         recurrence.setTitle(request.title());
         recurrence.setValue(request.value());
-        boolean hasCategory = recurrence.getCategory() != null;
-        if (hasCategory && (request.categoryID() != null || request.income() != null))
-            throw new IllegalArgumentException("Category and type can only be changed when the recurrence has no category");
-        if (!hasCategory) {
-            if (request.categoryID() != null) {
-                Category category = findCategory(request.categoryID());
-                requireCategoryDirection(category, request.income() == null ? category.isIncome() : request.income());
-                recurrence.setCategory(category);
-                recurrence.setIncome(category.isIncome());
-            } else if (request.income() != null) {
-                recurrence.setIncome(request.income());
-            }
+        if (request.categoryID() != null) {
+            Category category = findCategory(request.categoryID());
+            requireCategoryDirection(category, request.income() == null ? category.isIncome() : request.income());
+            recurrence.setCategory(category);
+            recurrence.setIncome(category.isIncome());
+        } else if (request.income() != null && recurrence.getCategory() == null) {
+            recurrence.setIncome(request.income());
         }
         if (request.status() != null) {
             if (request.status() == RecurrenceStatus.DELETED)
                 throw new IllegalArgumentException("Use the delete endpoint to remove a recurrence");
             recurrence.setStatus(request.status());
         }
-        return new RecurrenceResponseDTO(repository.save(recurrence));
+        Recurrence saved = repository.save(recurrence);
+        // Ocorrências confirmadas são histórico; só as pendentes seguem a nova categoria.
+        if (request.categoryID() != null) {
+            transactionRepository.updatePendingCategoryByRecurrence(
+                    id, saved.getUserId(), saved.getCategory(), saved.isIncome());
+        }
+        return new RecurrenceResponseDTO(saved);
     }
 
     @Override

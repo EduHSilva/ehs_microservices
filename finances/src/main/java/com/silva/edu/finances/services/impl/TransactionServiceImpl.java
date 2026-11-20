@@ -20,6 +20,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,7 +83,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public Page<@NonNull TransactionResponseDTO> findAll(int page, int size, String accountId) {
         if (accountId != null && !accountId.isBlank()) accountService.requireAccess(accountId);
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("executionDate")));
         var result = accountId == null || accountId.isBlank()
                 ? repository.findAllByAccountIdIn(accountService.accessibleAccountIds(), pageable)
                 : repository.findAllByAccountId(accountId, pageable);
@@ -102,18 +103,14 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.executionDate() != null) {
             transaction.setExecutionDate(request.executionDate());
         }
-        boolean hasCategory = transaction.getCategory() != null;
-        if (hasCategory && (request.categoryID() != null || request.income() != null))
-            throw new IllegalArgumentException("Category and type can only be changed when the transaction has no category");
-        if (!hasCategory) {
-            if (request.categoryID() != null) {
-                Category category = findCategory(request.categoryID());
-                requireCategoryDirection(category, request.income() == null ? category.isIncome() : request.income());
-                transaction.setCategory(category);
-                transaction.setIncome(category.isIncome());
-            } else if (request.income() != null) {
-                transaction.setIncome(request.income());
-            }
+        if (request.categoryID() != null) {
+            Category category = findCategory(request.categoryID());
+            requireCategoryDirection(category, request.income() == null ? category.isIncome() : request.income());
+            transaction.setCategory(category);
+            transaction.setIncome(category.isIncome());
+            syncRecurrenceCategory(transaction, category);
+        } else if (request.income() != null && transaction.getCategory() == null) {
+            transaction.setIncome(request.income());
         }
         if (request.status() != null) {
             if (request.status() == TransactionStatus.DELETED)
@@ -160,6 +157,20 @@ public class TransactionServiceImpl implements TransactionService {
 
     private Category findCategory(UUID categoryId) {
         return categoryService.requireAccessible(categoryId);
+    }
+
+    /**
+     * A transação vinculada à recorrência segue a categoria da recorrência: alterar no
+     * lançamento atualiza o modelo e as ocorrências pendentes (confirmadas são histórico).
+     */
+    private void syncRecurrenceCategory(Transaction transaction, Category category) {
+        Recurrence recurrence = transaction.getRecurrence();
+        if (recurrence == null) return;
+        recurrence.setCategory(category);
+        recurrence.setIncome(category.isIncome());
+        recurrenceRepository.save(recurrence);
+        repository.updatePendingCategoryByRecurrenceExcept(
+                recurrence.getId(), recurrence.getUserId(), category, category.isIncome(), transaction.getId());
     }
 
     private void requireCategoryDirection(Category category, boolean income) {

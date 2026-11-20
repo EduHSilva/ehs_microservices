@@ -17,6 +17,7 @@ import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +60,8 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Page<@NonNull CategoryResponseDTO> findAll(int page, int size) {
         seedDefaults(UserContext.getUser());
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.desc("income"), Sort.Order.desc("goal"), Sort.Order.asc("title")));
         return repository.findAllByUserIdIn(accountService.visibleUserIds(), pageable)
                 .map(CategoryResponseDTO::new);
     }
