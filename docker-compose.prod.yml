@@ -410,6 +410,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    # Reload periódico para pegar certificados renovados pelo certbot.
+    command: /bin/sh -c "while :; do sleep 6h & wait; nginx -s reload; done & nginx -g 'daemon off;'"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/prod:/etc/nginx/conf.d:ro
@@ -418,6 +420,27 @@ services:
       - ./infra/platform:/usr/share/nginx/html/platform:ro
       - ./infra/certbot/www:/var/www/certbot:ro
       - letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - backend
+
+  # --------------------------------------------------
+  # CERTBOT - LETSENCRYPT (renovação)
+  # --------------------------------------------------
+  # A emissão inicial é feita por scripts/init-letsencrypt.sh.
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - ./infra/certbot/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :;
+      do
+        certbot renew --quiet;
+        sleep 12h & wait;
+      done"
     networks:
       - backend
 
