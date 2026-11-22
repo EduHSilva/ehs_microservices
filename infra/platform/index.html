@@ -3,12 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EHS Solutions — Aplicativos</title>
-  <!-- SVG inline (data URI): o nginx só serve HTML em /app/, não arquivos estáticos. -->
+  <title>EHS Solutions — aplicativos de gestão, finanças e produtividade</title>
+  <!-- Arquivo único: o nginx só serve HTML estático desta pasta (sem build, sem assets externos). -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%234f46e5'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
-  <meta name="description" content="Aplicativos da EHS Solutions: Admin, Orçamentos, Finanças, Fitness, Estudos, Portfólio e Compras.">
+  <meta name="description" content="EHS Solutions: orçamentos e propostas, finanças pessoais e do negócio, gestão de alunos para personal e nutricionista e estudos. Comece no plano gratuito.">
   <meta name="theme-color" content="#4F46E5">
   <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="EHS Solutions — aplicativos para o seu trabalho e a sua rotina">
+  <meta property="og:description" content="Orçamentos, finanças, fitness e estudos com a mesma conta. Plano gratuito para começar.">
+  <meta property="og:locale" content="pt_BR">
   <style>
     :root {
       color-scheme: light dark;
@@ -19,8 +23,12 @@
       --muted: #475569;
       --border: #e2e8f0;
       --primary: #4f46e5;
+      --primary-strong: #4338ca;
       --primary-soft: #eef2ff;
-      --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 24px -16px rgba(15, 23, 42, .35);
+      --on-primary: #ffffff;
+      --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 16px 40px -24px rgba(15, 23, 42, .45);
+      --shadow-soft: 0 1px 2px rgba(15, 23, 42, .05);
+      --hero-glow: rgba(79, 70, 229, .16);
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -31,242 +39,461 @@
         --muted: #94a3b8;
         --border: #1e293b;
         --primary: #818cf8;
+        --primary-strong: #a5b4fc;
         --primary-soft: #1e1b4b;
-        --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+        --on-primary: #0b1220;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 24px 48px -28px rgba(0, 0, 0, .9);
+        --shadow-soft: 0 1px 2px rgba(0, 0, 0, .35);
+        --hero-glow: rgba(129, 140, 248, .16);
       }
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
       font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
+    a { color: inherit; }
+    .wrap { width: min(1120px, 100% - 32px); margin: 0 auto; }
+    .skip {
+      position: absolute; left: -999px; top: 8px;
+      padding: 8px 12px; border-radius: 8px;
+      background: var(--primary); color: var(--on-primary);
+    }
+    .skip:focus { left: 16px; z-index: 50; }
+
+    /* Header */
     header {
+      position: sticky; top: 0; z-index: 20;
       border-bottom: 1px solid var(--border);
-      background: var(--surface);
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    .wrap { width: min(1080px, 100% - 32px); margin: 0 auto; }
+    .nav {
+      display: flex; align-items: center; gap: 24px;
+      padding: 14px 0;
+    }
     .brand {
       display: flex; align-items: center; gap: 12px;
-      padding: 18px 0; text-decoration: none; color: inherit;
+      text-decoration: none; margin-right: auto;
     }
     .brand-mark {
       display: grid; place-items: center;
       width: 40px; height: 40px; border-radius: 12px;
-      background: var(--primary); color: #fff; font-weight: 800; letter-spacing: .5px;
+      background: var(--primary); color: var(--on-primary);
+      font-weight: 800; letter-spacing: .5px; flex: none;
     }
-    .brand strong { font-size: 1.05rem; display: block; line-height: 1.25; }
-    .brand small { color: var(--muted); font-size: .8rem; }
-    main { flex: 1; padding: 48px 0 64px; }
-    .hero { max-width: 640px; margin-bottom: 40px; }
+    .brand strong { font-size: 1.02rem; display: block; line-height: 1.25; }
+    .brand small { color: var(--muted); font-size: .78rem; }
+    .nav-links { display: flex; align-items: center; gap: 22px; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted);
+      font-size: .9rem; font-weight: 500;
+    }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--text); }
+    @media (max-width: 760px) {
+      .nav-links { display: none; }
+    }
+    @media (max-width: 480px) {
+      .nav { gap: 12px; }
+      .brand small { display: none; }
+      .btn-sm { padding: 8px 12px; font-size: .8rem; white-space: nowrap; }
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 20px; border-radius: 12px;
+      font-size: .92rem; font-weight: 650; text-decoration: none;
+      border: 1px solid transparent;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .btn-primary { background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-soft); }
+    .btn-primary:hover { background: var(--primary-strong); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-soft); border-color: var(--primary); }
+    .btn-sm { padding: 8px 14px; font-size: .85rem; border-radius: 10px; }
+
+    /* Hero */
+    .hero {
+      position: relative; overflow: hidden;
+      padding: clamp(56px, 9vw, 104px) 0 clamp(40px, 6vw, 72px);
+      text-align: center;
+    }
+    .hero::before {
+      content: "";
+      position: absolute; inset: -30% 20% auto;
+      height: 520px; z-index: -1;
+      background: radial-gradient(closest-side, var(--hero-glow), transparent 70%);
+      pointer-events: none;
+    }
     .eyebrow {
       display: inline-block;
-      padding: 4px 10px; margin-bottom: 14px;
+      padding: 5px 12px; margin-bottom: 18px;
       border: 1px solid var(--border); border-radius: 999px;
       background: var(--primary-soft); color: var(--primary);
-      font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+      font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
     }
-    h1 { font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.2; margin: 0 0 12px; }
+    h1 {
+      font-size: clamp(2rem, 5.4vw, 3.35rem);
+      line-height: 1.12; letter-spacing: -.02em;
+      margin: 0 auto 18px; max-width: 17ch;
+    }
     h1 span { color: var(--primary); }
-    .hero p { margin: 0; color: var(--muted); font-size: 1.05rem; }
-
-    h2 {
-      font-size: .8rem; text-transform: uppercase; letter-spacing: .08em;
-      color: var(--muted); margin: 0 0 16px;
+    .hero p {
+      margin: 0 auto; max-width: 60ch;
+      color: var(--muted); font-size: clamp(1rem, 1.6vw, 1.14rem);
     }
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      justify-content: center; margin-top: 30px;
+    }
+    .trust {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 8px 22px; margin: 30px 0 0; padding: 0; list-style: none;
+      color: var(--muted); font-size: .86rem;
+    }
+    .trust li { display: inline-flex; align-items: center; gap: 7px; }
+    .trust svg { width: 15px; height: 15px; color: var(--primary); flex: none; }
+
+    /* Sections */
+    section { padding: clamp(44px, 7vw, 76px) 0; }
+    .section-head { max-width: 640px; margin: 0 auto 36px; text-align: center; }
+    .section-head .eyebrow { margin-bottom: 12px; }
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      line-height: 1.2; letter-spacing: -.015em; margin: 0 0 10px;
+    }
+    .section-head p { margin: 0; color: var(--muted); }
+
+    /* Produtos */
     .grid {
-      display: grid; gap: 16px;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
     .card {
-      display: flex; flex-direction: column; gap: 10px;
-      padding: 20px;
+      --accent: var(--primary);
+      display: flex; flex-direction: column; gap: 14px;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+      text-decoration: none; color: inherit;
+      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    a.card:hover, a.card:focus-visible {
+      transform: translateY(-3px);
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+      box-shadow: var(--shadow);
+      outline: none;
+    }
+    a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .card-head { display: flex; align-items: center; gap: 12px; }
+    .icon {
+      display: grid; place-items: center;
+      width: 42px; height: 42px; border-radius: 12px; flex: none;
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent);
+    }
+    .icon svg { width: 21px; height: 21px; }
+    .card h3 { font-size: 1.06rem; line-height: 1.3; margin: 0; }
+    .card-tag {
+      margin-left: auto; flex: none;
+      padding: 2px 9px; border-radius: 999px;
+      background: var(--surface-soft); border: 1px solid var(--border);
+      color: var(--muted); font-size: .66rem; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+    }
+    .card .lead { margin: 0; color: var(--muted); font-size: .92rem; }
+    .features {
+      display: grid; gap: 7px;
+      margin: 2px 0 0; padding: 0; list-style: none;
+      font-size: .875rem; color: var(--text);
+    }
+    .features li { display: flex; gap: 8px; align-items: flex-start; }
+    .features svg { width: 15px; height: 15px; margin-top: 3px; color: var(--accent); flex: none; }
+    .card .go {
+      margin-top: auto; padding-top: 6px;
+      color: var(--accent); font-size: .88rem; font-weight: 650;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .card .go svg { width: 15px; height: 15px; transition: transform .15s ease; }
+    a.card:hover .go svg, a.card:focus-visible .go svg { transform: translateX(3px); }
+    .card.soon { box-shadow: none; border-style: dashed; }
+    .card.soon .go { color: var(--muted); font-weight: 500; }
+
+    /* Como funciona */
+    .steps {
+      display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .step {
+      padding: 24px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
-      box-shadow: var(--shadow);
-      text-decoration: none; color: inherit;
-      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+      box-shadow: var(--shadow-soft);
     }
-    a.card:hover, a.card:focus-visible {
-      transform: translateY(-2px);
-      border-color: var(--primary);
-      background: var(--surface-soft);
-      outline: none;
+    .step .num {
+      display: inline-grid; place-items: center;
+      width: 32px; height: 32px; margin-bottom: 12px;
+      border-radius: 999px; background: var(--primary-soft); color: var(--primary);
+      font-size: .86rem; font-weight: 800;
     }
-    .head { display: flex; align-items: center; gap: 12px; }
-    .icon {
-      display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--primary-soft); color: var(--primary);
-      flex: none;
+    .step h3 { margin: 0 0 6px; font-size: 1rem; }
+    .step p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+    /* CTA final */
+    .cta-band {
+      padding: clamp(30px, 5vw, 46px);
+      border: 1px solid var(--border); border-radius: 20px;
+      background:
+        radial-gradient(120% 160% at 0% 0%, var(--primary-soft), transparent 55%),
+        var(--surface);
+      box-shadow: var(--shadow-soft);
+      display: flex; flex-wrap: wrap; gap: 22px;
+      align-items: center; justify-content: space-between;
     }
-    .icon svg { width: 20px; height: 20px; }
-    .title { font-weight: 650; font-size: 1.02rem; line-height: 1.3; }
-    .tag {
-      margin-left: auto; flex: none;
-      padding: 2px 8px; border-radius: 999px;
-      background: var(--surface-soft); border: 1px solid var(--border);
-      color: var(--muted); font-size: .68rem; font-weight: 600;
-      letter-spacing: .04em; text-transform: uppercase;
-    }
-    .card p { margin: 0; color: var(--muted); font-size: .9rem; }
-    .go {
-      margin-top: auto; padding-top: 4px;
-      color: var(--primary); font-size: .85rem; font-weight: 600;
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .card.soon { opacity: .72; }
-    .card.soon .go { color: var(--muted); font-weight: 500; }
-    .note {
-      margin-top: 32px; padding: 14px 16px;
-      background: var(--primary-soft);
-      border: 1px solid var(--border); border-radius: 12px;
-      font-size: .875rem; color: var(--text);
-    }
-    .note a { color: var(--primary); }
+    .cta-band h2 { margin: 0 0 6px; }
+    .cta-band p { margin: 0; color: var(--muted); max-width: 56ch; }
+
+    /* Footer */
     footer {
       border-top: 1px solid var(--border);
-      padding: 20px 0 32px;
+      padding: 26px 0 36px;
       color: var(--muted); font-size: .85rem;
     }
     .foot {
       display: flex; flex-wrap: wrap; align-items: center;
-      justify-content: space-between; gap: 10px;
+      justify-content: space-between; gap: 10px 20px;
     }
-    footer a { color: inherit; }
-    footer a:hover { color: var(--primary); }
+    footer a { color: inherit; text-decoration: none; }
+    footer a:hover, footer a:focus-visible { color: var(--primary); }
+    .foot-links { display: flex; flex-wrap: wrap; gap: 6px 16px; }
   </style>
 </head>
 <body>
+  <a class="skip" href="#produtos">Ir para os produtos</a>
+
   <header>
-    <div class="wrap">
-      <a class="brand" href="/app/">
-        <span class="brand-mark">EHS</span>
+    <div class="wrap nav">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">EHS</span>
         <span>
           <strong>EHS Solutions</strong>
-          <small>Aplicativos EHS</small>
+          <small>Aplicativos para o seu trabalho</small>
         </span>
       </a>
+      <nav class="nav-links" aria-label="Navegação principal">
+        <a href="#produtos">Produtos</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="mailto:edu.slhenrique@gmail.com?subject=Quero%20conhecer%20os%20planos%20da%20EHS">Contato</a>
+      </nav>
+      <a class="btn btn-primary btn-sm" href="mailto:edu.slhenrique@gmail.com?subject=Quero%20conhecer%20os%20planos%20da%20EHS">Falar com a gente</a>
     </div>
   </header>
 
-  <main class="wrap">
-    <div class="hero">
-      <span class="eyebrow">Plataforma</span>
-      <h1>Um lugar para cada <span>parte do seu dia</span></h1>
+  <main id="conteudo">
+    <div class="wrap hero">
+      <span class="eyebrow">Plataforma EHS</span>
+      <h1>Um aplicativo para cada parte do seu <span>trabalho</span></h1>
       <p>
-        Orçamentos, finanças, treinos, estudos e gestão em aplicativos separados,
-        com a mesma conta. Escolha por onde começar.
+        Orçamentos, finanças, gestão de alunos e estudos em aplicativos profissionais
+        com a mesma conta. Comece no plano gratuito e ative recursos avançados quando fizer sentido.
       </p>
-    </div>
-
-    <h2>Aplicativos</h2>
-    <div class="grid">
-      <a class="card" href="/app/study/">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 18.5V5.5"/><path d="M8 7h8M8 11h6"/></svg>
-          </span>
-          <span class="title">Estudos</span>
-        </div>
-        <p>Tarefas, matérias, notas e revisões organizadas por dia.</p>
-        <span class="go">Abrir →</span>
-      </a>
-
-      <a class="card" href="/app/budgets/">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
-          </span>
-          <span class="title">Orçamentos</span>
-        </div>
-        <p>Clientes, propostas, kanban de acompanhamento e PDF para enviar.</p>
-        <span class="go">Abrir →</span>
-      </a>
-
-      <a class="card" href="/app/finances/">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 5-7 4 4"/><path d="M3 21h18"/></svg>
-          </span>
-          <span class="title">Finanças</span>
-        </div>
-        <p>Contas pessoais e do negócio, lançamentos, recorrências e metas.</p>
-        <span class="go">Abrir →</span>
-      </a>
-
-      <a class="card" href="/app/fitness/">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M3 9v6M17.5 6.5v11M21 9v6M6.5 12h11"/></svg>
-          </span>
-          <span class="title">Fitness</span>
-        </div>
-        <p>Treinos, dietas e acompanhamento de alunos e profissionais.</p>
-        <span class="go">Abrir →</span>
-      </a>
-
-      <a class="card" href="/app/admin/">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-2.9 7.9-7 9-4.1-1.1-7-4.8-7-9V6z"/><path d="M9.5 12l2 2 3.5-3.5"/></svg>
-          </span>
-          <span class="title">Admin</span>
-          <span class="tag">Equipe</span>
-        </div>
-        <p>Usuários, empresas, permissões e monitor da fila de e-mails.</p>
-        <span class="go">Abrir →</span>
-      </a>
-
-      <a class="card" href="/app/portfolio/">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>
-          </span>
-          <span class="title">Portfólio</span>
-        </div>
-        <p>Projetos, experiência e contato profissional.</p>
-        <span class="go">Abrir →</span>
-      </a>
-
-      <div class="card soon">
-        <div class="head">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 8h-12z"/><circle cx="9" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/><path d="M6 6L5 3H2"/></svg>
-          </span>
-          <span class="title">Compras</span>
-          <span class="tag">Android</span>
-        </div>
-        <p>Listas de compras offline, guardadas apenas no seu dispositivo.</p>
-        <span class="go">Disponível no app Android</span>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#produtos">Conhecer os produtos</a>
+        <a class="btn btn-ghost" href="mailto:edu.slhenrique@gmail.com?subject=Quero%20conhecer%20os%20planos%20da%20EHS">Falar com a gente</a>
       </div>
+      <ul class="trust">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          Plano gratuito para começar
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          Acesso pelo navegador, sem instalar
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          A mesma conta em todos os apps
+        </li>
+      </ul>
     </div>
 
-    <div class="note">
-      Aplicativos desenvolvidos pela EHS Solutions. Todos usam a mesma conta EHS.
-      Se você ainda não tem acesso, peça a um administrador ou crie sua conta em
-      qualquer aplicativo. Dúvidas sobre dados pessoais:
-      <a href="/app/privacidade/">Política de Privacidade</a>.
+    <section id="produtos" aria-labelledby="produtos-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Produtos</span>
+          <h2 id="produtos-titulo">Escolha por onde começar</h2>
+          <p>Cada aplicativo resolve uma parte da rotina. Você pode usar um ou combinar todos.</p>
+        </div>
+
+        <div class="grid">
+          <a class="card" href="/app/budgets/" style="--accent:#6366f1">
+            <div class="card-head">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+              </span>
+              <h3>Orçamentos</h3>
+            </div>
+            <p class="lead">Do cadastro do cliente ao PDF pronto para enviar, com acompanhamento de cada proposta.</p>
+            <ul class="features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Clientes, itens e totais automáticos</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Kanban de etapas e acompanhamento</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Plano gratuito; PDF personalizado e envio por WhatsApp nos planos pagos</li>
+            </ul>
+            <span class="go">Conhecer Orçamentos
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+
+          <a class="card" href="/app/finances/" style="--accent:#0ea5e9">
+            <div class="card-head">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 5-7 4 4"/><path d="M3 21h18"/></svg>
+              </span>
+              <h3>Finanças</h3>
+            </div>
+            <p class="lead">Finanças pessoais e do negócio no mesmo lugar, sem planilha.</p>
+            <ul class="features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Lançamentos, recorrências e categorias</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Cartões, limites e faturas</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Metas e visão mensal</li>
+            </ul>
+            <span class="go">Conhecer Finanças
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+
+          <a class="card" href="/app/fitness/" style="--accent:#10b981">
+            <div class="card-head">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M3 9v6M17.5 6.5v11M21 9v6M6.5 12h11"/></svg>
+              </span>
+              <h3>Fitness</h3>
+            </div>
+            <p class="lead">Gestão de alunos para personal trainers e nutricionistas, com app para o aluno acompanhar o dia.</p>
+            <ul class="features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Treinos, dietas e agenda semanal</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Convites e vínculo aluno ↔ profissional</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Acompanhamento no app do aluno</li>
+            </ul>
+            <span class="go">Conhecer Fitness
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+
+          <a class="card" href="/app/study/" style="--accent:#f59e0b">
+            <div class="card-head">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 18.5V5.5"/><path d="M8 7h8M8 11h6"/></svg>
+              </span>
+              <h3>Estudos</h3>
+            </div>
+            <p class="lead">Organize matérias, tarefas e revisões com metas que cabem na semana.</p>
+            <ul class="features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Tarefas recorrentes e metas diárias, semanais e mensais</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Revisões e acompanhamento</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Visão por dia e por semana</li>
+            </ul>
+            <span class="go">Conhecer Estudos
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+
+          <div class="card soon" style="--accent:#64748b">
+            <div class="card-head">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 8h-12z"/><circle cx="9" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/><path d="M6 6L5 3H2"/></svg>
+              </span>
+              <h3>Compras</h3>
+              <span class="card-tag">Android</span>
+            </div>
+            <p class="lead">Listas de compras offline, guardadas apenas no seu dispositivo.</p>
+            <ul class="features">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Funciona sem internet</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sem conta: fica só no aparelho</li>
+            </ul>
+            <span class="go">Disponível no app Android</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona" aria-labelledby="como-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Como funciona</span>
+          <h2 id="como-titulo">Comece simples, cresça no seu ritmo</h2>
+          <p>Sem instalação e sem contrato longo: você começa pelo aplicativo que resolve o seu dia hoje.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="num" aria-hidden="true">1</span>
+            <h3>Crie sua conta</h3>
+            <p>Um único cadastro vale para todos os aplicativos da plataforma.</p>
+          </div>
+          <div class="step">
+            <span class="num" aria-hidden="true">2</span>
+            <h3>Escolha seu aplicativo</h3>
+            <p>Orçamentos, finanças, alunos ou estudos: comece pelo que traz resultado agora.</p>
+          </div>
+          <div class="step">
+            <span class="num" aria-hidden="true">3</span>
+            <h3>Ative recursos avançados</h3>
+            <p>Os produtos têm plano gratuito para começar; personalizações e integrações são ativadas sob demanda.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap" style="padding-bottom: clamp(44px, 7vw, 76px)">
+      <div class="cta-band">
+        <div>
+          <h2>Precisa de um plano ou integração específica?</h2>
+          <p>Conte o que o seu negócio precisa — personalização de documentos, integrações e outros recursos são combinados direto com a gente.</p>
+        </div>
+        <a class="btn btn-primary" href="mailto:edu.slhenrique@gmail.com?subject=Quero%20falar%20sobre%20planos%20e%20integra%C3%A7%C3%B5es%20da%20EHS">Falar com a gente</a>
+      </div>
     </div>
   </main>
 
   <footer>
     <div class="wrap foot">
       <span>EHS Solutions · © <span id="year">2026</span></span>
-      <span>
-        <a href="/app/privacidade/">Privacidade</a> ·
+      <span class="foot-links">
+        <a href="/app/privacidade/">Privacidade</a>
         <a href="mailto:edu.slhenrique@gmail.com">edu.slhenrique@gmail.com</a>
+        <a href="/app/admin/">Equipe</a>
       </span>
     </div>
   </footer>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "EHS Solutions",
+      "url": "https://www.appsehs.com/",
+      "email": "edu.slhenrique@gmail.com",
+      "description": "Aplicativos de orçamentos, finanças, gestão de alunos e estudos."
+    }
   </script>
 </body>
 </html>
