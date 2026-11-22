@@ -383,6 +383,7 @@ services:
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/nginx/snippets:/etc/nginx/snippets:ro
       - ./infra/account:/usr/share/nginx/html/account:ro
       - ./infra/platform:/usr/share/nginx/html/platform:ro
       - ./infra/certbot/www:/var/www/certbot
