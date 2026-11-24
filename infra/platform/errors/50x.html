@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Problema temporário — EHS Solutions</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#216B4F">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#16170F">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23216B4F'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+  <style>
+    /* Mesma base de tokens da landing (infra/platform/index.html). */
+    :root {
+      color-scheme: light;
+      --font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-heading: "Fraunces", Georgia, "Times New Roman", serif;
+      --radius-md: 10px;
+      --radius-xl: 20px;
+      --bg: #f5f2ea;
+      --surface: #fffdf8;
+      --text: #26221c;
+      --muted: #6b6459;
+      --border: #e7e0d3;
+      --border-strong: #d8cfbf;
+      --primary: #216b4f;
+      --primary-strong: #17513b;
+      --primary-soft: #e2efe6;
+      --on-primary: #ffffff;
+      --warning: #a9761c;
+      --warning-soft: #f8efd8;
+      --shadow-pop: 0 24px 60px -28px rgba(32, 28, 18, .28);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #16170f;
+        --surface: #1e1f18;
+        --text: #f1ecdf;
+        --muted: #b6afa0;
+        --border: #2f3027;
+        --border-strong: #43443a;
+        --primary: #7cc9a2;
+        --primary-strong: #a3ddbc;
+        --primary-soft: #21372b;
+        --on-primary: #102017;
+        --warning: #e3b96b;
+        --warning-soft: #3a2f1a;
+        --shadow-pop: 0 24px 60px -24px rgba(0, 0, 0, .5);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      display: grid; place-items: center; padding: 24px;
+      background:
+        radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--warning-soft) 50%, transparent), transparent 60%),
+        radial-gradient(1100px 560px at 12% -12%, color-mix(in srgb, var(--primary-soft) 70%, transparent), transparent 62%),
+        var(--bg);
+      color: var(--text);
+      font: 400 16px/1.6 var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
+      width: min(560px, 100%);
+      padding: clamp(32px, 6vw, 48px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-pop);
+      text-align: center;
+    }
+    .brand {
+      display: inline-flex; align-items: center; gap: 12px;
+      text-decoration: none; color: inherit; margin-bottom: 28px;
+    }
+    .brand-mark {
+      display: grid; place-items: center;
+      width: 40px; height: 40px; border-radius: var(--radius-md);
+      background: linear-gradient(140deg, color-mix(in srgb, var(--primary) 82%, var(--text)), var(--primary-strong));
+      color: var(--on-primary);
+      font: 600 13px var(--font-heading); letter-spacing: .01em;
+    }
+    .brand strong { font: 600 1.05rem/1.2 var(--font-heading); letter-spacing: -.01em; }
+    .code {
+      display: block; width: fit-content;
+      padding: 4px 12px; margin: 0 auto 16px;
+      border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border));
+      border-radius: 999px;
+      background: var(--warning-soft);
+      color: var(--warning);
+      font: 600 .72rem/1.6 var(--font-body); letter-spacing: .08em; text-transform: uppercase;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font: 600 clamp(1.6rem, 4vw, 2.1rem)/1.15 var(--font-heading);
+      letter-spacing: -.02em;
+    }
+    p { margin: 0 auto; max-width: 44ch; color: var(--muted); }
+    .actions {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      justify-content: center; margin-top: 28px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 40px; padding: 0 18px;
+      border-radius: var(--radius-md); border: 1px solid transparent;
+      font: 600 .88rem/1 var(--font-body); text-decoration: none; cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .btn-primary { background: var(--primary); color: var(--on-primary); }
+    .btn-primary:hover { background: var(--primary-strong); }
+    .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+    .btn-ghost:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+    footer { margin-top: 26px; color: var(--muted); font-size: .82rem; }
+    footer a { color: inherit; }
+    footer a:hover { color: var(--primary); }
+    @media (max-width: 480px) { .actions .btn { flex: 1 1 auto; } }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">EHS</span>
+      <strong>EHS Solutions</strong>
+    </a>
+    <span class="code">Problema temporário</span>
+    <h1>Algo saiu do ar do nosso lado</h1>
+    <p>Não foi você — tivemos uma falha ao carregar esta página. Tente de novo em alguns instantes; seus dados estão salvos.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="" onclick="location.reload(); return false;">Tentar novamente</a>
+      <a class="btn btn-ghost" href="/">Voltar ao início</a>
+    </div>
+    <footer>Se persistir, <a href="mailto:edu.slhenrique@gmail.com?subject=Erro%20na%20plataforma%20EHS">fale com a gente</a></footer>
+  </main>
+</body>
+</html>

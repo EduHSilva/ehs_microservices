@@ -5,48 +5,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EHS Solutions — aplicativos de gestão, finanças e produtividade</title>
   <!-- Arquivo único: o nginx só serve HTML estático desta pasta (sem build, sem assets externos). -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%234f46e5'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23216B4F'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
   <meta name="description" content="EHS Solutions: orçamentos e propostas, finanças pessoais e do negócio, gestão de alunos para personal e nutricionista e estudos. Comece no plano gratuito.">
-  <meta name="theme-color" content="#4F46E5">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#216B4F">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#16170F">
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:title" content="EHS Solutions — aplicativos para o seu trabalho e a sua rotina">
   <meta property="og:description" content="Orçamentos, finanças, fitness e estudos com a mesma conta. Plano gratuito para começar.">
   <meta property="og:locale" content="pt_BR">
   <style>
+    /* ============================================================
+       Tokens — "papel quente": neutros quentes + pinho EHS.
+       Accents de produto só nos cards da landing.
+       ============================================================ */
     :root {
-      color-scheme: light dark;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --surface-soft: #f1f5f9;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: #e2e8f0;
-      --primary: #4f46e5;
-      --primary-strong: #4338ca;
-      --primary-soft: #eef2ff;
+      color-scheme: light;
+      --font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-heading: "Fraunces", Georgia, "Times New Roman", serif;
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+
+      --bg: #f5f2ea;
+      --surface: #fffdf8;
+      --surface-2: #efe9dc;
+      --text: #26221c;
+      --muted: #6b6459;
+      --subtle: #9a9284;
+      --border: #e7e0d3;
+      --border-strong: #d8cfbf;
+
+      --primary: #216b4f;
+      --primary-strong: #17513b;
+      --primary-soft: #e2efe6;
       --on-primary: #ffffff;
-      --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 16px 40px -24px rgba(15, 23, 42, .45);
-      --shadow-soft: 0 1px 2px rgba(15, 23, 42, .05);
-      --hero-glow: rgba(79, 70, 229, .16);
+
+      --success: #2f7d5b;
+      --success-soft: #e5f2ea;
+      --danger: #b34a33;
+      --danger-soft: #fae8e1;
+      --warning: #a9761c;
+      --warning-soft: #f8efd8;
+
+      /* Accents de produto (podem ser redefinidos por card via --accent-*, que derivam no dark) */
+      --accent-budgets: #40566b;
+      --accent-finances: #1e7a57;
+      --accent-fitness: #b25a33;
+      --accent-study: #216b4f;
+      --accent-extra: #7c3b52;
+
+      --shadow-soft: 0 1px 2px rgba(38, 34, 28, .05);
+      --shadow: 0 10px 30px rgba(38, 34, 28, .07);
+      --shadow-pop: 0 24px 60px -28px rgba(32, 28, 18, .28);
+      --hero-glow: rgba(33, 107, 79, .14);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #0b1220;
-        --surface: #111a2e;
-        --surface-soft: #16213a;
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --border: #1e293b;
-        --primary: #818cf8;
-        --primary-strong: #a5b4fc;
-        --primary-soft: #1e1b4b;
-        --on-primary: #0b1220;
-        --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 24px 48px -28px rgba(0, 0, 0, .9);
-        --shadow-soft: 0 1px 2px rgba(0, 0, 0, .35);
-        --hero-glow: rgba(129, 140, 248, .16);
+        color-scheme: dark;
+        --bg: #16170f;
+        --surface: #1e1f18;
+        --surface-2: #262720;
+        --text: #f1ecdf;
+        --muted: #b6afa0;
+        --subtle: #8c8576;
+        --border: #2f3027;
+        --border-strong: #43443a;
+
+        --primary: #7cc9a2;
+        --primary-strong: #a3ddbc;
+        --primary-soft: #21372b;
+        --on-primary: #102017;
+
+        --success: #8ad3a6;
+        --success-soft: #1d3326;
+        --danger: #eb9c84;
+        --danger-soft: #3b241c;
+        --warning: #e3b96b;
+        --warning-soft: #3a2f1a;
+
+        --accent-budgets: #9fb8cc;
+        --accent-finances: #7fd0a9;
+        --accent-fitness: #f0a17c;
+        --accent-study: #7cc9a2;
+        --accent-extra: #e39ab2;
+
+        --shadow-soft: none;
+        --shadow: 0 12px 32px rgba(0, 0, 0, .35);
+        --shadow-pop: 0 24px 60px -24px rgba(0, 0, 0, .5);
+        --hero-glow: rgba(124, 201, 162, .12);
       }
     }
+    /* Accent neutro para o card "em breve" */
+    :root { --accent-neutral: var(--muted); }
+
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     @media (prefers-reduced-motion: reduce) {
@@ -55,25 +111,34 @@
     }
     body {
       margin: 0;
-      background: var(--bg);
+      background:
+        radial-gradient(1100px 560px at 12% -12%, color-mix(in srgb, var(--primary-soft) 70%, transparent), transparent 62%),
+        radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--warning-soft) 50%, transparent), transparent 60%),
+        var(--bg);
+      background-attachment: fixed;
       color: var(--text);
-      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font: 400 16px/1.6 var(--font-body);
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
+    h1, h2, h3 { font-family: var(--font-heading); margin: 0; letter-spacing: -.02em; }
     a { color: inherit; }
+    ::selection { background: var(--primary-soft); color: var(--text); }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .wrap { width: min(1120px, 100% - 32px); margin: 0 auto; }
     .skip {
-      position: absolute; left: -999px; top: 8px;
-      padding: 8px 12px; border-radius: 8px;
-      background: var(--primary); color: var(--on-primary);
+      position: absolute; left: -999px; top: 8px; z-index: 50;
+      padding: 10px 14px; border-radius: var(--radius-md);
+      background: var(--primary); color: var(--on-primary); font-weight: 600;
+      text-decoration: none;
     }
-    .skip:focus { left: 16px; z-index: 50; }
+    .skip:focus { left: 16px; }
 
     /* Header */
     header {
       position: sticky; top: 0; z-index: 20;
       border-bottom: 1px solid var(--border);
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      background: color-mix(in srgb, var(--bg) 84%, transparent);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
@@ -87,11 +152,13 @@
     }
     .brand-mark {
       display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--primary); color: var(--on-primary);
-      font-weight: 800; letter-spacing: .5px; flex: none;
+      width: 40px; height: 40px; border-radius: var(--radius-md);
+      background: linear-gradient(140deg, color-mix(in srgb, var(--primary) 82%, var(--text)), var(--primary-strong));
+      color: var(--on-primary);
+      font: 600 13px var(--font-heading); letter-spacing: .01em; flex: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), var(--shadow-soft);
     }
-    .brand strong { font-size: 1.02rem; display: block; line-height: 1.25; }
+    .brand strong { font: 600 1.05rem/1.25 var(--font-heading); letter-spacing: -.01em; display: block; }
     .brand small { color: var(--muted); font-size: .78rem; }
     .nav-links { display: flex; align-items: center; gap: 22px; }
     .nav-links a {
@@ -105,25 +172,29 @@
     @media (max-width: 480px) {
       .nav { gap: 12px; }
       .brand small { display: none; }
-      .btn-sm { padding: 8px 12px; font-size: .8rem; white-space: nowrap; }
+      .btn-sm { padding: 0 12px; font-size: .8rem; white-space: nowrap; }
     }
+
+    /* Botões — 40px, raio 10px */
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 11px 20px; border-radius: 12px;
-      font-size: .92rem; font-weight: 650; text-decoration: none;
-      border: 1px solid transparent;
-      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      height: 40px; padding: 0 18px;
+      border-radius: var(--radius-md);
+      font: 600 .88rem/1 var(--font-body); text-decoration: none;
+      border: 1px solid transparent; cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
     }
-    .btn:hover { transform: translateY(-1px); }
-    .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .btn-primary { background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-soft); }
-    .btn-primary:hover { background: var(--primary-strong); }
+    .btn-primary {
+      background: var(--primary); color: var(--on-primary);
+      box-shadow: 0 1px 2px rgba(20, 40, 30, .18);
+    }
+    .btn-primary:hover { background: var(--primary-strong); box-shadow: var(--shadow-soft); }
     .btn-ghost {
-      background: transparent; color: var(--text);
-      border-color: var(--border);
+      background: var(--surface); color: var(--text);
+      border-color: var(--border-strong); box-shadow: var(--shadow-soft);
     }
-    .btn-ghost:hover { background: var(--surface-soft); border-color: var(--primary); }
-    .btn-sm { padding: 8px 14px; font-size: .85rem; border-radius: 10px; }
+    .btn-ghost:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+    .btn-sm { height: 36px; padding: 0 14px; font-size: .82rem; }
 
     /* Hero */
     .hero {
@@ -140,20 +211,21 @@
     }
     .eyebrow {
       display: inline-block;
-      padding: 5px 12px; margin-bottom: 18px;
+      padding: 4px 11px; margin-bottom: 18px;
       border: 1px solid var(--border); border-radius: 999px;
-      background: var(--primary-soft); color: var(--primary);
-      font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      background: color-mix(in srgb, var(--text) 5%, var(--surface));
+      color: var(--muted);
+      font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
     }
     h1 {
       font-size: clamp(2rem, 5.4vw, 3.35rem);
-      line-height: 1.12; letter-spacing: -.02em;
+      font-weight: 600; line-height: 1.08; letter-spacing: -.03em;
       margin: 0 auto 18px; max-width: 17ch;
     }
     h1 span { color: var(--primary); }
     .hero p {
       margin: 0 auto; max-width: 60ch;
-      color: var(--muted); font-size: clamp(1rem, 1.6vw, 1.14rem);
+      color: var(--muted); font-size: clamp(1rem, 1.6vw, 1.1rem);
     }
     .hero-actions {
       display: flex; flex-wrap: wrap; gap: 12px;
@@ -165,21 +237,25 @@
       color: var(--muted); font-size: .86rem;
     }
     .trust li { display: inline-flex; align-items: center; gap: 7px; }
-    .trust svg { width: 15px; height: 15px; color: var(--primary); flex: none; }
+    .trust svg {
+      width: 16px; height: 16px; padding: 3px; box-sizing: content-box; flex: none;
+      border-radius: 50%;
+      background: var(--success-soft); color: var(--success);
+    }
 
     /* Sections */
     section { padding: clamp(44px, 7vw, 76px) 0; }
     .section-head { max-width: 640px; margin: 0 auto 36px; text-align: center; }
     .section-head .eyebrow { margin-bottom: 12px; }
     h2 {
-      font-size: clamp(1.5rem, 3vw, 2.1rem);
-      line-height: 1.2; letter-spacing: -.015em; margin: 0 0 10px;
+      font-size: clamp(1.5rem, 3vw, 2.05rem);
+      font-weight: 600; line-height: 1.15; letter-spacing: -.022em; margin: 0 0 10px;
     }
     .section-head p { margin: 0; color: var(--muted); }
 
     /* Produtos */
     .grid {
-      display: grid; gap: 18px;
+      display: grid; gap: 20px;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
     .card {
@@ -188,33 +264,38 @@
       padding: 24px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: var(--radius-xl);
       box-shadow: var(--shadow-soft);
       text-decoration: none; color: inherit;
-      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+      transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
     }
     a.card:hover, a.card:focus-visible {
-      transform: translateY(-3px);
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+      border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
       box-shadow: var(--shadow);
+      transform: translateY(-2px);
       outline: none;
     }
     a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     .card-head { display: flex; align-items: center; gap: 12px; }
     .icon {
       display: grid; place-items: center;
-      width: 42px; height: 42px; border-radius: 12px; flex: none;
-      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      width: 42px; height: 42px; border-radius: var(--radius-lg); flex: none;
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface));
       color: var(--accent);
     }
     .icon svg { width: 21px; height: 21px; }
-    .card h3 { font-size: 1.06rem; line-height: 1.3; margin: 0; }
+    .card h3 {
+      font-size: 1.06rem; font-weight: 600; line-height: 1.3;
+      margin: 0; letter-spacing: -.01em;
+    }
+    /* Tag neutra: cor só para exceção */
     .card-tag {
       margin-left: auto; flex: none;
-      padding: 2px 9px; border-radius: 999px;
-      background: var(--surface-soft); border: 1px solid var(--border);
-      color: var(--muted); font-size: .66rem; font-weight: 700;
-      letter-spacing: .05em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--text) 6%, var(--surface));
+      border: 1px solid var(--border);
+      color: var(--muted); font-size: .64rem; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
     }
     .card .lead { margin: 0; color: var(--muted); font-size: .92rem; }
     .features {
@@ -225,44 +306,52 @@
     .features li { display: flex; gap: 8px; align-items: flex-start; }
     .features svg { width: 15px; height: 15px; margin-top: 3px; color: var(--accent); flex: none; }
     .card .go {
-      margin-top: auto; padding-top: 6px;
-      color: var(--accent); font-size: .88rem; font-weight: 650;
+      margin-top: auto; padding-top: 8px;
+      color: var(--accent); font-size: .86rem; font-weight: 600;
       display: inline-flex; align-items: center; gap: 6px;
     }
     .card .go svg { width: 15px; height: 15px; transition: transform .15s ease; }
     a.card:hover .go svg, a.card:focus-visible .go svg { transform: translateX(3px); }
-    .card.soon { box-shadow: none; border-style: dashed; }
+    .card.soon { box-shadow: none; border-style: dashed; background: color-mix(in srgb, var(--bg) 55%, var(--surface)); }
     .card.soon .go { color: var(--muted); font-weight: 500; }
+
+    /* Accent por produto (derivação automática no dark) */
+    .card.budgets { --accent: var(--accent-budgets); }
+    .card.finances { --accent: var(--accent-finances); }
+    .card.fitness { --accent: var(--accent-fitness); }
+    .card.study { --accent: var(--accent-study); }
+    .card.extra { --accent: var(--accent-neutral); }
 
     /* Como funciona */
     .steps {
-      display: grid; gap: 18px;
+      display: grid; gap: 20px;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
     .step {
-      padding: 24px;
+      padding: 22px 24px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: var(--radius-xl);
       box-shadow: var(--shadow-soft);
     }
     .step .num {
       display: inline-grid; place-items: center;
-      width: 32px; height: 32px; margin-bottom: 12px;
-      border-radius: 999px; background: var(--primary-soft); color: var(--primary);
-      font-size: .86rem; font-weight: 800;
+      width: 30px; height: 30px; margin-bottom: 14px;
+      border-radius: 50%;
+      background: var(--primary-soft); color: var(--primary);
+      font: 600 .82rem var(--font-heading);
     }
-    .step h3 { margin: 0 0 6px; font-size: 1rem; }
+    .step h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 600; letter-spacing: -.005em; }
     .step p { margin: 0; color: var(--muted); font-size: .9rem; }
 
     /* CTA final */
     .cta-band {
-      padding: clamp(30px, 5vw, 46px);
-      border: 1px solid var(--border); border-radius: 20px;
+      padding: clamp(28px, 5vw, 44px);
+      border: 1px solid var(--border); border-radius: var(--radius-xl);
       background:
         radial-gradient(120% 160% at 0% 0%, var(--primary-soft), transparent 55%),
         var(--surface);
-      box-shadow: var(--shadow-soft);
+      box-shadow: var(--shadow);
       display: flex; flex-wrap: wrap; gap: 22px;
       align-items: center; justify-content: space-between;
     }
@@ -282,6 +371,11 @@
     footer a { color: inherit; text-decoration: none; }
     footer a:hover, footer a:focus-visible { color: var(--primary); }
     .foot-links { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+
+    @media (max-width: 640px) {
+      .hero-actions .btn { flex: 1 1 auto; }
+      .cta-band .btn { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -319,15 +413,15 @@
       </div>
       <ul class="trust">
         <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
           Plano gratuito para começar
         </li>
         <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
           Acesso pelo navegador, sem instalar
         </li>
         <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
           A mesma conta em todos os apps
         </li>
       </ul>
@@ -342,7 +436,7 @@
         </div>
 
         <div class="grid">
-          <a class="card" href="/app/budgets/" style="--accent:#6366f1">
+          <a class="card budgets" href="/app/budgets/">
             <div class="card-head">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
@@ -360,7 +454,7 @@
             </span>
           </a>
 
-          <a class="card" href="/app/finances/" style="--accent:#0ea5e9">
+          <a class="card finances" href="/app/finances/">
             <div class="card-head">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3 5-7 4 4"/><path d="M3 21h18"/></svg>
@@ -378,7 +472,7 @@
             </span>
           </a>
 
-          <a class="card" href="/app/fitness/" style="--accent:#10b981">
+          <a class="card fitness" href="/app/fitness/">
             <div class="card-head">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M3 9v6M17.5 6.5v11M21 9v6M6.5 12h11"/></svg>
@@ -396,7 +490,7 @@
             </span>
           </a>
 
-          <a class="card" href="/app/study/" style="--accent:#f59e0b">
+          <a class="card study" href="/app/study/">
             <div class="card-head">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 18.5V5.5"/><path d="M8 7h8M8 11h6"/></svg>
@@ -414,7 +508,7 @@
             </span>
           </a>
 
-          <div class="card soon" style="--accent:#64748b">
+          <div class="card soon extra">
             <div class="card-head">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 8h-12z"/><circle cx="9" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/><path d="M6 6L5 3H2"/></svg>

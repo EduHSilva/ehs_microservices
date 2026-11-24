@@ -4,87 +4,165 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Política de Privacidade — EHS Solutions</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%234f46e5'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23216B4F'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
   <meta name="description" content="Política de Privacidade genérica dos aplicativos da EHS Solutions (Admin, Orçamentos, Finanças, Fitness, Estudos e Compras).">
-  <meta name="theme-color" content="#4F46E5">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#216B4F">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#16170F">
   <meta name="robots" content="index, follow">
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: #e2e8f0;
-      --primary: #4f46e5;
-      --primary-soft: #eef2ff;
+      color-scheme: light;
+      --font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-heading: "Fraunces", Georgia, "Times New Roman", serif;
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+
+      --bg: #f5f2ea;
+      --surface: #fffdf8;
+      --surface-2: #efe9dc;
+      --text: #26221c;
+      --muted: #6b6459;
+      --subtle: #9a9284;
+      --border: #e7e0d3;
+      --border-strong: #d8cfbf;
+
+      --primary: #216b4f;
+      --primary-strong: #17513b;
+      --primary-soft: #e2efe6;
+      --on-primary: #ffffff;
+
+      --success: #2f7d5b;
+      --success-soft: #e5f2ea;
+      --danger: #b34a33;
+      --danger-soft: #fae8e1;
+      --warning: #a9761c;
+      --warning-soft: #f8efd8;
+
+      --shadow-soft: 0 1px 2px rgba(38, 34, 28, .05);
+      --shadow: 0 10px 30px rgba(38, 34, 28, .07);
+      --shadow-pop: 0 24px 60px -28px rgba(32, 28, 18, .28);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #0b1220;
-        --surface: #111a2e;
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --border: #1e293b;
-        --primary: #818cf8;
-        --primary-soft: #1e1b4b;
+        color-scheme: dark;
+        --bg: #16170f;
+        --surface: #1e1f18;
+        --surface-2: #262720;
+        --text: #f1ecdf;
+        --muted: #b6afa0;
+        --subtle: #8c8576;
+        --border: #2f3027;
+        --border-strong: #43443a;
+
+        --primary: #7cc9a2;
+        --primary-strong: #a3ddbc;
+        --primary-soft: #21372b;
+        --on-primary: #102017;
+
+        --success: #8ad3a6;
+        --success-soft: #1d3326;
+        --danger: #eb9c84;
+        --danger-soft: #3b241c;
+        --warning: #e3b96b;
+        --warning-soft: #3a2f1a;
+
+        --shadow-soft: none;
+        --shadow: 0 12px 32px rgba(0, 0, 0, .35);
+        --shadow-pop: 0 24px 60px -24px rgba(0, 0, 0, .5);
       }
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: var(--bg);
+      background:
+        radial-gradient(1000px 480px at 8% -10%, color-mix(in srgb, var(--primary-soft) 65%, transparent), transparent 62%),
+        var(--bg);
+      background-attachment: fixed;
       color: var(--text);
-      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font: 400 15px/1.7 var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
+    h1, h2, h3 { font-family: var(--font-heading); margin: 0; letter-spacing: -.02em; }
+    ::selection { background: var(--primary-soft); color: var(--text); }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
     header {
       border-bottom: 1px solid var(--border);
-      background: var(--surface);
+      background: color-mix(in srgb, var(--bg) 84%, transparent);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
     .wrap { width: min(880px, 100% - 32px); margin: 0 auto; }
     .brand {
       display: flex; align-items: center; gap: 12px;
-      padding: 20px 0; text-decoration: none; color: inherit;
+      padding: 18px 0; text-decoration: none; color: inherit;
     }
     .brand-mark {
       display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--primary); color: #fff; font-weight: 800; letter-spacing: .5px;
+      width: 40px; height: 40px; border-radius: var(--radius-md); flex: none;
+      background: linear-gradient(140deg, color-mix(in srgb, var(--primary) 82%, var(--text)), var(--primary-strong));
+      color: var(--on-primary);
+      font: 600 13px var(--font-heading);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), var(--shadow-soft);
     }
-    .brand strong { font-size: 1.05rem; }
-    .brand span { color: var(--muted); font-size: .85rem; }
-    main { padding: 40px 0 64px; }
-    h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; }
-    .updated { color: var(--muted); font-size: .875rem; margin-bottom: 32px; }
+    .brand strong { display: block; font: 600 1rem/1.3 var(--font-heading); letter-spacing: -.01em; }
+    .brand span { color: var(--muted); font-size: .8rem; }
+    main { padding: 44px 0 64px; }
+    h1 { font-size: clamp(1.7rem, 2vw + 1rem, 2.25rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.12; margin: 0 0 8px; }
+    .updated { color: var(--subtle); font-size: .8rem; margin: 0 0 28px; }
     section {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
+      border-radius: var(--radius-xl);
+      padding: 22px 24px;
       margin-bottom: 16px;
+      box-shadow: var(--shadow-soft);
     }
-    h2 { font-size: 1.1rem; margin: 0 0 12px; }
-    h3 { font-size: .95rem; margin: 18px 0 8px; }
-    p, li { color: var(--muted); }
+    h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: -.01em; margin: 0 0 10px; }
+    h3 { font-family: var(--font-body); font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; }
+    p, li { color: var(--muted); margin: 0; }
+    p + p, p + ul, ul + p { margin-top: 10px; }
     ul { margin: 0; padding-left: 20px; }
     li + li { margin-top: 6px; }
-    a { color: var(--primary); }
+    li::marker { color: var(--subtle); }
+    strong { color: var(--text); font-weight: 600; }
+    a { color: var(--primary); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    a:hover { color: var(--primary-strong); }
     .callout {
       background: var(--primary-soft);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+      border-radius: var(--radius-lg);
       padding: 14px 16px;
-      margin-top: 8px;
+      margin-top: 14px;
     }
-    .callout p { color: var(--text); margin: 0; }
+    .callout p { color: var(--text); }
     footer {
       border-top: 1px solid var(--border);
       padding: 20px 0 32px;
       color: var(--muted);
-      font-size: .85rem;
+      font-size: .8rem;
     }
-    footer a { color: inherit; }
-    code { font-size: .85em; color: var(--text); }
+    footer a { color: inherit; text-decoration: none; }
+    footer a:hover, footer a:focus-visible { color: var(--primary); }
+    code {
+      font-size: .85em;
+      color: var(--text);
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--text) 6%, var(--surface));
+      border: 1px solid var(--border);
+    }
+    @media (max-width: 600px) {
+      main { padding: 28px 0 48px; }
+      section { padding: 18px; border-radius: var(--radius-lg); }
+      h1 { font-size: 1.7rem; }
+    }
   </style>
 </head>
 <body>

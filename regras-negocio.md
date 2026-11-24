@@ -111,6 +111,9 @@
 - Exclusões de negócio são **soft delete** (`status = DELETED` + `@SQLRestriction`).
 - Exclusão via `DELETE`; o `PUT` rejeita `DELETED` com 400 em todas as entidades com status.
 - Registros excluídos continuam no banco para histórico/auditoria.
+- **Exceção consciente**: a solicitação de exclusão de dados do titular (LGPD, só por
+  e-mail) faz **hard delete** via `lgpd_purge_user` apenas nos fluxos de purga
+  (`scripts/purge-user`); todo o resto continua soft delete.
 
 ## 7. Links e páginas centrais
 
@@ -119,6 +122,12 @@
 - E-mails transacionais usam `SERVER_URL` como base; em produção precisa ser o domínio
   público (HTTPS).
 - A política de privacidade é única para todos os produtos e cobre LGPD/Loja.
+
+## 7.1 Bancos de dados
+
+- `init.sql` só cria os databases e **não roda** em volume existente; vale apenas para
+  ambientes novos. Ambientes existentes são atualizados pelos scripts de `migrations/`
+  (o rename `crm`/`orcamentos` → `budgets` já foi executado em produção e local).
 
 ## 8. Observabilidade e auditoria
 

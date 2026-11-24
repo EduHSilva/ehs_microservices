@@ -17,6 +17,20 @@ import (
 	dblogger "gorm.io/gorm/logger"
 )
 
+// domainModels lista os models migrados; lgpd_purge_test.go usa a mesma lista para exigir
+// que a função lgpd_purge_user cubra todas as tabelas de domínio.
+var domainModels = []interface{}{
+	&workout.Exercise{},
+	&workout.Workout{},
+	&workout.ExerciseWorkout{},
+	&diet.Meal{},
+	&diet.Food{},
+	&diet.MealFood{},
+	&config.UserConfig{},
+	&config.History{},
+	&link.StudentProfessional{},
+}
+
 func InitDatabase() (*gorm.DB, error) {
 
 	logger = GetLogger("PG")
@@ -46,26 +60,18 @@ func InitDatabase() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	tables := []interface{}{
-		&workout.Exercise{},
-		&workout.Workout{},
-		&workout.ExerciseWorkout{},
-		&diet.Meal{},
-		&diet.Food{},
-		&diet.MealFood{},
-		&config.UserConfig{},
-		&config.History{},
-		&link.StudentProfessional{},
-	}
-
 	if err := prepareOwnershipMigration(db); err != nil {
 		return nil, err
 	}
 
-	for _, table := range tables {
+	for _, table := range domainModels {
 		if err := db.AutoMigrate(table); err != nil {
 			return nil, err
 		}
+	}
+
+	if err := installLgpdPurge(db); err != nil {
+		return nil, fmt.Errorf("install lgpd purge function: %w", err)
 	}
 
 	links.Init(db)

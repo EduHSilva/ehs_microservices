@@ -4,33 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Redefinir senha — EHS Solutions</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%234f46e5'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
-  <meta name="theme-color" content="#4F46E5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23216B4F'/%3E%3Cpath d='M18 16h28v7H26v6h18v7H26v6h20v7H18z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#216B4F">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#16170F">
   <meta name="robots" content="noindex">
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: #e2e8f0;
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --danger: #b91c1c;
-      --success: #047857;
+      color-scheme: light;
+      --font-body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-heading: "Fraunces", Georgia, "Times New Roman", serif;
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+
+      --bg: #f5f2ea;
+      --surface: #fffdf8;
+      --surface-2: #efe9dc;
+      --text: #26221c;
+      --muted: #6b6459;
+      --subtle: #9a9284;
+      --border: #e7e0d3;
+      --border-strong: #d8cfbf;
+
+      --primary: #216b4f;
+      --primary-strong: #17513b;
+      --primary-soft: #e2efe6;
+      --on-primary: #ffffff;
+
+      --success: #2f7d5b;
+      --success-soft: #e5f2ea;
+      --danger: #b34a33;
+      --danger-soft: #fae8e1;
+      --warning: #a9761c;
+      --warning-soft: #f8efd8;
+
+      --shadow-soft: 0 1px 2px rgba(38, 34, 28, .05);
+      --shadow: 0 10px 30px rgba(38, 34, 28, .07);
+      --shadow-pop: 0 24px 60px -28px rgba(32, 28, 18, .28);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #0b1220;
-        --surface: #111a2e;
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --border: #1e293b;
-        --primary: #818cf8;
-        --primary-hover: #6366f1;
-        --danger: #f87171;
-        --success: #34d399;
+        color-scheme: dark;
+        --bg: #16170f;
+        --surface: #1e1f18;
+        --surface-2: #262720;
+        --text: #f1ecdf;
+        --muted: #b6afa0;
+        --subtle: #8c8576;
+        --border: #2f3027;
+        --border-strong: #43443a;
+
+        --primary: #7cc9a2;
+        --primary-strong: #a3ddbc;
+        --primary-soft: #21372b;
+        --on-primary: #102017;
+
+        --success: #8ad3a6;
+        --success-soft: #1d3326;
+        --danger: #eb9c84;
+        --danger-soft: #3b241c;
+        --warning: #e3b96b;
+        --warning-soft: #3a2f1a;
+
+        --shadow-soft: none;
+        --shadow: 0 12px 32px rgba(0, 0, 0, .35);
+        --shadow-pop: 0 24px 60px -24px rgba(0, 0, 0, .5);
       }
     }
     * { box-sizing: border-box; }
@@ -40,66 +82,94 @@
       display: grid;
       place-items: center;
       padding: 24px;
-      background: var(--bg);
+      background:
+        radial-gradient(900px 480px at 10% -10%, color-mix(in srgb, var(--primary-soft) 75%, transparent), transparent 62%),
+        radial-gradient(760px 420px at 100% 0%, color-mix(in srgb, var(--warning-soft) 55%, transparent), transparent 60%),
+        var(--bg);
       color: var(--text);
-      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font: 400 14px/1.6 var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
+    h1 { font-family: var(--font-heading); margin: 0; }
+    ::selection { background: var(--primary-soft); color: var(--text); }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
     .card {
       width: min(440px, 100%);
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: var(--radius-xl);
       padding: 28px;
-      box-shadow: 0 20px 45px -30px rgba(15, 23, 42, .45);
+      box-shadow: var(--shadow-pop);
     }
-    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
     .brand-mark {
       display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--primary); color: #fff; font-weight: 800;
+      width: 40px; height: 40px; border-radius: var(--radius-md); flex: none;
+      background: linear-gradient(140deg, color-mix(in srgb, var(--primary) 82%, var(--text)), var(--primary-strong));
+      color: var(--on-primary);
+      font: 600 13px var(--font-heading);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
     }
-    .brand span { color: var(--muted); font-size: .85rem; }
-    h1 { font-size: 1.35rem; margin: 0 0 6px; }
-    .subtitle { color: var(--muted); font-size: .92rem; margin: 0 0 22px; }
-    label { display: block; font-size: .875rem; font-weight: 600; margin-bottom: 6px; }
+    .brand strong { display: block; font: 600 1rem/1.3 var(--font-heading); letter-spacing: -.01em; color: var(--text); }
+    .brand span { color: var(--muted); font-size: .8rem; }
+    h1 { font-size: 1.45rem; font-weight: 600; letter-spacing: -.022em; line-height: 1.2; margin: 0 0 6px; }
+    .subtitle { color: var(--muted); font-size: .9rem; margin: 0 0 22px; }
+    label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
     input {
       width: 100%;
-      padding: 11px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
+      height: 40px;
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
       color: var(--text);
-      font: inherit;
+      font: 400 .9rem var(--font-body);
+      transition: border-color .15s, box-shadow .15s;
     }
-    input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: transparent; }
+    input::placeholder { color: var(--subtle); }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
     .field + .field { margin-top: 16px; }
     button {
       width: 100%;
+      height: 40px;
       margin-top: 22px;
-      padding: 12px 16px;
-      border: 0;
-      border-radius: 10px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
       background: var(--primary);
-      color: #fff;
-      font: inherit;
-      font-weight: 600;
+      color: var(--on-primary);
+      font: 600 .86rem var(--font-body);
       cursor: pointer;
+      box-shadow: 0 1px 2px rgba(20, 40, 30, .18);
+      transition: background .15s, box-shadow .15s;
     }
-    button:hover { background: var(--primary-hover); }
+    button:hover:not(:disabled) { background: var(--primary-strong); box-shadow: var(--shadow-soft); }
     button:disabled { opacity: .6; cursor: not-allowed; }
     .message {
       margin-top: 16px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-size: .9rem;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      font-size: .875rem;
       display: none;
     }
-    .message.error { display: block; color: var(--danger); border: 1px solid currentColor; }
-    .message.success { display: block; color: var(--success); border: 1px solid currentColor; }
-    .hint { color: var(--muted); font-size: .82rem; margin-top: 8px; }
-    .footer { margin-top: 22px; font-size: .85rem; color: var(--muted); text-align: center; }
+    .message.error { display: block; color: var(--danger); background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); }
+    .message.success { display: block; color: var(--success); background: var(--success-soft); border: 1px solid color-mix(in srgb, var(--success) 25%, transparent); }
+    .hint { color: var(--subtle); font-size: .78rem; margin: 12px 0 0; line-height: 1.5; }
+    .footer {
+      margin: 22px 0 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: .8rem;
+      color: var(--muted);
+      text-align: center;
+    }
     a { color: var(--primary); }
     .hidden { display: none !important; }
+    @media (max-width: 420px) {
+      .card { padding: 22px; }
+    }
   </style>
 </head>
 <body>
