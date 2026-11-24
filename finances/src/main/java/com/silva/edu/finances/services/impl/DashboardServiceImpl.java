@@ -125,10 +125,12 @@ public class DashboardServiceImpl implements DashboardService {
         var account = accounts.get(accountId);
         UUID owner = accounts.ownerOf(accountId);
         categories.ensureInvestmentCategory(owner);
+        // "Até hoje" = fim do dia para incluir aportes lançados para hoje.
+        Date todayEnd = atStartOfDay(LocalDate.now(UTC).plusDays(1));
         BigDecimal contributions = BigDecimal.ZERO;
         BigDecimal withdrawals = BigDecimal.ZERO;
         for (Object[] row : transactions.sumByClassification(owner, accountId,
-                CategoryClassification.INVESTMENT, new Date())) {
+                CategoryClassification.INVESTMENT, todayEnd)) {
             BigDecimal total = (BigDecimal) row[1];
             if (Boolean.TRUE.equals(row[0])) withdrawals = total;
             else contributions = total;
@@ -168,7 +170,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         BigDecimal investmentBalance = ZERO;
         for (Object[] row : transactions.sumByClassification(owner, accountId,
-                CategoryClassification.INVESTMENT, new Date())) {
+                CategoryClassification.INVESTMENT, monthToDateEnd)) {
             BigDecimal total = (BigDecimal) row[1];
             investmentBalance = Boolean.TRUE.equals(row[0])
                     ? investmentBalance.subtract(total) : investmentBalance.add(total);

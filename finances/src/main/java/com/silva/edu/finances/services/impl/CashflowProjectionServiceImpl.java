@@ -42,8 +42,8 @@ public class CashflowProjectionServiceImpl implements CashflowProjectionService 
 
     @Override @Transactional(readOnly = true)
     public CashflowProjectionResponse project(String accountId, int horizonDays) {
-        if (!List.of(30, 90, 180).contains(horizonDays))
-            throw new IllegalArgumentException("Horizon must be 30, 90 or 180 days");
+        if (horizonDays < 0 || horizonDays > 366)
+            throw new IllegalArgumentException("Horizon must be between 0 and 366 days");
         var account = accounts.get(accountId);
         UUID userId = accounts.ownerOf(accountId);
         LocalDate today = LocalDate.now(ZONE);

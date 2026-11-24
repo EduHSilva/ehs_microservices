@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Date;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 @Service @Transactional
 public class FinanceAccountServiceImpl implements FinanceAccountService {
@@ -144,9 +146,18 @@ public class FinanceAccountServiceImpl implements FinanceAccountService {
         return id;
     }
     private FinanceAccountResponse response(FinanceAccount account, UUID dataOwner, String role) {
-        BigDecimal net = transactions.sumNetByAccountAndUser(account.getId(), dataOwner, new Date());
+        BigDecimal net = transactions.sumNetByAccountAndUser(account.getId(), dataOwner, endOfToday());
         if (net == null) net = BigDecimal.ZERO;
         return new FinanceAccountResponse(account.getId(), account.getName(), account.getType(),
                 account.getOpeningBalance(), account.getOpeningBalance().add(net), account.getCurrency(), role);
+    }
+
+    /**
+     * "Até hoje" inclui o dia inteiro: o corte é o início de amanhã, não o instante atual.
+     * Os lançamentos da web guardam a data às 12:00, então comparar com {@code new Date()}
+     * escondia do caixa tudo o que fosse lançado para o dia de hoje até o meio-dia.
+     */
+    private static Date endOfToday() {
+        return Date.from(LocalDate.now(ZoneOffset.UTC).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant());
     }
 }
