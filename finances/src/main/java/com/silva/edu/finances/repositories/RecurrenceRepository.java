@@ -18,6 +18,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface RecurrenceRepository extends JpaRepository<Recurrence, UUID> {
     Optional<Recurrence> findByIdAndUserId(UUID id, UUID userId);
+    boolean existsByCreditCardIdAndStatus(UUID creditCardId, RecurrenceStatus status);
     Page<Recurrence> findAllByAccountId(String accountId, Pageable pageable);
     Page<Recurrence> findAllByAccountIdIn(Collection<String> accountIds, Pageable pageable);
     List<Recurrence> findAllByAccountIdAndStatus(String accountId, RecurrenceStatus status);

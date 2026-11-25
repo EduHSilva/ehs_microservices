@@ -2,6 +2,7 @@ package com.silva.edu.finances.controllers;
 
 import com.edu.silva.common.DefaultResponse;
 import com.silva.edu.finances.domain.dtos.request.CreateFinanceAccountRequest;
+import com.silva.edu.finances.domain.dtos.request.UpdateFinanceAccountRequest;
 import com.silva.edu.finances.domain.dtos.response.FinanceAccountResponse;
 import com.silva.edu.finances.services.FinanceAccountService;
 import jakarta.validation.Valid;
@@ -23,6 +24,12 @@ public class FinanceAccountController {
     @PostMapping("/accounts")
     public ResponseEntity<DefaultResponse<FinanceAccountResponse>> create(@RequestBody @Valid CreateFinanceAccountRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(new DefaultResponse<>("Account created successfully", service.create(request)));
+    }
+
+    @PutMapping("/accounts/{accountId}")
+    public ResponseEntity<DefaultResponse<FinanceAccountResponse>> update(@PathVariable String accountId,
+                                                                          @RequestBody @Valid UpdateFinanceAccountRequest request) {
+        return ResponseEntity.ok(new DefaultResponse<>("Account updated successfully", service.update(accountId, request)));
     }
 
     @GetMapping("/accounts/{accountId}")

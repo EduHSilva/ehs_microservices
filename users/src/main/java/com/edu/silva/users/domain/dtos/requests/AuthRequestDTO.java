@@ -1,6 +1,7 @@
 package com.edu.silva.users.domain.dtos.requests;
 
 import com.edu.silva.common.enums.AppScope;
+import com.edu.silva.users.domain.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
@@ -8,5 +9,6 @@ public record AuthRequestDTO(
         @Email String email,
         String password,
         String tokenGmail,
-        @NotNull(message = "app is required") AppScope app) {
+        @NotNull(message = "app is required") AppScope app,
+        UserRole role) {
 }

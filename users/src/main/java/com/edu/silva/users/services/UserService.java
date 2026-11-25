@@ -64,5 +64,10 @@ public interface UserService {
 
     LoginResponseDTO changePassword(UUID id, AppScope app, ChangePasswordRequestDTO dto);
 
-    LoginResponseDTO login(AuthRequestDTO dto);
+    /**
+     * Autentica por senha ou Google e emite o token da aplicação. Retorna
+     * vazio quando nenhum token é emitido porque um e-mail de vínculo de
+     * acesso foi enviado (a conta existe, mas não possui a role solicitada).
+     */
+    Optional<LoginResponseDTO> login(AuthRequestDTO dto);
 }

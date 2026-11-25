@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -52,12 +53,12 @@ class AuthControllerTest {
 
     @Test
     void shouldLogin() {
-        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.FINANCES);
+        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.FINANCES, null);
         LoginResponseDTO login = new LoginResponseDTO(
                 UUID.randomUUID(), "tester", "test@email.com", new Date(), "fake-jwt-token",
                 List.of("FINANCES"), List.of("FINANCES"));
 
-        when(userService.login(any(AuthRequestDTO.class))).thenReturn(login);
+        when(userService.login(any(AuthRequestDTO.class))).thenReturn(Optional.of(login));
 
         client.post()
                 .uri("/auth/login")
@@ -72,7 +73,7 @@ class AuthControllerTest {
 
     @Test
     void shouldInvalidLogin() {
-        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.FINANCES);
+        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.FINANCES, null);
 
         when(userService.login(any(AuthRequestDTO.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
@@ -88,11 +89,28 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldForbidLoginWhenUserLacksAppRole() {
-        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.FINANCES);
+    void shouldAcceptLoginWhenAppAccessLinkWasSent() {
+        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.FINANCES, UserRole.FINANCES);
+
+        when(userService.login(any(AuthRequestDTO.class))).thenReturn(Optional.empty());
+
+        client.post()
+                .uri("/auth/login")
+                .body(request)
+                .exchange()
+                .expectStatus().isAccepted()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo(
+                        "Se os dados informados estiverem corretos, enviaremos as instruções por e-mail")
+                .jsonPath("$.data").doesNotExist();
+    }
+
+    @Test
+    void shouldForbidLoginToAdminApp() {
+        AuthRequestDTO request = new AuthRequestDTO("test@email.com", "password123", null, AppScope.ADMIN, null);
 
         when(userService.login(any(AuthRequestDTO.class)))
-                .thenThrow(new CustomExceptions.AppAccessDeniedException("FINANCES"));
+                .thenThrow(new CustomExceptions.AppAccessDeniedException("ADMIN"));
 
         client.post()
                 .uri("/auth/login")
@@ -100,7 +118,7 @@ class AuthControllerTest {
                 .exchange()
                 .expectStatus().isForbidden()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Usuário não possui acesso à aplicação FINANCES");
+                .jsonPath("$.message").isEqualTo("Usuário não possui acesso à aplicação ADMIN");
     }
 
     @Test
@@ -116,7 +134,8 @@ class AuthControllerTest {
                 .expectStatus().isAccepted()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo(
-                        "Se os dados informados estiverem corretos, enviaremos as instruções por e-mail")
+                        "Se os dados informados estiverem corretos, você receberá as instruções por e-mail. "
+                                + "Se já possui conta, faça login para solicitar o novo acesso")
                 .jsonPath("$.data").doesNotExist();
 
         org.mockito.Mockito.verify(userService).save(any(RegisterRequestDTO.class));

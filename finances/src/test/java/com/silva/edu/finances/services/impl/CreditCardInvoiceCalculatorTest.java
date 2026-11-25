@@ -56,7 +56,7 @@ class CreditCardInvoiceCalculatorTest {
     void dueDateMustBeStrictlyAfterClosing() {
         // Mesmo dia: não pode vencer no próprio fechamento, então cai no mês seguinte.
         LocalDate closing = CreditCardInvoiceCalculator.closingDate(YearMonth.of(2026, 3), 10);
-        assertThat(CreditCardInvoiceCalculator.dueDate(closing, 10)).isEqualTo(LocalDate.of(2026, 4, 10));
+        assertThat(CreditCardInvoiceCalculator.dueDate(closing, 10, 10)).isEqualTo(LocalDate.of(2026, 4, 10));
     }
 
     @Test
@@ -67,8 +67,35 @@ class CreditCardInvoiceCalculatorTest {
         assertThat(CreditCardInvoiceCalculator.closingDate(YearMonth.of(2026, 4), 31))
                 .isEqualTo(LocalDate.of(2026, 4, 30));
         // Fecha 28/02 e vence 31 (ajustado a 28/02) — não pode ser depois, então 31/03.
-        assertThat(CreditCardInvoiceCalculator.dueDate(LocalDate.of(2026, 2, 28), 31))
+        assertThat(CreditCardInvoiceCalculator.dueDate(LocalDate.of(2026, 2, 28), 31, 31))
                 .isEqualTo(LocalDate.of(2026, 3, 31));
+    }
+
+    @Test
+    void februaryDueDayAfterClosingDoesNotCollideWithNextCycle() {
+        // Fecha 28 e vence 29: em fevereiro o dia 29 não existe. Sem o deslocamento, o ciclo de
+        // fev e o de mar venceriam em 29/03 e dividiriam a fatura 2026-03.
+        assertThat(CreditCardInvoiceCalculator.dueDate(LocalDate.of(2026, 2, 28), 28, 29))
+                .isEqualTo(LocalDate.of(2026, 2, 28));
+        assertThat(CreditCardInvoiceCalculator.dueDate(LocalDate.of(2026, 3, 28), 28, 29))
+                .isEqualTo(LocalDate.of(2026, 3, 29));
+
+        assertThat(CreditCardInvoiceCalculator.cycleOf(LocalDate.of(2026, 2, 20), 28, 29).invoiceMonth())
+                .isEqualTo(YearMonth.of(2026, 2));
+        assertThat(CreditCardInvoiceCalculator.cycleOf(LocalDate.of(2026, 3, 20), 28, 29).invoiceMonth())
+                .isEqualTo(YearMonth.of(2026, 3));
+        assertThat(CreditCardInvoiceCalculator.cycleOfInvoiceMonth(YearMonth.of(2026, 2), 28, 29).dueDate())
+                .isEqualTo(LocalDate.of(2026, 2, 28));
+    }
+
+    @Test
+    void shortMonthClosingAtMonthEndShiftsDueToAvoidInvoiceCollision() {
+        // Fecha 30 e vence 31: abril não tem dia 31, então o ciclo de abril fica com o vencimento
+        // no dia 30/04 e o de maio em 31/05.
+        assertThat(CreditCardInvoiceCalculator.dueDate(LocalDate.of(2026, 4, 30), 30, 31))
+                .isEqualTo(LocalDate.of(2026, 4, 30));
+        assertThat(CreditCardInvoiceCalculator.dueDate(LocalDate.of(2026, 5, 30), 30, 31))
+                .isEqualTo(LocalDate.of(2026, 5, 31));
     }
 
     @Test

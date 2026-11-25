@@ -36,6 +36,19 @@ public enum AppScope {
     }
 
     /**
+     * Roles que podem ser criadas no primeiro login (provisionamento pelo
+     * Google). O fitness só permite o perfil de aluno; os perfis profissionais
+     * exigem o cadastro completo.
+     */
+    public Set<String> signupRoles() {
+        return switch (this) {
+            case ADMIN -> Set.of();
+            case FITNESS -> Set.of("HEALTH_USER");
+            default -> requiredRoles;
+        };
+    }
+
+    /**
      * Indica se a coleção de roles dá acesso a esta aplicação.
      */
     public boolean allows(Collection<String> roles) {
@@ -67,20 +80,6 @@ public enum AppScope {
      */
     public static Optional<AppScope> fromName(String name) {
         return fromService(name);
-    }
-
-    /**
-     * Resolve a aplicação dona de uma role (ex.: {@code FINANCES} ->
-     * {@code AppScope.FINANCES}, {@code HEALTH_USER} -> {@code AppScope.FITNESS}).
-     * A role {@code ADMIN} não pertence a nenhuma aplicação.
-     */
-    public static Optional<AppScope> fromRole(String role) {
-        if (role == null || role.isBlank() || ADMIN_ROLE.equalsIgnoreCase(role)) {
-            return Optional.empty();
-        }
-        return Arrays.stream(values())
-                .filter(app -> app.requiredRoles.contains(role))
-                .findFirst();
     }
 
     /**

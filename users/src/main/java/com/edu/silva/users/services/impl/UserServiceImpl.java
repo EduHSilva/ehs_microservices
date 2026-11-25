@@ -35,6 +35,7 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -102,28 +103,10 @@ public class UserServiceImpl implements UserService {
         String email = normalizeEmail(dto.email());
 
         // Busca inclusive DELETED para nunca criar e-mail duplicado. A resposta
-        // pública é sempre genérica (não revela se o e-mail já existe).
-        Optional<User> existingUser = repository.findAnyByEmail(email);
-
-        if (existingUser.isPresent()) {
-            User existing = existingUser.get();
-
-            // Conta bloqueada ou removida: não cria duplicata, não envia e-mail.
-            if (existing.getStatus() == UserStatus.BLOCKED || existing.getStatus() == UserStatus.DELETED) {
-                return;
-            }
-
-            // Conta existente: envia link de confirmação para adicionar a role
-            // sem tocar na senha atual. Se já possui a role, nada a fazer.
-            if (existing.getRoles().contains(dto.role())) {
-                return;
-            }
-
-            AppScope app = AppScope.fromRole(dto.role().name())
-                    .orElseThrow(() -> new CustomExceptions.InvalidRoleException("Role não vinculada a uma aplicação"));
-
-            String token = tokenService.generateAppAccessToken(existing, app, dto.role().name());
-            producer.publishAppAccessEmail(existing, app.name(), dto.role().name(), token);
+        // pública é sempre genérica (não revela se o e-mail já existe). Novas
+        // roles não são mais vinculadas aqui: o dono do e-mail precisa fazer
+        // login, que envia o link de confirmação (ver login).
+        if (repository.findAnyByEmail(email).isPresent()) {
             return;
         }
 
@@ -144,25 +127,30 @@ public class UserServiceImpl implements UserService {
         if (company != null) {
             user.setCompany(company);
         } else {
-            String companyName = null;
-            switch (dto.role()) {
-                // todo internacionalizar
-                case HEALTH_NUTRITIONIST -> companyName = dto.username() + " nutricionista";
-                case HEALTH_PERSONAL -> companyName = dto.username() + " personal";
-                case BUDGETS -> companyName = dto.username();
-            }
-
-            if (companyName != null) {
-                company = new Company();
-                company.setOwner(user);
-                company.setStatus(Status.ACTIVE);
-                company.setName(companyName);
-                companyRepository.save(company);
-                user.setCompany(company);
-            }
+            createDefaultCompany(user, dto.role());
         }
 
         producer.publishMessageEmail(user);
+    }
+
+    private void createDefaultCompany(User user, UserRole role) {
+        String companyName = switch (role) {
+            // todo internacionalizar
+            case HEALTH_NUTRITIONIST -> user.getUsername() + " nutricionista";
+            case HEALTH_PERSONAL -> user.getUsername() + " personal";
+            case BUDGETS -> user.getUsername();
+            default -> null;
+        };
+
+        if (companyName == null) {
+            return;
+        }
+
+        Company company = new Company();
+        company.setOwner(user);
+        company.setStatus(Status.ACTIVE);
+        company.setName(companyName);
+        user.setCompany(companyRepository.save(company));
     }
 
     @Override
@@ -655,6 +643,21 @@ public class UserServiceImpl implements UserService {
                 AppScope.appsFor(roleNames).stream().map(Enum::name).toList());
     }
 
+    /**
+     * Role usada quando o cliente não especifica: apps com uma única role usam
+     * a própria; no fitness vale a role de auto-cadastro (aluno), já que os
+     * perfis profissionais só são criados pelo cadastro completo.
+     */
+    private UserRole defaultRole(AppScope app) {
+        if (app.requiredRoles().size() == 1) {
+            return parseRole(app.requiredRoles().iterator().next());
+        }
+        return app.signupRoles().stream().findFirst()
+                .map(this::parseRole)
+                .orElseThrow(() -> new CustomExceptions.InvalidRoleException(
+                        "Informe a role desejada para a aplicação " + app.name()));
+    }
+
     private UserRole resolveRole(AppScope app, UserRole requested) {
         if (requested == UserRole.ADMIN) {
             throw new CustomExceptions.InvalidRoleException("A role ADMIN só pode ser atribuída via seed");
@@ -693,33 +696,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public LoginResponseDTO login(AuthRequestDTO dto) {
+    public Optional<LoginResponseDTO> login(AuthRequestDTO dto) {
         User user;
         if (dto.tokenGmail() != null && !dto.tokenGmail().isEmpty()) {
-            var payload = verifyToken(dto.tokenGmail());
-
-            if (payload == null) {
-                throw new CustomExceptions.InvalidGmailTokenException("Invalid gmail token");
-            }
-
-            // Sem e-mail verificado pelo Google não é seguro usar o endereço para
-            // localizar a conta (evita tomar conta alheia com e-mail não confirmado).
-            if (payload.getEmailVerified() == null || !payload.getEmailVerified()) {
-                throw new CustomExceptions.InvalidGmailTokenException("Gmail account is not verified");
-            }
-
-            String email = payload.getEmail();
-            user = (User) repository.findByEmail(email);
+            user = loginWithGoogle(dto);
         } else {
             UsernamePasswordAuthenticationToken userNamePassword =
                     new UsernamePasswordAuthenticationToken(dto.email(), dto.password());
 
             Authentication authentication = authenticationManager.authenticate(userNamePassword);
             user = (User) authentication.getPrincipal();
-        }
-
-        if (user == null) {
-            throw new CustomExceptions.EntityNotFoundException(User.class.getSimpleName(), dto.email());
         }
 
         if (user.getStatus() != UserStatus.OK) {
@@ -731,21 +717,107 @@ public class UserServiceImpl implements UserService {
                 .toList();
 
         if (!dto.app().allows(roleNames)) {
-            throw new CustomExceptions.AppAccessDeniedException(dto.app().name());
+            // Dono do e-mail já se autenticou, mas ainda não tem a role do app:
+            // envia o link de vínculo e não emite sessão.
+            sendAppAccessEmail(user, dto);
+            return Optional.empty();
         }
 
         String token = tokenService.generateToken(user, dto.app());
 
         user.setLastLogin(new Date());
         repository.save(user);
-        return new LoginResponseDTO(
+        return Optional.of(new LoginResponseDTO(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getLastLogin(),
                 token,
                 roleNames,
-                AppScope.appsFor(roleNames).stream().map(Enum::name).toList());
+                AppScope.appsFor(roleNames).stream().map(Enum::name).toList()));
+    }
+
+    /**
+     * Localiza a conta pelo e-mail verificado do Google ou a provisiona no
+     * primeiro login. Contas BLOCKED/DELETED continuam bloqueadas.
+     */
+    private User loginWithGoogle(AuthRequestDTO dto) {
+        GoogleIdToken.Payload payload = verifyToken(dto.tokenGmail());
+
+        if (payload == null) {
+            throw new CustomExceptions.InvalidGmailTokenException("Invalid gmail token");
+        }
+
+        // Sem e-mail verificado pelo Google não é seguro usar o endereço para
+        // localizar a conta (evita tomar conta alheia com e-mail não confirmado).
+        if (payload.getEmailVerified() == null || !payload.getEmailVerified()) {
+            throw new CustomExceptions.InvalidGmailTokenException("Gmail account is not verified");
+        }
+
+        String email = normalizeEmail(payload.getEmail());
+        if (email == null || email.isBlank()) {
+            throw new CustomExceptions.InvalidGmailTokenException("Gmail token without email");
+        }
+
+        return repository.findAnyByEmail(email)
+                .orElseGet(() -> provisionGoogleAccount(dto, email, (String) payload.get("name")));
+    }
+
+    /**
+     * Cria a conta no primeiro login com Google: e-mail já verificado, status
+     * OK e sem senha local (o acesso é sempre pelo Google até definir uma senha
+     * pelo "esqueci minha senha"). Só roles de auto-cadastro da aplicação.
+     */
+    private User provisionGoogleAccount(AuthRequestDTO dto, String email, String name) {
+        if (dto.app() == AppScope.ADMIN) {
+            throw new CustomExceptions.AppAccessDeniedException(dto.app().name());
+        }
+
+        UserRole role = dto.role() != null ? resolveRole(dto.app(), dto.role()) : defaultRole(dto.app());
+        if (!dto.app().signupRoles().contains(role.name())) {
+            throw new CustomExceptions.InvalidRoleException(
+                    "O perfil " + role.name() + " exige o cadastro completo");
+        }
+
+        User user = new User(resolveUsername(name, email), email, null,
+                new ArrayList<>(List.of(role)));
+        user.setStatus(UserStatus.OK);
+
+        try {
+            user = repository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            // Corrida entre dois primeiros logins: a conta já foi criada.
+            return repository.findAnyByEmail(email).orElseThrow(() -> e);
+        }
+
+        createDefaultCompany(user, role);
+        if (user.getCompany() != null) {
+            user = repository.save(user);
+        }
+
+        AuditLogger.log("anonymous", "USER_GOOGLE_SIGNUP", User.class.getSimpleName(), user.getId(),
+                Map.of("app", dto.app().name(), "role", role.name()));
+        return user;
+    }
+
+    private void sendAppAccessEmail(User user, AuthRequestDTO dto) {
+        if (dto.app() == AppScope.ADMIN) {
+            throw new CustomExceptions.AppAccessDeniedException(dto.app().name());
+        }
+
+        UserRole role = dto.role() != null ? resolveRole(dto.app(), dto.role()) : defaultRole(dto.app());
+        String token = tokenService.generateAppAccessToken(user, dto.app(), role.name());
+        producer.publishAppAccessEmail(user, dto.app().name(), role.name(), token);
+        AuditLogger.log(user.getId().toString(), "USER_APP_ACCESS_REQUEST", User.class.getSimpleName(), user.getId(),
+                Map.of("app", dto.app().name(), "role", role.name(), "origin", "login"));
+    }
+
+    private String resolveUsername(String name, String email) {
+        if (name != null && !name.isBlank()) {
+            return name.trim();
+        }
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
     }
 
     private boolean isAdmin() {
@@ -762,7 +834,7 @@ public class UserServiceImpl implements UserService {
         return String.valueOf(principal.getId());
     }
 
-    private GoogleIdToken.Payload verifyToken(String token) {
+    GoogleIdToken.Payload verifyToken(String token) {
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                     new NetHttpTransport(),

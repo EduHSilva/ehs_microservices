@@ -132,9 +132,13 @@ public class AccountMemberServiceImpl implements AccountMemberService {
         FinanceAccountMember member = findMember(accountId, memberId);
         if (member.getStatus() != AccountMemberStatus.PENDING && member.getStatus() != AccountMemberStatus.ACTIVE)
             throw new IllegalArgumentException("This invitation can no longer be cancelled");
+        boolean removedAccess = member.getStatus() == AccountMemberStatus.ACTIVE;
         member.setStatus(AccountMemberStatus.REVOKED);
         member.setToken(null);
         members.save(member);
+        if (removedAccess)
+            notifier.sendRemoval(member.getEmail(), member.getName(), member.getUserId(), ownerName(account),
+                    account.getName());
     }
 
     @Override
@@ -260,12 +264,15 @@ public class AccountMemberServiceImpl implements AccountMemberService {
     }
 
     private void sendInvite(FinanceAccountMember member, FinanceAccount account) {
-        String ownerName = users.findById(account.getOwnerId())
+        notifier.sendInvite(member.getEmail(), member.getName(), member.getUserId(), ownerName(account),
+                account.getName(), member.getToken());
+    }
+
+    private String ownerName(FinanceAccount account) {
+        return users.findById(account.getOwnerId())
                 .map(UsersServiceClient.Profile::username)
                 .filter(name -> !name.isBlank())
                 .orElse("Um usuário do Finanças");
-        notifier.sendInvite(member.getEmail(), member.getName(), member.getUserId(), ownerName,
-                account.getName(), member.getToken());
     }
 
     private AccountMemberResponse card(FinanceAccountMember member, boolean includeToken) {

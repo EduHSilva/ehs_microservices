@@ -49,14 +49,24 @@ public class AccountInviteNotifier {
 
     public void sendInvite(String email, String name, UUID userId, String ownerName, String accountName,
                            String token) {
+        publish(email, name, userId, ownerName, accountName, EmailType.FINANCES_ACCOUNT_INVITE,
+                inviteUrlBase + token, "invite");
+    }
+
+    public void sendRemoval(String email, String name, UUID userId, String ownerName, String accountName) {
+        publish(email, name, userId, ownerName, accountName, EmailType.FINANCES_ACCOUNT_REMOVED, null, "removal");
+    }
+
+    private void publish(String email, String name, UUID userId, String ownerName, String accountName,
+                         EmailType type, String buttonUrl, String kind) {
         if (!enabled) return;
         EmailDTO dto = new EmailDTO();
         dto.setUserID(userId);
         dto.setUsername(name == null || name.isBlank() ? email : name);
         dto.setEmailTo(email);
         dto.setLocaleTag("pt-BR");
-        dto.setEmailType(EmailType.FINANCES_ACCOUNT_INVITE);
-        dto.setBtnURL(inviteUrlBase + token);
+        dto.setEmailType(type);
+        dto.setBtnURL(buttonUrl);
         dto.setVariables(Map.of("owner", ownerName, "account", accountName));
         try {
             amqpAdmin.declareQueue(new Queue(queue, true));
@@ -66,9 +76,9 @@ public class AccountInviteNotifier {
             properties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
             rabbitTemplate.send("", queue, new Message(body, properties));
         } catch (AmqpException ex) {
-            log.warn("account invite e-mail to {} could not be published: {}", email, ex.getMessage());
+            log.warn("account {} e-mail to {} could not be published: {}", kind, email, ex.getMessage());
         } catch (Exception ex) {
-            log.warn("account invite e-mail to {} could not be published: {}", email, ex.getMessage());
+            log.warn("account {} e-mail to {} could not be published: {}", kind, email, ex.getMessage());
         }
     }
 

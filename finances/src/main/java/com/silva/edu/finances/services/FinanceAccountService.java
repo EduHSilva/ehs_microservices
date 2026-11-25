@@ -1,6 +1,7 @@
 package com.silva.edu.finances.services;
 
 import com.silva.edu.finances.domain.dtos.request.CreateFinanceAccountRequest;
+import com.silva.edu.finances.domain.dtos.request.UpdateFinanceAccountRequest;
 import com.silva.edu.finances.domain.dtos.response.FinanceAccountResponse;
 import com.silva.edu.finances.domain.entities.FinanceAccount;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.UUID;
 public interface FinanceAccountService {
     List<FinanceAccountResponse> listMine();
     FinanceAccountResponse create(CreateFinanceAccountRequest request);
+    FinanceAccountResponse update(String accountId, UpdateFinanceAccountRequest request);
     FinanceAccountResponse get(String accountId);
     void requireAccess(String accountId);
     FinanceAccount requireAccount(String accountId);

@@ -169,7 +169,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void shouldLinkAppAccessWithoutCreatingDuplicateAccount() {
+    void shouldNotCreateDuplicateNorSendEmailForExistingAccountOnRegister() {
         User existing = new User("Edu", "edu@test.com", "encoded", new java.util.ArrayList<>(List.of(UserRole.STUDY)));
         existing.setId(UUID.randomUUID());
         existing.setStatus(UserStatus.OK);
@@ -179,14 +179,15 @@ class UserServiceImplTest {
         );
 
         when(repository.findAnyByEmail("edu@test.com")).thenReturn(Optional.of(existing));
-        when(tokenService.generateAppAccessToken(existing, AppScope.FINANCES, "FINANCES")).thenReturn("token");
 
         service.save(dto);
 
+        // O vínculo da nova role acontece no login, não no cadastro.
         verify(repository, never()).save(any());
-        verify(producer).publishAppAccessEmail(existing, "FINANCES", "FINANCES", "token");
+        verifyNoInteractions(producer);
+        verify(tokenService, never()).generateAppAccessToken(any(), any(), any());
 
-        // A senha original nunca é alterada.
+        // A senha e as roles originais nunca são alteradas.
         assertEquals("encoded", existing.getPassword());
         assertEquals(List.of(UserRole.STUDY), existing.getRoles());
     }
@@ -652,18 +653,40 @@ class UserServiceImplTest {
         when(tokenService.generateToken(user, AppScope.FINANCES)).thenReturn("jwt-token");
         when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        LoginResponseDTO result = service.login(
-                new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES));
+        Optional<LoginResponseDTO> result = service.login(
+                new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES, null));
 
-        assertEquals("jwt-token", result.token());
-        assertEquals(List.of("FINANCES"), result.roles());
-        assertEquals(List.of("FINANCES"), result.apps());
+        assertTrue(result.isPresent());
+        assertEquals("jwt-token", result.get().token());
+        assertEquals(List.of("FINANCES"), result.get().roles());
+        assertEquals(List.of("FINANCES"), result.get().apps());
         verify(tokenService).generateToken(user, AppScope.FINANCES);
     }
 
     @Test
-    void shouldRejectLoginWhenUserLacksRoleForRequestedApp() {
+    void shouldSendAppAccessEmailAtLoginWhenRoleIsMissing() {
         User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.STUDY));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.OK);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(tokenService.generateAppAccessToken(user, AppScope.FINANCES, "FINANCES")).thenReturn("token");
+
+        Optional<LoginResponseDTO> result = service.login(
+                new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES, UserRole.FINANCES));
+
+        assertTrue(result.isEmpty());
+        verify(producer).publishAppAccessEmail(user, "FINANCES", "FINANCES", "token");
+        verify(tokenService, never()).generateToken(any(User.class), any(AppScope.class));
+        verify(repository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldRejectLoginToAdminAppWhenUserIsNotAdmin() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.FINANCES));
         user.setId(UUID.randomUUID());
         user.setStatus(UserStatus.OK);
         Authentication authentication = mock(Authentication.class);
@@ -673,10 +696,46 @@ class UserServiceImplTest {
                 .thenReturn(authentication);
 
         assertThrows(CustomExceptions.AppAccessDeniedException.class,
-                () -> service.login(new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES)));
+                () -> service.login(new AuthRequestDTO("edu@test.com", "123", null, AppScope.ADMIN, null)));
 
+        verify(producer, never()).publishAppAccessEmail(any(), any(), any(), any());
         verify(tokenService, never()).generateToken(any(User.class), any(AppScope.class));
-        verify(repository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldOfferStudentRoleAtLoginWhenFitnessRoleIsMissing() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.STUDY));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.OK);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(tokenService.generateAppAccessToken(user, AppScope.FITNESS, "HEALTH_USER")).thenReturn("token");
+
+        Optional<LoginResponseDTO> result = service.login(
+                new AuthRequestDTO("edu@test.com", "123", null, AppScope.FITNESS, null));
+
+        assertTrue(result.isEmpty());
+        verify(producer).publishAppAccessEmail(user, "FITNESS", "HEALTH_USER", "token");
+    }
+
+    @Test
+    void shouldRejectLoginWithRoleFromAnotherApp() {
+        User user = new User("Edu", "edu@test.com", "encoded", List.of(UserRole.HEALTH_USER));
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.OK);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal()).thenReturn(user);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        assertThrows(CustomExceptions.InvalidRoleException.class,
+                () -> service.login(new AuthRequestDTO("edu@test.com", "123", null, AppScope.FINANCES, UserRole.STUDY)));
+
+        verify(producer, never()).publishAppAccessEmail(any(), any(), any(), any());
     }
 
     @Test
@@ -692,10 +751,11 @@ class UserServiceImplTest {
         when(tokenService.generateToken(user, AppScope.STUDY)).thenReturn("jwt-token");
         when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        LoginResponseDTO result = service.login(
-                new AuthRequestDTO("admin@test.com", "123", null, AppScope.STUDY));
+        Optional<LoginResponseDTO> result = service.login(
+                new AuthRequestDTO("admin@test.com", "123", null, AppScope.STUDY, null));
 
-        assertEquals("jwt-token", result.token());
+        assertTrue(result.isPresent());
+        assertEquals("jwt-token", result.get().token());
         verify(tokenService).generateToken(user, AppScope.STUDY);
     }
 
@@ -711,7 +771,7 @@ class UserServiceImplTest {
                 .thenReturn(authentication);
 
         assertThrows(CustomExceptions.AccountNotActiveException.class,
-                () -> service.login(new AuthRequestDTO("blocked@test.com", "123", null, AppScope.FINANCES)));
+                () -> service.login(new AuthRequestDTO("blocked@test.com", "123", null, AppScope.FINANCES, null)));
 
         verify(tokenService, never()).generateToken(any(User.class), any(AppScope.class));
         verify(repository, never()).save(any(User.class));

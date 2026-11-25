@@ -1,6 +1,7 @@
 package com.silva.edu.finances.services.impl;
 
 import com.silva.edu.finances.domain.dtos.request.CreateFinanceAccountRequest;
+import com.silva.edu.finances.domain.dtos.request.UpdateFinanceAccountRequest;
 import com.silva.edu.finances.domain.dtos.response.FinanceAccountResponse;
 import com.silva.edu.finances.domain.entities.FinanceAccount;
 import com.silva.edu.finances.domain.entities.FinanceAccountMember;
@@ -66,6 +67,15 @@ public class FinanceAccountServiceImpl implements FinanceAccountService {
         account.setOpeningBalance(request.openingBalance()); account.setCurrency("BRL");
         accounts.save(account);
         return response(account, user, "OWNER");
+    }
+    @Override public FinanceAccountResponse update(String accountId, UpdateFinanceAccountRequest request) {
+        FinanceAccount account = requireAccount(accountId);
+        if (!account.getOwnerId().equals(UserContext.getUser()))
+            throw new CustomExceptions.ForbiddenException("Only the account owner can edit the account");
+        account.setName(request.name().trim());
+        if (request.openingBalance() != null) account.setOpeningBalance(request.openingBalance());
+        accounts.save(account);
+        return response(account, account.getOwnerId(), "OWNER");
     }
     @Override @Transactional(readOnly = true)
     public FinanceAccountResponse get(String accountId) {

@@ -81,6 +81,18 @@ public class EmailConsumer {
                     btnLabel = i18n.getMessage("financesInvite.button", locale);
                     break;
 
+                case FINANCES_ACCOUNT_REMOVED:
+                    String removedBy = dto.getVariables() == null
+                            ? ""
+                            : String.valueOf(dto.getVariables().getOrDefault("owner", ""));
+                    String removedAccount = dto.getVariables() == null
+                            ? ""
+                            : String.valueOf(dto.getVariables().getOrDefault("account", ""));
+                    subject = i18n.getMessage("financesRemoved.subject", locale);
+                    body = i18n.getMessage("financesRemoved.body", locale, dto.getUsername(), removedAccount, removedBy);
+                    btnLabel = "";
+                    break;
+
                 default:
                     throw new IllegalArgumentException("Invalid email type");
             }

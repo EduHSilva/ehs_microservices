@@ -15,6 +15,11 @@ import java.util.Date;
  * recebe as compras com data até o fechamento — compra no próprio dia entra nele. O vencimento é
  * o primeiro {@code dueDay} (ajustado) estritamente após o fechamento, procurando no máximo um
  * mês à frente. A fatura é identificada pelo mês do vencimento ({@code AAAA-MM}).</p>
+ *
+ * <p>Exceção: quando o {@code dueDay} não existe no mês curto (ex.: fechamento 28 e vencimento 29
+ * em fevereiro), o vencimento deslocado cairia no mesmo mês do ciclo seguinte e as duas faturas
+ * compartilhariam o identificador {@code AAAA-MM}. Nesse caso o vencimento fica no último dia do
+ * mês do fechamento (o próprio dia do fechamento).</p>
  */
 public final class CreditCardInvoiceCalculator {
     /** Janela usada para carregar compras: nenhum ciclo usado pelos endpoints começa antes disto. */
@@ -39,7 +44,17 @@ public final class CreditCardInvoiceCalculator {
         return month.atDay(clampDay(closingDay, month));
     }
 
-    public static java.time.LocalDate dueDate(java.time.LocalDate closing, int dueDay) {
+    public static java.time.LocalDate dueDate(java.time.LocalDate closing, int closingDay, int dueDay) {
+        java.time.LocalDate due = plainDueDate(closing, dueDay);
+        YearMonth next = YearMonth.from(closing).plusMonths(1);
+        if (!YearMonth.from(due).equals(next)) return due;
+        // Se o ciclo seguinte venceria no mesmo mês, as faturas AAAA-MM colidiriam.
+        java.time.LocalDate nextClosing = closingDate(next, closingDay);
+        if (YearMonth.from(plainDueDate(nextClosing, dueDay)).equals(next)) return closing;
+        return due;
+    }
+
+    private static java.time.LocalDate plainDueDate(java.time.LocalDate closing, int dueDay) {
         YearMonth month = YearMonth.from(closing);
         // Mesmo mês só quando o dueDay fica estritamente depois do fechamento; senão, mês seguinte.
         java.time.LocalDate sameMonth = month.atDay(clampDay(dueDay, month));
@@ -56,7 +71,7 @@ public final class CreditCardInvoiceCalculator {
             month = month.plusMonths(1);
             closing = closingDate(month, closingDay);
         }
-        java.time.LocalDate due = dueDate(closing, dueDay);
+        java.time.LocalDate due = dueDate(closing, closingDay, dueDay);
         return new Cycle(YearMonth.from(due), closing, due, closingDate(month.minusMonths(1), closingDay));
     }
 
@@ -67,10 +82,10 @@ public final class CreditCardInvoiceCalculator {
      */
     public static Cycle cycleOfInvoiceMonth(YearMonth invoiceMonth, int closingDay, int dueDay) {
         YearMonth closingMonth = invoiceMonth.minusMonths(1);
-        if (!YearMonth.from(dueDate(closingDate(closingMonth, closingDay), dueDay)).equals(invoiceMonth))
+        if (!YearMonth.from(dueDate(closingDate(closingMonth, closingDay), closingDay, dueDay)).equals(invoiceMonth))
             closingMonth = invoiceMonth;
         java.time.LocalDate closing = closingDate(closingMonth, closingDay);
-        return new Cycle(invoiceMonth, closing, dueDate(closing, dueDay),
+        return new Cycle(invoiceMonth, closing, dueDate(closing, closingDay, dueDay),
                 closingDate(closingMonth.minusMonths(1), closingDay));
     }
 

@@ -27,6 +27,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -39,6 +40,14 @@ public class AuthController {
      */
     private static final String GENERIC_EMAIL_MESSAGE =
             "Se os dados informados estiverem corretos, enviaremos as instruções por e-mail";
+
+    /**
+     * Contas existentes não recebem e-mail no cadastro: o vínculo da nova role
+     * parte do login.
+     */
+    private static final String REGISTER_MESSAGE =
+            "Se os dados informados estiverem corretos, você receberá as instruções por e-mail. "
+                    + "Se já possui conta, faça login para solicitar o novo acesso";
 
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -79,7 +88,7 @@ public class AuthController {
     ResponseEntity<@NonNull DefaultResponse<Void>> save(@RequestBody @Valid RegisterRequestDTO dto) {
         service.save(dto);
         return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body(new DefaultResponse<>(GENERIC_EMAIL_MESSAGE));
+                .body(new DefaultResponse<>(REGISTER_MESSAGE));
     }
 
     @Operation(summary = "Request access to an application for an existing account")
@@ -148,7 +157,12 @@ public class AuthController {
 
     @PostMapping("login")
     public ResponseEntity<DefaultResponse<LoginResponseDTO>> login(@RequestBody @Valid AuthRequestDTO dto) {
-        return ResponseEntity.ok(new DefaultResponse<>("Auth successfully verified", service.login(dto)));
+        Optional<LoginResponseDTO> result = service.login(dto);
+        if (result.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(new DefaultResponse<>(GENERIC_EMAIL_MESSAGE));
+        }
+        return ResponseEntity.ok(new DefaultResponse<>("Auth successfully verified", result.get()));
     }
 
     @PostMapping("logout-all")

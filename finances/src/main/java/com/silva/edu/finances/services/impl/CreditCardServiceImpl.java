@@ -9,10 +9,12 @@ import com.silva.edu.finances.domain.dtos.response.CreditCardResponse;
 import com.silva.edu.finances.domain.entities.CreditCard;
 import com.silva.edu.finances.domain.entities.Transaction;
 import com.silva.edu.finances.domain.enums.CardStatus;
+import com.silva.edu.finances.domain.enums.RecurrenceStatus;
 import com.silva.edu.finances.domain.enums.TransactionEntryType;
 import com.silva.edu.finances.domain.enums.TransactionStatus;
 import com.silva.edu.finances.infra.exceptions.CustomExceptions;
 import com.silva.edu.finances.repositories.CreditCardRepository;
+import com.silva.edu.finances.repositories.RecurrenceRepository;
 import com.silva.edu.finances.repositories.TransactionRepository;
 import com.silva.edu.finances.services.CreditCardService;
 import com.silva.edu.finances.services.FinanceAccountService;
@@ -35,13 +37,16 @@ public class CreditCardServiceImpl implements CreditCardService {
 
     private final CreditCardRepository cards;
     private final TransactionRepository transactions;
+    private final RecurrenceRepository recurrences;
     private final FinanceAccountService accounts;
     private final CreditCardInvoiceService invoices;
 
     public CreditCardServiceImpl(CreditCardRepository cards, TransactionRepository transactions,
-                                 FinanceAccountService accounts, CreditCardInvoiceService invoices) {
+                                 RecurrenceRepository recurrences, FinanceAccountService accounts,
+                                 CreditCardInvoiceService invoices) {
         this.cards = cards;
         this.transactions = transactions;
+        this.recurrences = recurrences;
         this.accounts = accounts;
         this.invoices = invoices;
     }
@@ -122,11 +127,15 @@ public class CreditCardServiceImpl implements CreditCardService {
     @Override
     public void delete(UUID cardId) {
         CreditCard card = requireCard(cardId);
+        // Recorrência ativa continuaria gerando ocorrências sem fatura pagável após o cartão sair.
+        if (recurrences.existsByCreditCardIdAndStatus(cardId, RecurrenceStatus.ACTIVE))
+            throw new CustomExceptions.ConflictException(
+                    "This card is linked to active recurrences. Remove or unlink them before deleting the card");
         UUID owner = accounts.ownerOf(card.getAccountId());
         // Compras antigas permanecem como histórico; só bloqueia fatura com saldo em aberto.
         for (CreditCardInvoiceService.Invoice invoice : invoices.invoices(card, owner, today())) {
             if (invoice.hasOpenBalance())
-                throw new IllegalArgumentException("Cannot delete a card with open invoices ("
+                throw new CustomExceptions.ConflictException("Cannot delete a card with open invoices ("
                         + invoice.invoiceMonth() + ")");
         }
         cards.delete(card);

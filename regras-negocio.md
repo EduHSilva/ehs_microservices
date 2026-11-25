@@ -13,8 +13,11 @@
   - `WAITING_CONFIRMATION → OK` pela confirmação; `OK ⇄ BLOCKED` só por ADMIN;
     `→ DELETED` só por exclusão administrativa (soft delete) e não há retorno.
   - Bloquear incrementa `tokenVersion`, derrubando as sessões abertas.
-- O login exige o campo `app` (`ADMIN`, `BUDGETS`, `FINANCES`, `STUDY`, `FITNESS`).
-  O usuário precisa ter ao menos uma role do app; senão 403. Erros:
+- O login exige o campo `app` (`ADMIN`, `BUDGETS`, `FINANCES`, `STUDY`, `FITNESS`) e
+  aceita `role`. Quando o app tem mais de uma role e o cliente não informa, vale a role
+  de auto-cadastro (`AppScope.signupRoles()`; `FITNESS` → `HEALTH_USER`). Se a conta
+  ainda não tem a role do app, o login envia o link de vínculo e responde **202 sem
+  token**; **403** fica para conta inativa, app `ADMIN` e role fora do app. Erros:
   - **401** = não autenticado (token ausente/inválido, sessão expirada) → os fronts
     limpam a sessão e voltam ao login.
   - **403** = autenticado sem permissão (app/role/ADMIN) → os fronts apenas avisam
@@ -32,9 +35,12 @@
   (não 401) para os fronts não derrubarem a sessão. A troca persiste só o hash e
   incrementa `tokenVersion`, encerrando as demais sessões; a sessão que fez a troca
   recebe um token novo na resposta (mesmo `aud` do token usado na chamada).
-- Login com Google exige **cadastro prévio** (e-mail precisa existir e estar `OK`) e o
-  claim `email_verified = true`; o Google serve como segundo fator de identidade, não
-  como provisionamento de conta.
+- Login com Google exige `email_verified = true`. E-mail desconhecido é **provisionado no
+  primeiro login**: conta `OK`, sem senha local (o acesso é só pelo Google até definir
+  uma senha pelo "esqueci minha senha"), `username` vindo do `name` do payload e somente
+  roles de auto-cadastro (`AppScope.signupRoles()`): no `FITNESS` apenas `HEALTH_USER`;
+  `HEALTH_PERSONAL`/`HEALTH_NUTRITIONIST` exigem o cadastro completo. Contas
+  `BLOCKED`/`DELETED` nunca são recriadas.
 - `tokenVersion` (`ver` no JWT) é incrementado ao trocar senha, alterar roles,
   bloquear, confirmar acesso a app e "sair de todas as sessões".
 - Segurança dos dados: o e-mail é normalizado (trim + lowercase) e único; senhas nunca
@@ -68,8 +74,12 @@
 
 ## 3. Acesso a várias aplicações
 
-- Quem já tem conta e se cadastra em outro app recebe um link de **vínculo de acesso**
-  (`APP_ACCESS`) que adiciona a role **sem alterar a senha**.
+- Quem já tem conta e entra em outro app informa `app` (+ `role` quando necessário) no
+  **login**: se a role ainda não existe, recebe o link de **vínculo de acesso**
+  (`APP_ACCESS`) que adiciona a role **sem alterar a senha** e o login responde 202 sem
+  token. Sem `role` informada, o vínculo usa a role de auto-cadastro do app
+  (`FITNESS` → `HEALTH_USER`). O cadastro (`/auth/register`) de e-mail existente não
+  cria conta nem envia e-mail; a resposta genérica orienta a fazer login.
 - Contas `BLOCKED`/`DELETED` não recebem e-mail e não geram novo cadastro.
 - A confirmação do vínculo não passa por ADMIN (é feita pelo dono do e-mail).
 - As páginas `/user/confirm/{id}` e `/user/app-access` são estáticas (mesmo padrão do
@@ -78,8 +88,9 @@
 
 ## 4. Empresas
 
-- Cada usuário pode ter **uma** empresa; ela é criada no cadastro apenas para
-  `BUDGETS`, `HEALTH_PERSONAL` e `HEALTH_NUTRITIONIST` (nome derivado do usuário).
+- Cada usuário pode ter **uma** empresa; ela é criada no cadastro (e no provisionamento
+  pelo Google) apenas para `BUDGETS`, `HEALTH_PERSONAL` e `HEALTH_NUTRITIONIST` (nome
+  derivado do usuário).
 - A empresa pode ser renomeada pelo dono (`PUT /companies/{id}`).
 - Excluir a empresa exclui (soft delete) todos os usuários dela.
 - Listagem/consulta/exportação de empresas é **ADMIN-only** (`@OnlyAdmin` no service,
