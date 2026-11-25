@@ -9,6 +9,7 @@ import com.edu.silva.study.infra.exceptions.InvalidRequestException
 import com.edu.silva.study.repositories.ProjectRepository
 import com.edu.silva.study.infra.config.UserContext
 import com.edu.silva.study.repositories.ProjectStageRepository
+import com.edu.silva.study.services.ProjectProgressService
 import com.edu.silva.study.services.ProjectStageService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,7 +19,8 @@ import java.util.UUID
 @Transactional
 class ProjectStageServiceImpl(
     private val repository: ProjectStageRepository,
-    private val projectRepository: ProjectRepository
+    private val projectRepository: ProjectRepository,
+    private val progressService: ProjectProgressService
 ) : ProjectStageService {
 
     override fun add(request: ProjectStageRequestDTO?): ProjectStageResponseDTO {
@@ -31,7 +33,7 @@ class ProjectStageServiceImpl(
             done = request.done,
             userId = UserContext.getUser()
         )
-        return repository.save(stage).toResponse()
+        return repository.save(stage).toResponse(progressOf(stage))
     }
 
     override fun update(id: UUID?, request: ProjectStageRequestDTO?): ProjectStageResponseDTO {
@@ -42,7 +44,13 @@ class ProjectStageServiceImpl(
         stage.project = findProject(request.idProject)
         stage.name = request.title
         stage.done = request.done
-        return repository.save(stage).toResponse()
+        return repository.save(stage).toResponse(progressOf(stage))
+    }
+
+    private fun progressOf(stage: ProjectStage): Int {
+        val projectId = stage.project!!.id!!
+        val stages = repository.findAllByProject_IdAndUserId(projectId, UserContext.getUser())
+        return progressService.progressOf(projectId, stages)
     }
 
     private fun findEntity(id: UUID?): ProjectStage {
@@ -58,11 +66,12 @@ class ProjectStageServiceImpl(
             .orElseThrow { EntityNotFoundException("Project", id) }
     }
 
-    private fun ProjectStage.toResponse(): ProjectStageResponseDTO {
+    private fun ProjectStage.toResponse(projectProgress: Int): ProjectStageResponseDTO {
         return ProjectStageResponseDTO(
             id = id!!,
             name = name,
-            done = done
+            done = done,
+            projectProgress = projectProgress
         )
     }
 }

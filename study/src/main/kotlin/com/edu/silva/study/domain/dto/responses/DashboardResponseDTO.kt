@@ -23,6 +23,7 @@ data class TaskResponseDTO(
     val endDate: Date? = null,
     val type: String? = null,
     val status: String? = null,
+    val projectId: UUID? = null,
     val dailyCompletions: List<DailyTaskCompletionDTO>? = null,
 )
 

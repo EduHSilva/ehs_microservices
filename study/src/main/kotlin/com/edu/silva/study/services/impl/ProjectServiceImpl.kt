@@ -12,6 +12,7 @@ import com.edu.silva.study.infra.exceptions.EntityNotFoundException
 import com.edu.silva.study.infra.exceptions.InvalidRequestException
 import com.edu.silva.study.repositories.ProjectRepository
 import com.edu.silva.study.infra.config.UserContext
+import com.edu.silva.study.services.ProjectProgressService
 import com.edu.silva.study.services.ProjectService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -25,7 +26,8 @@ import java.util.UUID
 @Service
 @Transactional
 class ProjectServiceImpl(
-    private val repository: ProjectRepository
+    private val repository: ProjectRepository,
+    private val progressService: ProjectProgressService
 ) : ProjectService {
 
     override fun findAll(page: Int, size: Int): Page<ProjectResponseDTO> {
@@ -40,11 +42,15 @@ class ProjectServiceImpl(
         val pageable = PageRequest.of(page, size)
         val from = minOf(page * size, ordered.size)
         val to = minOf(from + size, ordered.size)
-        return PageImpl(ordered.subList(from, to).map { it.toResponse() }, pageable, ordered.size.toLong())
+        val items = ordered.subList(from, to)
+        // Uma consulta de tarefas por page; o progresso vem do back para o front só exibir.
+        val progress = progressService.progressByProject(items)
+        return PageImpl(items.map { it.toResponse(progress[it.id!!] ?: 0) }, pageable, ordered.size.toLong())
     }
 
     override fun findById(id: UUID?): ProjectResponseDTO {
-        return findEntity(id).toResponse()
+        val project = findEntity(id)
+        return project.toResponse(progressOf(project))
     }
 
     override fun add(request: ProjectRequestDTO?): ProjectResponseDTO {
@@ -57,7 +63,8 @@ class ProjectServiceImpl(
             advisor = request.advisor,
             userId = UserContext.getUser()
         )
-        return repository.save(project).toResponse()
+        // Projeto recém-criado ainda não tem etapas nem tarefas.
+        return repository.save(project).toResponse(0)
     }
 
     override fun update(id: UUID?, request: ProjectRequestDTO?): ProjectResponseDTO {
@@ -69,7 +76,8 @@ class ProjectServiceImpl(
         request.status?.let { project.status = it }
         // Null means "clear the advisor", which is a valid edit (the front sends it explicitly).
         project.advisor = request.advisor
-        return repository.save(project).toResponse()
+        val saved = repository.save(project)
+        return saved.toResponse(progressOf(saved))
     }
 
     override fun delete(id: UUID?) {
@@ -84,9 +92,11 @@ class ProjectServiceImpl(
             .orElseThrow { EntityNotFoundException("Project", id) }
     }
 
-    private fun Projects.toResponse(): ProjectResponseDTO {
+    private fun progressOf(project: Projects): Int =
+        progressService.progressByProject(listOf(project))[project.id!!] ?: 0
+
+    private fun Projects.toResponse(progress: Int): ProjectResponseDTO {
         val stages = stages.sortedBy { it.createdDate }
-        val progress = if (stages.isEmpty()) 0 else stages.count { it.done } * 100 / stages.size
         return ProjectResponseDTO(
             id = id!!,
             title = title,
