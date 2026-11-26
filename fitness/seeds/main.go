@@ -2,13 +2,12 @@ package seeds
 
 import (
 	"embed"
-	"health/schemas/diet"
 	"health/schemas/workout"
 
 	"gorm.io/gorm"
 )
 
-//go:embed data/*.json data/*.xlsx
+//go:embed data/*.json data/*.xlsx data/*.csv
 var Files embed.FS
 
 func Load(db *gorm.DB) {
@@ -19,8 +18,10 @@ func Load(db *gorm.DB) {
 		loadExerciseFromFile(db)
 	}
 
-	db.Model(&diet.Food{}).Count(&count)
-	if count == 0 {
-		loadFoodFromExcel(db)
-	}
+	// O catálogo de alimentos é sempre sincronizado por code (upsert), para que
+	// versões novas da TACO e do complemento entrem no boot sem truncate.
+	foods := loadFoodFromExcel()
+	foods = append(foods, loadComplementaryFoods()...)
+	applyFoodPortions(foods, loadFoodPortions())
+	seedFoods(db, foods)
 }

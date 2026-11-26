@@ -7,5 +7,6 @@ data class ProjectRequestDTO(
     val id: UUID? = null,
     val title: String,
     val status: ProjectStatus? = null,
-    val advisor: String? = null
+    val advisor: String? = null,
+    val link: String? = null
 )

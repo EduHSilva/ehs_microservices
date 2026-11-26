@@ -8,6 +8,11 @@ type Food struct {
 	Code string `gorm:"size:20;uniqueIndex"`
 	Name string `gorm:"size:255;not null;index"`
 
+	// Medida caseira de referência (ex.: fatia = 25 g). A quantidade da refeição
+	// continua em gramas; a porção serve só para facilitar o preenchimento.
+	PortionLabel string  `gorm:"size:40"`
+	PortionGrams float64 `gorm:"type:decimal(8,2)"`
+
 	// Macronutrientes (100g)
 	Calories float64 `gorm:"type:decimal(8,2)"`
 	Protein  float64 `gorm:"type:decimal(8,2)"`

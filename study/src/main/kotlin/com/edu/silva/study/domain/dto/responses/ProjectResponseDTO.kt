@@ -10,5 +10,6 @@ data class ProjectResponseDTO(
     val stages: ArrayList<ProjectStageResponseDTO>,
     val status: ProjectStatus,
     val progress: Int,
-    val advisor: String
+    val advisor: String,
+    val link: String = ""
 )

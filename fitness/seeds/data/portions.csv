@@ -1,0 +1,74 @@
+code,label,grams
+486,unidade,33
+487,unidade,17
+488,unidade,50
+489,unidade,50
+490,unidade,50
+48,fatia,25
+52,fatia,25
+53,unidade,50
+63,unidade,10
+140,unidade,20
+164,fatia,75
+179,unidade,100
+182,unidade,70
+214,unidade,130
+222,unidade,130
+226,fatia,150
+1,colher de sopa,25
+3,colher de sopa,25
+7,colher de sopa,15
+561,concha,80
+567,concha,80
+301,filé,100
+377,bife,100
+408,filé,100
+410,filé,100
+261,colher de chá,5
+263,colher de chá,5
+448,pote,170
+449,pote,170
+457,copo,200
+458,copo,200
+461,fatia,30
+463,fatia,30
+467,fatia,30
+468,colher de sopa,30
+260,colher de sopa,13
+272,colher de sopa,13
+587,punhado,30
+588,punhado,30
+589,unidade,5
+597,unidade,5
+492,colher de sopa,12
+498,quadrado,10
+507,colher de sopa,20
+SUP-WHEY-CONC,dose,30
+SUP-WHEY-ISO,dose,30
+SUP-WHEY-HIDRO,dose,30
+SUP-WHEY-VEG,dose,30
+SUP-CASEINA,dose,30
+SUP-ALBUMINA,dose,30
+SUP-MALTO,dose,30
+SUP-HIPER,dose,60
+SUP-BARRA-PROT,unidade,60
+SUP-BARRA-CEREAL,unidade,25
+SUP-GEL-CARBO,sachê,30
+SUP-ENERGETICO,lata,350
+IND-IOGURTE-GREGO,pote,130
+IND-GREGO-ZERO,pote,130
+IND-IOGURTE-PROT,pote,150
+IND-IOGURTE-COCO,pote,130
+IND-COTTAGE,colher de sopa,30
+IND-BEBIDA-AVEIA,copo,200
+IND-BEBIDA-AMENDOA,copo,200
+IND-BEBIDA-COCO,copo,200
+IND-PEITO-PERU,fatia,15
+IND-PASTA-AMENDOIM,colher de sopa,15
+IND-GRANOLA,colher de sopa,15
+IND-TORRADA-INTG,unidade,10
+IND-BISCOITO-ARROZ,unidade,8
+IND-PAO-SEM-GLUTEN,fatia,25
+IND-PAO-PROTEINA,fatia,25
+IND-REFRIG-ZERO,lata,350
+IND-LEITE-ZERO-LACT,copo,200

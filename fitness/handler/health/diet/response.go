@@ -24,6 +24,9 @@ type ResponseDataFood struct {
 	Carbs    float64 `json:"carbs"`
 	Fat      float64 `json:"fat"`
 	Fiber    float64 `json:"fiber"`
+	// Medida caseira de referência do catálogo (ex.: fatia = 25 g).
+	PortionLabel string  `json:"portion_label"`
+	PortionGrams float64 `json:"portion_grams"`
 }
 
 type PhotoField struct {
@@ -51,38 +54,44 @@ func ConvertFoodToResponse(food *diet.MealFood) ResponseDataFood {
 	// tag_id is kept for older clients; it now carries the catalog food id,
 	// the same value as food_id.
 	return ResponseDataFood{
-		TagID:       food.MealFood,
-		FoodID:      food.MealFood,
-		FoodName:    food.Food.Name,
-		Quantity:    food.Quantity,
-		Observation: food.Observation,
-		Calories:    food.Food.Calories,
-		Protein:     food.Food.Protein,
-		Carbs:       food.Food.Carbs,
-		Fat:         food.Food.Fat,
-		Fiber:       food.Food.Fiber,
+		TagID:        food.MealFood,
+		FoodID:       food.MealFood,
+		FoodName:     food.Food.Name,
+		Quantity:     food.Quantity,
+		Observation:  food.Observation,
+		Calories:     food.Food.Calories,
+		Protein:      food.Food.Protein,
+		Carbs:        food.Food.Carbs,
+		Fat:          food.Food.Fat,
+		Fiber:        food.Food.Fiber,
+		PortionLabel: food.Food.PortionLabel,
+		PortionGrams: food.Food.PortionGrams,
 	}
 }
 
 type FoodResponse struct {
-	ID       uint    `json:"id"`
-	Name     string  `json:"name"`
-	Calories float64 `json:"calories"`
-	Protein  float64 `json:"protein"`
-	Carbs    float64 `json:"carbs"`
-	Fat      float64 `json:"fat"`
-	Fiber    float64 `json:"fiber"`
+	ID           uint    `json:"id"`
+	Name         string  `json:"name"`
+	Calories     float64 `json:"calories"`
+	Protein      float64 `json:"protein"`
+	Carbs        float64 `json:"carbs"`
+	Fat          float64 `json:"fat"`
+	Fiber        float64 `json:"fiber"`
+	PortionLabel string  `json:"portion_label"`
+	PortionGrams float64 `json:"portion_grams"`
 }
 
 func ConvertFoodsToResponse(food *diet.Food) FoodResponse {
 	return FoodResponse{
-		ID:       food.ID,
-		Name:     food.Name,
-		Calories: food.Calories,
-		Protein:  food.Protein,
-		Carbs:    food.Carbs,
-		Fat:      food.Fat,
-		Fiber:    food.Fiber,
+		ID:           food.ID,
+		Name:         food.Name,
+		Calories:     food.Calories,
+		Protein:      food.Protein,
+		Carbs:        food.Carbs,
+		Fat:          food.Fat,
+		Fiber:        food.Fiber,
+		PortionLabel: food.PortionLabel,
+		PortionGrams: food.PortionGrams,
 	}
 }
 

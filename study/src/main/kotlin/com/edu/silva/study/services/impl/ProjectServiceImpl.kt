@@ -1,5 +1,6 @@
 package com.edu.silva.study.services.impl
 
+import com.edu.silva.study.domain.ProjectLinks
 import com.edu.silva.study.domain.dto.requests.ProjectRequestDTO
 import com.edu.silva.study.domain.dto.responses.ProjectVersionResponseDTO
 import com.edu.silva.study.domain.dto.responses.ProjectResponseDTO
@@ -61,6 +62,7 @@ class ProjectServiceImpl(
             title = request.title,
             status = request.status ?: ProjectStatus.WAITING,
             advisor = request.advisor,
+            link = normalizeLink(request.link),
             userId = UserContext.getUser()
         )
         // Projeto recém-criado ainda não tem etapas nem tarefas.
@@ -76,6 +78,8 @@ class ProjectServiceImpl(
         request.status?.let { project.status = it }
         // Null means "clear the advisor", which is a valid edit (the front sends it explicitly).
         project.advisor = request.advisor
+        // Link ausente preserva o atual; string vazia limpa (o formulário de edição envia sempre).
+        request.link?.let { project.link = normalizeLink(it) }
         val saved = repository.save(project)
         return saved.toResponse(progressOf(saved))
     }
@@ -95,6 +99,14 @@ class ProjectServiceImpl(
     private fun progressOf(project: Projects): Int =
         progressService.progressByProject(listOf(project))[project.id!!] ?: 0
 
+    private fun normalizeLink(value: String?): String? {
+        val link = ProjectLinks.normalize(value) ?: return null
+        if (link.length > ProjectLinks.MAX_LENGTH) {
+            throw InvalidRequestException("Project link must have at most ${ProjectLinks.MAX_LENGTH} characters")
+        }
+        return link
+    }
+
     private fun Projects.toResponse(progress: Int): ProjectResponseDTO {
         val stages = stages.sortedBy { it.createdDate }
         return ProjectResponseDTO(
@@ -104,7 +116,8 @@ class ProjectServiceImpl(
             stages = stages.map { it.toResponse() }.toCollection(ArrayList()),
             status = status,
             progress = progress,
-            advisor = advisor ?: ""
+            advisor = advisor ?: "",
+            link = link ?: ""
         )
     }
 

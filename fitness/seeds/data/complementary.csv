@@ -1,0 +1,31 @@
+code,name,calories,protein,carbs,fat,fiber
+SUP-WHEY-CONC,Whey protein concentrado (pó),400,75,10,6,0
+SUP-WHEY-ISO,Whey protein isolado (pó),370,85,3,1,0
+SUP-WHEY-HIDRO,Whey protein hidrolisado (pó),370,85,4,1,0
+SUP-WHEY-VEG,Proteína vegetal isolada (pó),375,75,8,4,2
+SUP-CASEINA,Caseína (pó),370,80,8,2,0
+SUP-ALBUMINA,Albumina (pó),380,80,5,2,0
+SUP-MALTO,Maltodextrina (pó),380,0,95,0,0
+SUP-HIPER,Hipercalórico (pó),400,15,75,5,1
+SUP-BARRA-PROT,Barra de proteína,380,30,40,11,6
+SUP-BARRA-CEREAL,Barra de cereal,400,5,75,8,4
+SUP-GEL-CARBO,Gel de carboidrato,250,0,62,0,0
+SUP-ENERGETICO,Energético tradicional,45,0,11,0,0
+IND-IOGURTE-GREGO,Iogurte grego natural,70,7,4,1.5,0
+IND-GREGO-ZERO,Iogurte grego desnatado,55,9,4,0,0
+IND-IOGURTE-PROT,Iogurte proteico,70,10,5,1,0
+IND-IOGURTE-COCO,Iogurte de coco,90,1,10,5,1
+IND-COTTAGE,Queijo cottage,100,12,3,4,0
+IND-BEBIDA-AVEIA,Bebida vegetal de aveia,45,1,7,1.5,0.5
+IND-BEBIDA-AMENDOA,Bebida vegetal de amêndoa,25,0.7,2,1.5,0.5
+IND-BEBIDA-COCO,Bebida vegetal de coco,30,0.3,2,2,0
+IND-PEITO-PERU,Peito de peru defumado fatiado,100,17,2,2,0
+IND-PASTA-AMENDOIM,Pasta de amendoim integral,590,25,20,50,8
+IND-GRANOLA,Granola tradicional,400,9,65,12,8
+IND-TORRADA-INTG,Torrada integral,380,12,70,7,6
+IND-BISCOITO-ARROZ,Biscoito de arroz integral,390,8,80,3,3
+IND-PAO-SEM-GLUTEN,Pão sem glúten,250,4,50,4,3
+IND-PAO-PROTEINA,Pão de proteína (média),280,25,10,12,5
+IND-REFRIG-ZERO,Refrigerante zero,0,0,0,0,0
+IND-LEITE-ZERO-LACT,Leite desnatado zero lactose,35,3,5,0,0
+IND-GELATINA-ZERO,Gelatina zero,5,1,0,0,0

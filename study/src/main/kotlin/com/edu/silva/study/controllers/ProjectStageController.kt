@@ -1,7 +1,9 @@
 package com.edu.silva.study.controllers
 
 import com.edu.silva.common.DefaultResponse
+import com.edu.silva.study.domain.dto.requests.ProjectStageBulkRequestDTO
 import com.edu.silva.study.domain.dto.requests.ProjectStageRequestDTO
+import com.edu.silva.study.domain.dto.responses.ProjectStageBulkResponseDTO
 import com.edu.silva.study.domain.dto.responses.ProjectStageResponseDTO
 import com.edu.silva.study.services.ProjectStageService
 import jakarta.validation.Valid
@@ -31,6 +33,18 @@ class ProjectStageController {
                 stage,
                 BASE_URL,
                 stage!!.id
+            )
+        )
+    }
+
+    @PostMapping("$BASE_URL/bulk")
+    fun saveMany(
+        @RequestBody @Valid request: ProjectStageBulkRequestDTO,
+    ): ResponseEntity<DefaultResponse<ProjectStageBulkResponseDTO?>> {
+        return ResponseEntity.ok(
+            DefaultResponse<ProjectStageBulkResponseDTO?>(
+                "Project stages successfully saved",
+                service.addMany(request)
             )
         )
     }

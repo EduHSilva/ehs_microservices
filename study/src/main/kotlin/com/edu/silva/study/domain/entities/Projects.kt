@@ -30,6 +30,9 @@ class Projects(
 
     var advisor: String? = null,
 
+    /** Link do projeto/curso (ex.: página do curso), normalizado ao salvar. */
+    var link: String? = null,
+
     @Column(name = "user_id")
     var userId: UUID? = null,
 
