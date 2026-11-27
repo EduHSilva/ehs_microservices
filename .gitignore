@@ -41,4 +41,6 @@ build/
 ### Notas locais ###
 TODO.md
 
-scripts
+# scripts locais (deploy/APK) não vão para o repo; o runbook de purga vai.
+scripts/*
+!scripts/purge-user/
