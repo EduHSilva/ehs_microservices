@@ -56,6 +56,7 @@ public class JwtAuthFilter implements GlobalFilter {
         // deste filtro, então o caminho já está sem o prefixo do serviço), a confirmação
         // de cadastro enviada por e-mail e o admin do Spring Boot.
         if (path.startsWith("/ping") || path.startsWith("/auth") || path.startsWith("/confirm")
+                || path.startsWith("/budgets/public")
                 || "admin".equalsIgnoreCase(service) || path.contains("swagger") || path.contains("/api-docs")) {
             Logger.log(null, method, path, service, meta, ip);
             return chain.filter(exchange);
@@ -86,10 +87,16 @@ public class JwtAuthFilter implements GlobalFilter {
         }
 
         Optional<AppScope> appScope = AppScope.fromService(service);
-        // `tasks` é um serviço interno do StudyFlow; sem app próprio, exige o mesmo
-        // escopo do STUDY para que um token de outra aplicação não o acesse.
+        // `tasks` é compartilhado pelo StudyFlow e pelo Orçamentos (lembretes). Sem app
+        // próprio, o `aud` do token decide qual escopo a requisição assume; o header
+        // X-App-Scope leva essa decisão ao serviço, que só devolve as tarefas da origem.
+        String taskScope = null;
         if (appScope.isEmpty() && "tasks".equalsIgnoreCase(service)) {
-            appScope = Optional.of(AppScope.STUDY);
+            taskScope = resolveSharedScope(jwt.getAudience(), roles);
+            if (taskScope == null) {
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
         }
         if (appScope.isPresent()) {
             AppScope app = appScope.get();
@@ -107,17 +114,38 @@ public class JwtAuthFilter implements GlobalFilter {
 
         String subject = jwt.getSubject();
         String rolesHeader = roles == null ? "" : String.join(",", roles);
+        String appScopeHeader = taskScope;
 
         exchange = exchange.mutate()
                 .request(builder ->
                         builder.headers(headers -> {
                             headers.set("X-User-ID", subject);
                             headers.set("X-User-Roles", rolesHeader);
+                            if (appScopeHeader != null) {
+                                // Sobrescreve qualquer valor enviado pelo cliente.
+                                headers.set("X-App-Scope", appScopeHeader);
+                            }
                         }))
                 .build();
 
         Logger.log(subject, method, path, service, meta, ip);
         return chain.filter(exchange);
+    }
+
+    /**
+     * Escopo de uma requisição ao serviço compartilhado `tasks`: vale a aplicação que
+     * emitiu o token (aud) e cuja role o usuário possui. Tokens de outras aplicações
+     * continuam sem acesso.
+     */
+    private String resolveSharedScope(List<String> audience, List<String> roles) {
+        for (AppScope app : List.of(AppScope.BUDGETS, AppScope.STUDY)) {
+            boolean audienceMatches = audience != null && audience.stream()
+                    .anyMatch(aud -> app.name().equalsIgnoreCase(aud));
+            if (audienceMatches && app.allows(roles)) {
+                return app.name();
+            }
+        }
+        return null;
     }
 
     private String getClientIp(ServerWebExchange exchange) {

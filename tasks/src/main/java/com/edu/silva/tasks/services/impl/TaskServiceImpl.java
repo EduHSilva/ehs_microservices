@@ -7,6 +7,8 @@ import com.edu.silva.tasks.domain.dtos.responses.DailyTaskCompletionDTO;
 import com.edu.silva.tasks.domain.dtos.responses.TaskResponseDTO;
 import com.edu.silva.tasks.domain.entities.Task;
 import com.edu.silva.tasks.domain.entities.TaskCompletion;
+import com.edu.silva.tasks.domain.enums.TaskPriority;
+import com.edu.silva.tasks.domain.enums.TaskSource;
 import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
 import com.edu.silva.tasks.infra.config.RequestTimeZone;
@@ -51,6 +53,9 @@ public class TaskServiceImpl implements TaskService {
         task.setStartDate(dto.startDate() == null ? new java.util.Date() : dto.startDate());
         task.setEndDate(dto.endDate());
         task.setStatus(TaskStatus.PENDING);
+        task.setPriority(dto.priority() == null ? TaskPriority.MEDIUM : dto.priority());
+        task.setClientId(dto.clientId());
+        task.setSource(UserContext.getSource());
         task.setProjectId(dto.projectId());
         task.setStageId(dto.stageId());
         task.setRecurrenceDays(dto.recurrenceDays());
@@ -82,13 +87,14 @@ public class TaskServiceImpl implements TaskService {
         }
 
         UUID userId = UserContext.getUser();
+        TaskSource source = UserContext.getSource();
         Page<Task> tasks;
         if (stageId != null) {
-            tasks = repository.findAllOverlappingPeriodByStageId(userId, effectiveStart, effectiveEnd, stageId, pageable);
+            tasks = repository.findAllOverlappingPeriodByStageId(userId, source, effectiveStart, effectiveEnd, stageId, pageable);
         } else if (projectId != null) {
-            tasks = repository.findAllOverlappingPeriodByProjectId(userId, effectiveStart, effectiveEnd, projectId, pageable);
+            tasks = repository.findAllOverlappingPeriodByProjectId(userId, source, effectiveStart, effectiveEnd, projectId, pageable);
         } else {
-            tasks = repository.findAllOverlappingPeriod(userId, effectiveStart, effectiveEnd, pageable);
+            tasks = repository.findAllOverlappingPeriod(userId, source, effectiveStart, effectiveEnd, pageable);
         }
         // O atraso é derivado do prazo: toda leitura recalcula e persiste a mudança. Como as
         // entidades estão gerenciadas pela transação, o flush grava o novo status no commit.
@@ -114,6 +120,14 @@ public class TaskServiceImpl implements TaskService {
         // Null means "not sent"; an empty string is how the client clears the details.
         if (request.details() != null) {
             task.setDetails(trimToNull(request.details()));
+        }
+        if (Boolean.TRUE.equals(request.clearClient())) {
+            task.setClientId(null);
+        } else if (request.clientId() != null) {
+            task.setClientId(request.clientId());
+        }
+        if (request.priority() != null) {
+            task.setPriority(request.priority());
         }
         if (request.type() != null) {
             task.setType(request.type());
@@ -164,8 +178,12 @@ public class TaskServiceImpl implements TaskService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * Busca restrita ao dono e à aplicação de origem: um token do Orçamentos não enxerga
+     * nem altera tarefas do StudyFlow, e vice-versa.
+     */
     private Task findEntity(UUID id) {
-        return repository.findByIdAndUserId(id, UserContext.getUser())
+        return repository.findByIdAndUserIdAndSource(id, UserContext.getUser(), UserContext.getSource())
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Task.class.getSimpleName(), id));
     }
 

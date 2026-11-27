@@ -56,6 +56,13 @@ public class Budget implements Serializable {
     @Column(name = "kanban_order")
     private Integer kanbanOrder;
 
+    /**
+     * Token do link público de aprovação. É gerado na criação e nunca muda,
+     * para que links já compartilhados continuem válidos.
+     */
+    @Column(name = "approval_token", unique = true)
+    private UUID approvalToken;
+
     @OneToMany(mappedBy = "budget", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Item> items = new ArrayList<>();
 }

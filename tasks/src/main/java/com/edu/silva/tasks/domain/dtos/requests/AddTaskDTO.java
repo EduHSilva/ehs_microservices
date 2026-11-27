@@ -1,5 +1,6 @@
 package com.edu.silva.tasks.domain.dtos.requests;
 
+import com.edu.silva.tasks.domain.enums.TaskPriority;
 import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
 import jakarta.validation.constraints.Max;
@@ -19,6 +20,10 @@ public record AddTaskDTO(
         Date startDate,
         Date endDate,
         TaskStatus status,
+        /** Optional priority; defaults to MEDIUM. Used by the Orçamentos reminders. */
+        TaskPriority priority,
+        /** Optional CRM client linked to the reminder (id from the budgets service). */
+        UUID clientId,
         UUID projectId,
         UUID stageId,
         /** ISO weekdays (1 = Monday .. 7 = Sunday); required for WEEKLY. */

@@ -43,6 +43,9 @@ public class TaskController {
                     whose completionDate falls within the effective interval, and completion is accepted only on
                     scheduled days (WEEKLY_GOAL accepts any day up to its weekly target).
                     dailyStatistics contains the task's accumulated statistics based on scheduled days.
+
+                    Only tasks created by the calling application are returned: the gateway resolves the
+                    application from the token audience and sends it as X-App-Scope (StudyFlow or Orçamentos).
                     """
     )
     ResponseEntity<@NonNull DefaultResponse<PageResponse<TaskResponseDTO>>> all(

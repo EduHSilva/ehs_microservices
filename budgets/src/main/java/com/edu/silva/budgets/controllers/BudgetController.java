@@ -3,6 +3,7 @@ package com.edu.silva.budgets.controllers;
 import com.edu.silva.common.DefaultResponse;
 import com.edu.silva.common.PageResponse;
 import com.edu.silva.budgets.domain.dtos.requests.NewBudgetRequestDTO;
+import com.edu.silva.budgets.domain.dtos.requests.PublicBudgetDecisionRequestDTO;
 import com.edu.silva.budgets.domain.dtos.requests.UpdateBudgetRequestDTO;
 import com.edu.silva.budgets.domain.dtos.responses.BudgetResponseDTO;
 import com.edu.silva.budgets.services.BudgetService;
@@ -77,6 +78,28 @@ public class BudgetController {
     ) {
         return ResponseEntity.ok(
                 new DefaultResponse<>("Budget successfully saved", service.update(id, dto), BASE_URL, id)
+        );
+    }
+
+    // --- Link público de aprovação (sem login, autenticado pelo token) ---
+
+    @GetMapping("/budgets/public/{token}")
+    public ResponseEntity<@NonNull DefaultResponse<BudgetResponseDTO>> publicGet(
+            @PathVariable UUID token
+    ) {
+        return ResponseEntity.ok(
+                new DefaultResponse<>("Budget successfully retrieved", service.findByApprovalToken(token))
+        );
+    }
+
+    @PostMapping("/budgets/public/{token}/decision")
+    public ResponseEntity<@NonNull DefaultResponse<BudgetResponseDTO>> publicDecision(
+            @PathVariable UUID token,
+            @RequestBody @Valid PublicBudgetDecisionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                new DefaultResponse<>("Budget decision successfully saved",
+                        service.decideByApprovalToken(token, dto.status()))
         );
     }
 }

@@ -24,6 +24,8 @@ public class SecurityConfiguration {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/ping",
+            // Link de aprovação enviado ao cliente: autenticação é o token da URL.
+            "/budgets/public/**",
             "/actuator/**",
             "/v3/api-docs/**",
             "/swagger-ui.html",

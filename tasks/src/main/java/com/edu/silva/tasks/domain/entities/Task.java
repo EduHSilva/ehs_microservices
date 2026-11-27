@@ -1,5 +1,7 @@
 package com.edu.silva.tasks.domain.entities;
 
+import com.edu.silva.tasks.domain.enums.TaskPriority;
+import com.edu.silva.tasks.domain.enums.TaskSource;
 import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
 import jakarta.persistence.*;
@@ -42,6 +44,22 @@ public class Task {
     private TaskType type;
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
+
+    /** Aplicação que criou a tarefa; cada produto só enxerga as suas. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", nullable = false)
+    @ColumnDefault("'STUDY'")
+    private TaskSource source = TaskSource.STUDY;
+
+    /** Prioridade usada pelos lembretes do Orçamentos; o StudyFlow mantém o padrão. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority", nullable = false)
+    @ColumnDefault("'MEDIUM'")
+    private TaskPriority priority = TaskPriority.MEDIUM;
+
+    /** Cliente vinculado ao lembrete (id do serviço budgets); nulo no StudyFlow. */
+    @Column(name = "client_id")
+    private UUID clientId;
 
     /** Day a single task was completed; null while pending and for recurring tasks. */
     @Column(name = "completed_date")

@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class BudgetStatusTest {
 
     private static final Map<BudgetStatus, Set<BudgetStatus>> ALLOWED = Map.of(
-            DRAFT, Set.of(DRAFT, SEND, CANCEL, DELETED),
-            SEND, Set.of(SEND, WAITING, CANCEL, DELETED),
+            DRAFT, Set.of(DRAFT, SEND, WAITING, CANCEL, DELETED),
+            SEND, Set.of(SEND, WAITING, APPROVED, DENY, CANCEL, DELETED),
             WAITING, Set.of(WAITING, APPROVED, DENY, CANCEL, DELETED),
             APPROVED, Set.of(APPROVED, WORKING, CANCEL, DELETED),
             WORKING, Set.of(WORKING, DONE, CANCEL, DELETED),

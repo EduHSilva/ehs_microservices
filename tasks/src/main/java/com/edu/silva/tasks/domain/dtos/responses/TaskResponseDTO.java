@@ -1,6 +1,7 @@
 package com.edu.silva.tasks.domain.dtos.responses;
 
 import com.edu.silva.tasks.domain.entities.Task;
+import com.edu.silva.tasks.domain.enums.TaskPriority;
 import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,6 +28,10 @@ public class TaskResponseDTO {
     private Date endDate;
     private TaskType type;
     private TaskStatus status;
+    @Schema(description = "Priority used by the Orçamentos reminders.")
+    private TaskPriority priority;
+    @Schema(description = "Client linked to the reminder (id from the budgets service); null when there is none.")
+    private UUID clientId;
     @Schema(description = "Day a single task was completed. Null while pending and for recurring tasks.")
     private LocalDate completedDate;
     @Schema(description = "ISO weekdays (1 = Monday .. 7 = Sunday) for WEEKLY tasks.")

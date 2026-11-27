@@ -30,6 +30,7 @@ public class BudgetResponseDTO {
     private Date createdDate;
     private String clientName;
     private String client;
+    private UUID approvalToken;
     private List<ItemDTO> items = new ArrayList<>();
     private double total;
 

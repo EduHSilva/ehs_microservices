@@ -24,6 +24,8 @@ public interface BudgetRepository extends JpaRepository<@NonNull Budget, @NonNul
 
     Optional<Budget> findByIdAndUserId(UUID id, UUID userId);
 
+    Optional<Budget> findByApprovalToken(UUID approvalToken);
+
     List<Budget> findTop5ByOrderByCreatedDateDesc();
 
     List<Budget> findByStatusOrderByKanbanOrder(BudgetStatus status);

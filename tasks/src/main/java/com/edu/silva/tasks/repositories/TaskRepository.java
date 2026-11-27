@@ -1,6 +1,7 @@
 package com.edu.silva.tasks.repositories;
 
 import com.edu.silva.tasks.domain.entities.Task;
+import com.edu.silva.tasks.domain.enums.TaskSource;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,16 +14,18 @@ import java.util.UUID;
 
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
-    Optional<Task> findByIdAndUserId(UUID id, UUID userId);
+    Optional<Task> findByIdAndUserIdAndSource(UUID id, UUID userId, TaskSource source);
 
     @Query("""
             select t from Task t
             where t.userId = :userId
+              and t.source = :source
               and (t.endDate is null or t.endDate >= :start)
               and coalesce(t.startDate, t.createdDate) <= :end
             """)
     Page<Task> findAllOverlappingPeriod(
             @Param("userId") UUID userId,
+            @Param("source") TaskSource source,
             @Param("start") Date start,
             @Param("end") Date end,
             Pageable pageable);
@@ -30,12 +33,14 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("""
             select t from Task t
             where t.userId = :userId
+              and t.source = :source
               and (t.endDate is null or t.endDate >= :start)
               and coalesce(t.startDate, t.createdDate) <= :end
               and t.projectId = :projectId
             """)
     Page<Task> findAllOverlappingPeriodByProjectId(
             @Param("userId") UUID userId,
+            @Param("source") TaskSource source,
             @Param("start") Date start,
             @Param("end") Date end,
             @Param("projectId") UUID projectId,
@@ -44,12 +49,14 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("""
             select t from Task t
             where t.userId = :userId
+              and t.source = :source
               and (t.endDate is null or t.endDate >= :start)
               and coalesce(t.startDate, t.createdDate) <= :end
               and t.stageId = :stageId
             """)
     Page<Task> findAllOverlappingPeriodByStageId(
             @Param("userId") UUID userId,
+            @Param("source") TaskSource source,
             @Param("start") Date start,
             @Param("end") Date end,
             @Param("stageId") UUID stageId,

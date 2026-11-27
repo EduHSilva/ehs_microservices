@@ -63,6 +63,7 @@ class BudgetServiceImplTest {
         budget.setStatus(BudgetStatus.WAITING);
 
         when(repository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
+        when(repository.findByApprovalToken(any(UUID.class))).thenReturn(Optional.of(budget));
         when(repository.save(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -113,6 +114,35 @@ class BudgetServiceImplTest {
     void shouldRejectDeletedThroughPut() {
         assertThrows(CustomExceptions.InvalidStatusException.class,
                 () -> service.update(budgetId, request(BudgetStatus.DELETED)));
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldApproveThroughPublicToken() {
+        UUID token = UUID.randomUUID();
+
+        BudgetResponseDTO result = service.decideByApprovalToken(token, BudgetStatus.APPROVED);
+
+        assertEquals(BudgetStatus.APPROVED, result.getStatus());
+        verify(repository).findByApprovalToken(token);
+        verify(repository).save(budget);
+    }
+
+    @Test
+    void shouldRejectNonDecisionThroughPublicToken() {
+        assertThrows(CustomExceptions.InvalidStatusException.class,
+                () -> service.decideByApprovalToken(UUID.randomUUID(), BudgetStatus.WORKING));
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectDecisionWhenAlreadyFinished() {
+        budget.setStatus(BudgetStatus.DONE);
+
+        assertThrows(CustomExceptions.InvalidStatusException.class,
+                () -> service.decideByApprovalToken(UUID.randomUUID(), BudgetStatus.DENY));
 
         verify(repository, never()).save(any());
     }

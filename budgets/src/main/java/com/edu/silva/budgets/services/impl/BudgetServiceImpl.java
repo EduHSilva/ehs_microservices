@@ -54,6 +54,7 @@ public class BudgetServiceImpl implements BudgetService {
         Budget budget = new Budget();
         budget.setStatus(BudgetStatus.DRAFT);
         budget.setUserId(userId);
+        budget.setApprovalToken(UUID.randomUUID());
         budget.setTitle(dto.title());
         budget.setDescription(dto.description());
         budget.setObservations(dto.observations());
@@ -128,6 +129,12 @@ public class BudgetServiceImpl implements BudgetService {
                         budget.setStatus(dto.status());
                     }
 
+                    // Orçamentos antigos podem não ter token; garante o link público
+                    // a partir da primeira edição/envio.
+                    if (budget.getApprovalToken() == null) {
+                        budget.setApprovalToken(UUID.randomUUID());
+                    }
+
                     budget.setTitle(dto.title());
                     budget.setDescription(dto.description());
                     budget.setValidate(dto.validate());
@@ -173,6 +180,33 @@ public class BudgetServiceImpl implements BudgetService {
                     return repository.save(budget);
                 })
                 .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Budget.class.getSimpleName(), id)));
+    }
+
+    @Override
+    public BudgetResponseDTO findByApprovalToken(UUID token) {
+        return new BudgetResponseDTO(repository.findByApprovalToken(token)
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Budget.class.getSimpleName(), token)));
+    }
+
+    @Override
+    @Transactional
+    public BudgetResponseDTO decideByApprovalToken(UUID token, BudgetStatus decision) {
+        if (decision != BudgetStatus.APPROVED && decision != BudgetStatus.DENY) {
+            throw new CustomExceptions.InvalidStatusException(
+                    "Decisão pública inválida: " + decision);
+        }
+
+        Budget budget = repository.findByApprovalToken(token)
+                .orElseThrow(() -> new CustomExceptions.EntityNotFoundException(Budget.class.getSimpleName(), token));
+
+        if (!budget.getStatus().canTransitionTo(decision)) {
+            throw new CustomExceptions.InvalidStatusException(
+                    "Transição de status inválida: "
+                            + budget.getStatus() + " -> " + decision);
+        }
+
+        budget.setStatus(decision);
+        return new BudgetResponseDTO(repository.save(budget));
     }
 
     private Item createItem(ItemDTO i, Budget budget, UUID userId) {

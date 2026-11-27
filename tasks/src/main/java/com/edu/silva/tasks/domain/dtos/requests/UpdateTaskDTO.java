@@ -1,5 +1,6 @@
 package com.edu.silva.tasks.domain.dtos.requests;
 
+import com.edu.silva.tasks.domain.enums.TaskPriority;
 import com.edu.silva.tasks.domain.enums.TaskStatus;
 import com.edu.silva.tasks.domain.enums.TaskType;
 import jakarta.validation.constraints.Max;
@@ -21,6 +22,11 @@ public record UpdateTaskDTO(
         Date endDate,
         TaskStatus status,
         LocalDate completionDate,
+        TaskPriority priority,
+        /** Client linked to the reminder; null keeps the current link. */
+        UUID clientId,
+        /** Sends true to remove the client link (clientId null alone means "unchanged"). */
+        Boolean clearClient,
         UUID projectId,
         UUID stageId,
         /** ISO weekdays (1 = Monday .. 7 = Sunday) used by WEEKLY. */

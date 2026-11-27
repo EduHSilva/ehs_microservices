@@ -61,6 +61,10 @@
 - Roles de ADMIN são geridas apenas por ADMIN; o próprio usuário não altera as suas.
 - O gateway valida token + `aud` (app) + role da rota e injeta `X-User-ID` e
   `X-User-Roles` (CSV); o serviço de destino confia nesses headers.
+- O serviço `tasks` é compartilhado por `STUDY` e `BUDGETS` (lembretes): o gateway aceita
+  token cujo `aud` seja um dos dois, injeta `X-App-Scope` com a aplicação do token e o
+  service devolve (e altera) somente tarefas com o `source` correspondente. Origem no
+  token de outra aplicação → 403; tarefa de outra origem → 404.
 - Rotas `/internal/**` são bloqueadas no gateway com 404, mesmo com token válido. A
   consulta interna do `fitness` ao `users` (`/internal/profiles`) usa o segredo
   compartilhado `X-Internal-Token` e nunca é exposta ao cliente.
@@ -102,7 +106,8 @@
   nenhum usuário vê dado de outro.
 - No serviço `budgets` o isolamento é feito por filtro Hibernate (`userFilter`) + queries
   `findByIdAndUserId`; no `finances` as entidades têm `owner_id`/`user_id` nas queries;
-  em `study`/`tasks` as queries são sempre por usuário do token.
+  em `study`/`tasks` as queries são sempre por usuário do token (no `tasks`, também pela
+  aplicação de origem).
 - No `fitness`, o plano (treino, agenda e refeição) pertence ao **aluno** (`student_id`).
   O usuário do token é o próprio aluno ou um profissional com vínculo ativo; consultas
   usam o aluno-alvo validado, nunca um id arbitrário do payload. Escrita exige role do
@@ -113,8 +118,10 @@
   `AND student_id = :studentId`).
 - Requisição sem `X-User-ID` em rota privada = 401 (falha fechada).
 - O `budgets` usa Spring Security stateless: as rotas privadas exigem o `X-User-ID`
-  injetado pelo gateway (saúde, Swagger e docs são públicas). Os demais serviços de
-  produto aplicam o mesmo requisito por filtro próprio. Em todos, a porta do serviço
+  injetado pelo gateway (saúde, Swagger e docs são públicas). Exceção: `/budgets/public/**`
+  (leitura e decisão do orçamento) é autenticada pelo token da URL, não pelo usuário —
+  não aplica o filtro de tenant e o gateway libera o caminho sem JWT. Os demais serviços
+  de produto aplicam o mesmo requisito por filtro próprio. Em todos, a porta do serviço
   não pode ser publicada no host (só via gateway).
 
 ## 6. Exclusão de dados

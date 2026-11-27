@@ -34,8 +34,10 @@ public enum BudgetStatus {
             return true;
         }
         return switch (this) {
-            case DRAFT -> target == SEND;
-            case SEND -> target == WAITING;
+            // SEND existe apenas por compatibilidade com registros antigos: o
+            // fluxo atual vai direto do rascunho para WAITING (envio manual).
+            case DRAFT -> target == WAITING || target == SEND;
+            case SEND -> target == WAITING || target == APPROVED || target == DENY;
             case WAITING -> target == APPROVED || target == DENY;
             case APPROVED -> target == WORKING;
             case WORKING -> target == DONE;

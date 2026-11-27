@@ -1,5 +1,6 @@
 package com.edu.silva.tasks.infra.config;
 
+import com.edu.silva.tasks.domain.enums.TaskSource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,8 +43,22 @@ public class HibernateUserFilter extends OncePerRequestFilter {
             return;
         }
 
+        // O gateway sobrescreve este header a partir do `aud` do token; sem ele a
+        // requisição é tratada como StudyFlow (compatibilidade com chamadas antigas).
+        TaskSource source;
+        try {
+            String appScope = request.getHeader("X-App-Scope");
+            source = appScope == null || appScope.isBlank()
+                    ? TaskSource.STUDY
+                    : TaskSource.valueOf(appScope.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid X-App-Scope");
+            return;
+        }
+
         try {
             UserContext.setUser(userId);
+            UserContext.setSource(source);
             filterChain.doFilter(request, response);
         } finally {
             UserContext.clear();
